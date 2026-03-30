@@ -1,0 +1,465 @@
+'use client';
+
+import PublicFooter from '@/components/layout/PublicFooter';
+import PublicNavbar from '@/components/layout/PublicNavbar';
+import { ChevronRight, ArrowLeft, CheckCircle2, User, FileText, CreditCard, BedDouble, Loader2 } from 'lucide-react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
+
+
+interface Room {
+  id: string;
+  roomNumber: string;
+  roomType: string;
+  capacity: number;
+  pricePerNight: number;
+  description: string;
+  imageUrl?: string;
+  roomAmenities: { amenity: { name: string } }[];
+}
+
+export default function BookingPage() {
+  const router = useRouter();
+  const params = useParams();
+  const roomId = params.roomId as string;
+  
+  const searchParams = useSearchParams();
+  const checkInQuery = searchParams.get('checkIn');
+  const checkOutQuery = searchParams.get('checkOut');
+
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [room, setRoom] = useState<Room | null>(null);
+  const [bookingCode, setBookingCode] = useState<string | null>(null);
+
+  const [formData, setFormData] = useState({
+    checkIn: checkInQuery || '',
+    checkOut: checkOutQuery || '',
+    guestName: '',
+    guestPhone: '',
+    guestEmail: '',
+    specialRequests: '',
+  });
+
+  useEffect(() => {
+    fetch(`/api/rooms/${roomId}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.error) throw new Error(d.error);
+        setRoom(d);
+        setLoading(false);
+      })
+      .catch((err) => {
+        toast.error("Gagal memuat data kamar");
+        setLoading(false);
+      });
+  }, [roomId]);
+
+  const handleNext = () => {
+    if (step === 1) {
+      if (!formData.guestName || !formData.guestPhone || !formData.guestEmail) {
+        toast.error("Mohon lengkapi data tamu (Nama, Email, dan Telepon)");
+        return;
+      }
+      if (!formData.checkIn || !formData.checkOut) {
+        toast.error("Mohon lengkapi tanggal Check-in dan Check-out");
+        return;
+      }
+      
+      const inDate = new Date(formData.checkIn);
+      const outDate = new Date(formData.checkOut);
+      if (inDate >= outDate) {
+        toast.error("Tanggal Check-out harus setelah Check-in");
+        return;
+      }
+    }
+    setStep((prev) => prev + 1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleBack = () => {
+    setStep((prev) => prev - 1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const calculateTotalNights = () => {
+    if (!formData.checkIn || !formData.checkOut) return 0;
+    const diff = new Date(formData.checkOut).getTime() - new Date(formData.checkIn).getTime();
+    return Math.max(1, Math.ceil(diff / (1000 * 3600 * 24)));
+  };
+
+  const calculateTotalPrice = () => {
+    if (!room) return 0;
+    return calculateTotalNights() * Number(room.pricePerNight);
+  };
+
+  const handleSubmitBooking = async () => {
+    setSubmitting(true);
+    try {
+      // Single public endpoint: creates guest, reservation, and snap token
+      const res = await fetch('/api/public/book', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          roomId,
+          checkIn: new Date(formData.checkIn).toISOString(),
+          checkOut: new Date(formData.checkOut).toISOString(),
+          guestName: formData.guestName,
+          guestPhone: formData.guestPhone,
+          guestEmail: formData.guestEmail,
+          specialRequests: formData.specialRequests || undefined,
+          numGuests: 1,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Gagal membuat booking');
+      }
+
+      // Open Midtrans Snap popup
+      const snap = (window as any).snap;
+      if (!snap) {
+        toast.error('Snap belum dimuat. Silakan refresh halaman.');
+        setSubmitting(false);
+        return;
+      }
+
+      snap.pay(data.payment.token, {
+        onSuccess: (_result: any) => {
+          setBookingCode(data.bookingCode);
+          setStep(4);
+          toast.success('Pembayaran berhasil! Booking Anda telah dikonfirmasi.');
+          setSubmitting(false);
+        },
+        onPending: (_result: any) => {
+          setBookingCode(data.bookingCode);
+          setStep(4);
+          toast.success('Booking berhasil dibuat! Menunggu konfirmasi pembayaran.');
+          setSubmitting(false);
+        },
+        onError: (_result: any) => {
+          toast.error('Pembayaran gagal. Silakan coba lagi.');
+          setSubmitting(false);
+        },
+        onClose: () => {
+          toast('Anda menutup popup pembayaran. Booking tetap tersimpan, Anda bisa membayar nanti.', { icon: 'ℹ️' });
+          setSubmitting(false);
+        },
+      });
+    } catch (error: any) {
+      toast.error(error.message);
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) return (
+    <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-700"></div>
+    </div>
+  );
+
+  if (!room) return (
+    <div className="min-h-screen bg-zinc-50 flex flex-col items-center justify-center">
+      <h1 className="text-2xl font-serif mb-4">Kamar Tidak Ditemukan</h1>
+      <button onClick={() => router.push('/rooms')} className="text-red-700 hover:underline">
+        Kembali ke Daftar Kamar
+      </button>
+    </div>
+  );
+
+  const totalNights = calculateTotalNights();
+  const totalPrice = calculateTotalPrice();
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+
+  return (
+    <div className="min-h-screen bg-zinc-50 text-gray-900 font-sans">
+      <PublicNavbar />
+      
+      <div className="pt-32 pb-20 px-4 max-w-5xl mx-auto">
+        <button 
+          onClick={() => step > 1 ? handleBack() : router.back()} 
+          className="flex items-center text-sm font-bold uppercase tracking-widest text-gray-500 hover:text-black transition-colors mb-8"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          {step > 1 ? 'Kembali' : 'Kembali ke Kamar'}
+        </button>
+
+        {/* Stepper Header */}
+        {step < 4 && (
+          <div className="flex items-center justify-between mb-12 border-b border-gray-200 pb-8">
+            <div className={`flex flex-col items-center ${step >= 1 ? 'text-red-700' : 'text-gray-400'}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${step >= 1 ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-gray-100'}`}>
+                <User className="w-4 h-4" />
+              </div>
+              <span className="text-xs font-bold uppercase tracking-widest text-center">Data Tamu</span>
+            </div>
+            
+            <div className={`flex-1 h-0.5 mx-4 ${step >= 2 ? 'bg-red-700' : 'bg-gray-200'}`} />
+            
+            <div className={`flex flex-col items-center ${step >= 2 ? 'text-red-700' : 'text-gray-400'}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${step >= 2 ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-gray-100'}`}>
+                <FileText className="w-4 h-4" />
+              </div>
+              <span className="text-xs font-bold uppercase tracking-widest text-center">Detail Booking</span>
+            </div>
+
+            <div className={`flex-1 h-0.5 mx-4 ${step >= 3 ? 'bg-red-700' : 'bg-gray-200'}`} />
+            
+            <div className={`flex flex-col items-center ${step >= 3 ? 'text-red-700' : 'text-gray-400'}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${step >= 3 ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-gray-100'}`}>
+                <CreditCard className="w-4 h-4" />
+              </div>
+              <span className="text-xs font-bold uppercase tracking-widest text-center">Pembayaran</span>
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          {/* Main Content Area */}
+          <div className="lg:col-span-2 space-y-8">
+            
+            {/* STEP 1: GUEST INFO */}
+            {step === 1 && (
+              <div className="bg-white p-8 border border-gray-100 shadow-sm">
+                <h2 className="text-2xl font-serif mb-6 text-gray-900 border-b border-gray-100 pb-4">Informasi Tamu</h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                  <div>
+                    <label className="block text-xs font-bold tracking-widest uppercase text-gray-500 mb-2">Check-in</label>
+                    <input 
+                      type="date" 
+                      value={formData.checkIn}
+                      onChange={(e) => setFormData({...formData, checkIn: e.target.value})}
+                      className="w-full border border-gray-300 px-4 py-3 outline-none focus:border-red-700 transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold tracking-widest uppercase text-gray-500 mb-2">Check-out</label>
+                    <input 
+                      type="date" 
+                      value={formData.checkOut}
+                      onChange={(e) => setFormData({...formData, checkOut: e.target.value})}
+                      className="w-full border border-gray-300 px-4 py-3 outline-none focus:border-red-700 transition-colors"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-xs font-bold tracking-widest uppercase text-gray-500 mb-2">Nama Lengkap *</label>
+                    <input 
+                      type="text" 
+                      placeholder="Sesuai KTP / Paspor"
+                      value={formData.guestName}
+                      onChange={(e) => setFormData({...formData, guestName: e.target.value})}
+                      className="w-full border border-gray-300 px-4 py-3 outline-none focus:border-red-700 transition-colors"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-xs font-bold tracking-widest uppercase text-gray-500 mb-2">Email Address *</label>
+                      <input 
+                        type="email" 
+                        value={formData.guestEmail}
+                        onChange={(e) => setFormData({...formData, guestEmail: e.target.value})}
+                        className="w-full border border-gray-300 px-4 py-3 outline-none focus:border-red-700 transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold tracking-widest uppercase text-gray-500 mb-2">Nomor Telepon / WhatsApp *</label>
+                      <input 
+                        type="tel" 
+                        value={formData.guestPhone}
+                        onChange={(e) => setFormData({...formData, guestPhone: e.target.value})}
+                        className="w-full border border-gray-300 px-4 py-3 outline-none focus:border-red-700 transition-colors"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold tracking-widest uppercase text-gray-500 mb-2">Permintaan Khusus (Opsional)</label>
+                    <textarea 
+                      rows={3}
+                      value={formData.specialRequests}
+                      onChange={(e) => setFormData({...formData, specialRequests: e.target.value})}
+                      className="w-full border border-gray-300 px-4 py-3 outline-none focus:border-red-700 transition-colors"
+                      placeholder="Cth: Tolong siapkan extra bed..."
+                    />
+                  </div>
+                </div>
+                
+                <div className="mt-8 flex justify-end">
+                  <button onClick={handleNext} className="bg-black hover:bg-gray-800 text-white px-8 py-4 text-sm font-bold uppercase tracking-widest transition-colors">
+                    Lanjut ke Pengecekan
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 2: BOOKING DETAILS */}
+            {step === 2 && (
+              <div className="bg-white p-8 border border-gray-100 shadow-sm">
+                <h2 className="text-2xl font-serif mb-6 text-gray-900 border-b border-gray-100 pb-4">Detail Booking</h2>
+                
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center py-4 border-b border-gray-100">
+                    <span className="text-sm font-bold uppercase tracking-widest text-gray-500">Kamar</span>
+                    <span className="font-serif text-xl capitalize">{room.roomType} Room</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center py-4 border-b border-gray-100">
+                    <span className="text-sm font-bold uppercase tracking-widest text-gray-500">Check-in</span>
+                    <span className="text-lg text-gray-800">
+                      {new Date(formData.checkIn).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-4 border-b border-gray-100">
+                    <span className="text-sm font-bold uppercase tracking-widest text-gray-500">Check-out</span>
+                    <span className="text-lg text-gray-800">
+                      {new Date(formData.checkOut).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-4 border-b border-gray-100">
+                    <span className="text-sm font-bold uppercase tracking-widest text-gray-500">Durasi</span>
+                    <span className="text-lg text-gray-800">{totalNights} Malam</span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-4 border-b border-gray-100">
+                    <span className="text-sm font-bold uppercase tracking-widest text-gray-500">Nama Tamu</span>
+                    <span className="text-lg text-gray-800">{formData.guestName}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-4 border-b border-gray-100">
+                    <span className="text-sm font-bold uppercase tracking-widest text-gray-500">Email</span>
+                    <span className="text-lg text-gray-800">{formData.guestEmail}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-4 border-b border-gray-100">
+                    <span className="text-sm font-bold uppercase tracking-widest text-gray-500">No. Telepon</span>
+                    <span className="text-lg text-gray-800">{formData.guestPhone}</span>
+                  </div>
+                </div>
+
+                <div className="mt-8 flex justify-end">
+                  <button onClick={handleNext} className="bg-black hover:bg-gray-800 text-white px-8 py-4 text-sm font-bold uppercase tracking-widest transition-colors">
+                    Lanjut ke Pembayaran
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 3: PAYMENT — Midtrans Snap */}
+            {step === 3 && (
+              <div className="bg-white p-8 border border-gray-100 shadow-sm">
+                <h2 className="text-2xl font-serif mb-6 text-gray-900 border-b border-gray-100 pb-4">Pembayaran</h2>
+                
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-red-50 text-red-700 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <CreditCard className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-xl font-serif mb-3 text-gray-900">Pembayaran Online via Midtrans</h3>
+                  <p className="text-gray-500 font-light max-w-md mx-auto mb-8">
+                    Klik tombol di bawah untuk membuat booking dan membuka halaman pembayaran. 
+                    Anda dapat membayar menggunakan transfer bank, e-wallet, QRIS, kartu kredit, dan lainnya.
+                  </p>
+                  
+                  <button 
+                    onClick={handleSubmitBooking} 
+                    disabled={submitting}
+                    className="bg-red-700 hover:bg-red-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-10 py-4 text-sm font-bold uppercase tracking-widest transition-colors inline-flex items-center gap-3"
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Memproses...
+                      </>
+                    ) : (
+                      'Konfirmasi & Bayar Sekarang'
+                    )}
+                  </button>
+
+                  <p className="text-xs text-gray-400 mt-4">
+                    Pembayaran diproses secara aman oleh Midtrans
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 4: CONFIRMATION */}
+            {step === 4 && (
+              <div className="bg-white p-12 border border-gray-100 shadow-sm text-center">
+                <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <CheckCircle2 className="w-10 h-10" />
+                </div>
+                <h2 className="text-3xl font-serif mb-4 text-gray-900">Booking Berhasil!</h2>
+                <p className="text-gray-500 font-light max-w-md mx-auto mb-6">
+                  Terima kasih telah memilih Ron&apos;s Guesthouse. Detail booking Anda telah kami terima.
+                </p>
+
+                {bookingCode && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg max-w-sm mx-auto p-6 mb-8 mt-2">
+                    <p className="text-xs uppercase tracking-widest text-gray-500 font-bold mb-2">Simpan Kode Booking Anda</p>
+                    <div className="font-mono text-2xl font-bold text-red-800 tracking-wider">
+                      {bookingCode}
+                    </div>
+                    <p className="text-xs text-gray-400 mt-3">Gunakan kode ini dan alamat email Anda untuk melacak pesanan di halaman <Link href="/check-booking" className="text-red-700 hover:underline font-medium">Cek Pesanan</Link>.</p>
+                  </div>
+                )}
+
+                <Link href="/" className="inline-block bg-black hover:bg-gray-800 text-white px-8 py-4 text-sm font-bold uppercase tracking-widest transition-colors">
+                  Kembali ke Beranda
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* Sidebar Summary */}
+          {step < 4 && (
+            <div className="lg:col-span-1">
+              <div className="bg-white border border-gray-100 shadow-sm p-6 sticky top-24">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4 border-b border-gray-100 pb-2">Ringkasan Pemesanan</h3>
+                
+                <div className="relative aspect-video bg-gray-100 mb-4 overflow-hidden rounded-sm">
+                  <img
+                    src={room.imageUrl ? `${backendUrl}${room.imageUrl}` : 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&q=80&w=800'}
+                    alt={room.roomType}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                
+                <h4 className="text-xl font-serif capitalize mb-1">{room.roomType} Room</h4>
+                <p className="text-sm text-gray-500 flex items-center mb-6">
+                  <BedDouble className="w-4 h-4 mr-1.5" /> Guest House
+                </p>
+
+                <div className="space-y-3 border-b border-gray-100 pb-6 mb-6">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Harga per malam</span>
+                    <span className="font-medium text-gray-900">Rp {Number(room.pricePerNight).toLocaleString('id-ID')}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Total malam</span>
+                    <span className="font-medium text-gray-900">{totalNights} Malam</span>
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-end">
+                  <span className="text-xs font-bold uppercase tracking-widest text-gray-500">Total Pembayaran</span>
+                  <span className="text-2xl font-serif text-red-700">Rp {totalPrice.toLocaleString('id-ID')}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      <PublicFooter />
+    </div>
+  );
+}
