@@ -12,7 +12,7 @@ import { useState } from 'react';
 export default function LoginPage() {
   // ── Hooks ──────────────────────────────────────────────────────────────────
   const router = useRouter();
-  
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -94,7 +94,7 @@ export default function LoginPage() {
         </p>
 
         {/* Demo Credentials Section */}
-        <div className="bg-white/5 border border-white/10 p-4 mb-8 text-xs font-light text-gray-400">
+        {/* <div className="bg-white/5 border border-white/10 p-4 mb-8 text-xs font-light text-gray-400">
           <div className="font-bold text-white tracking-widest uppercase mb-3 text-[10px]">Demo Credentials (Password: Admin@12345)</div>
           <div className="space-y-2">
             <div className="flex justify-between items-center cursor-pointer hover:text-white transition-colors" onClick={() => { setEmail('superadmin@ronsguesthouse.com'); setPassword('Admin@12345'); }}>
@@ -110,7 +110,7 @@ export default function LoginPage() {
               <span>receptionist@ronsguesthouse.com</span>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {error && (
           <div className="bg-red-900/20 border border-red-900/50 text-red-500 text-sm px-4 py-3 mb-6 flex items-center">

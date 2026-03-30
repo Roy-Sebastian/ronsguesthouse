@@ -9,6 +9,8 @@ out/
 
 # production
 build/
+dist/
+*.zip
 
 # env
 .env
