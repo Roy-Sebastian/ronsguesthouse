@@ -1,6 +1,8 @@
 'use client';
 
 import { confirmAction } from '@/lib/dialog';
+import { formatRp } from '@/lib/formatters';
+
 import {
   BarElement,
   CategoryScale,
@@ -108,12 +110,7 @@ export default function SuperadminExpensesPage() {
     fetchExpenses();
   };
 
-  const formatRp = (v: number) =>
-    new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      maximumFractionDigits: 0,
-    }).format(v);
+  
 
   const filteredByPeriod = expenses.filter((t) => {
     const matchSearch =

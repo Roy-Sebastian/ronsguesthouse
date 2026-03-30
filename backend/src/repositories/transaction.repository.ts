@@ -1,6 +1,7 @@
 ﻿import { Prisma } from '@prisma/client';
-import { prisma } from '../config/prisma';
+
 import type { PrismaClientType, PrismaTransactionClient } from './db.repository';
+import { prisma } from '../config/prisma';
 
 export const transactionRepository = {
   findAll: (args?: Prisma.TransactionFindManyArgs, tx: PrismaClientType | PrismaTransactionClient = prisma) =>

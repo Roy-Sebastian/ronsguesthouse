@@ -3,8 +3,11 @@
 import PublicFooter from '@/components/layout/PublicFooter';
 import PublicNavbar from '@/components/layout/PublicNavbar';
 import ScrollReveal from '@/components/ui/ScrollReveal';
+import { BACKEND_URL, GALLERY_CATEGORY_MAP } from '@/lib/constants';
 import { X, ZoomIn } from 'lucide-react';
 import { useEffect, useState } from 'react';
+
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface GalleryItem {
   id: string;
@@ -14,12 +17,16 @@ interface GalleryItem {
   category?: string;
 }
 
+// ─── Component ───────────────────────────────────────────────────────────────
+
 export default function GalleryPage() {
+  // ── Hooks ──────────────────────────────────────────────────────────────────
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState<GalleryItem | null>(null);
   const [activeCategory, setActiveCategory] = useState('All');
 
+  // ── Data Fetching ──────────────────────────────────────────────────────────
   useEffect(() => {
     fetch('/api/gallery')
       .then((r) => r.json())
@@ -28,25 +35,16 @@ export default function GalleryPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const categoryMap: Record<string, string> = {
-    'umum': 'General',
-    'kamar': 'Room',
-    'fasilitas': 'Facilities',
-    'eksterior': 'Exterior',
-    'interior': 'Interior',
-    'lainnya': 'Others',
-  };
+  // ── Handlers & Helpers ─────────────────────────────────────────────────────
 
   const translateCategory = (cat?: string) => {
     if (!cat) return 'Other';
-    return categoryMap[cat.toLowerCase()] || cat;
+    return GALLERY_CATEGORY_MAP[cat.toLowerCase()] || cat;
   };
 
   const categories = [
     'All',
-    ...Array.from(
-      new Set(items.map((i) => translateCategory(i.category))),
-    ),
+    ...Array.from(new Set(items.map((i) => translateCategory(i.category)))),
   ];
 
   const filtered =
@@ -54,7 +52,7 @@ export default function GalleryPage() {
       ? items
       : items.filter((i) => translateCategory(i.category) === activeCategory);
 
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+  // ── JSX ────────────────────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen bg-zinc-50 text-gray-900 font-sans selection:bg-red-900 selection:text-white">
@@ -112,7 +110,7 @@ export default function GalleryPage() {
                         onClick={() => setLightbox(item)}
                       >
                         <img
-                          src={`${backendUrl}${item.imageUrl}`}
+                          src={`${BACKEND_URL}${item.imageUrl}`}
                           alt={item.title}
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-90"
                         />
@@ -148,7 +146,7 @@ export default function GalleryPage() {
           </button>
           <div className="relative max-w-5xl w-full max-h-[85vh] flex flex-col">
             <img
-              src={`${backendUrl}${lightbox.imageUrl}`}
+              src={`${BACKEND_URL}${lightbox.imageUrl}`}
               alt={lightbox.title}
               className="w-full h-full object-contain"
             />

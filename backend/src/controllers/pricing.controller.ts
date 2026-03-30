@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
+
 import * as PricingService from '../services/pricing.service';
-import { logger } from '../config/logger';
 
 export const calculatePrice = async (req: Request, res: Response) => {
   try {

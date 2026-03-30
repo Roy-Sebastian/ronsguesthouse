@@ -1,9 +1,10 @@
+import { ReservationStatus } from '@prisma/client';
 import { Request, Response } from 'express';
-import * as MidtransService from '../services/midtrans.service';
+
+import { logger } from '../config/logger';
 import { reservationRepository } from '../repositories/reservation.repository';
 import { transactionRepository } from '../repositories/transaction.repository';
-import { logger } from '../config/logger';
-import { ReservationStatus } from '@prisma/client';
+import * as MidtransService from '../services/midtrans.service';
 
 export const charge = async (req: Request, res: Response) => {
   try {

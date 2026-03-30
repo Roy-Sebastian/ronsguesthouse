@@ -1,5 +1,5 @@
-﻿import { userRepository } from '../repositories/user.repository';
-import { loadRoleMatrix, normalizeRoleMatrix, saveRoleMatrix } from '../config/rbac';
+﻿import { loadRoleMatrix, normalizeRoleMatrix, saveRoleMatrix } from '../config/rbac';
+import { userRepository } from '../repositories/user.repository';
 
 export function getRoles() {
   return loadRoleMatrix();

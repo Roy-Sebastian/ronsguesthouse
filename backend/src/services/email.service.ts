@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+
 import { logger } from '../config/logger';
 
 // If API key is missing, the service will silently skip sending (with a warning log)

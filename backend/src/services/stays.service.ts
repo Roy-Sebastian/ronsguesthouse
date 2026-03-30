@@ -1,6 +1,6 @@
 import { dbRepository } from '../repositories/db.repository';
-import { stayRepository } from '../repositories/stay.repository';
 import { reservationRepository } from '../repositories/reservation.repository';
+import { stayRepository } from '../repositories/stay.repository';
 
 export async function getAllStays(page: number = 1, limit: number = 10, search?: string, status?: string) {
   const skip = (page - 1) * limit;

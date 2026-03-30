@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+
 import * as MessagesService from '../services/messages.service';
 
 export const getAll = async (req: Request, res: Response) => {

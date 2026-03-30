@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+
 import * as AddOnsService from '../services/addons.service';
 
 export const getAll = async (req: Request, res: Response) => {

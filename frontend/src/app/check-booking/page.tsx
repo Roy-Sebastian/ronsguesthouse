@@ -1,17 +1,23 @@
 'use client';
 
-import { useState } from 'react';
 import PublicNavbar from '@/components/layout/PublicNavbar';
 import PublicFooter from '@/components/layout/PublicFooter';
 import ScrollReveal from '@/components/ui/ScrollReveal';
+import { BACKEND_URL } from '@/lib/constants';
 import { Search, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+
+// ─── Component ───────────────────────────────────────────────────────────────
 
 export default function CheckBookingPage() {
+  // ── Hooks ──────────────────────────────────────────────────────────────────
   const [email, setEmail] = useState('');
   const [bookingCode, setBookingCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<any | null>(null);
+
+  // ── Handlers & Helpers ─────────────────────────────────────────────────────
 
   const handleCheck = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,8 +28,7 @@ export default function CheckBookingPage() {
     setResult(null);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-      const res = await fetch(`${apiUrl}/api/public/check-booking`, {
+      const res = await fetch(`${BACKEND_URL}/api/public/check-booking`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, bookingCode }),
@@ -58,6 +63,8 @@ export default function CheckBookingPage() {
         return <span className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium uppercase">{status}</span>;
     }
   };
+
+  // ── JSX ────────────────────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen flex flex-col bg-neutral-50 text-neutral-800">

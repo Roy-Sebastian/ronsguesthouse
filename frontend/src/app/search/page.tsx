@@ -2,11 +2,15 @@
 
 import PublicFooter from '@/components/layout/PublicFooter';
 import PublicNavbar from '@/components/layout/PublicNavbar';
+import { BACKEND_URL, FALLBACK_ROOM_IMAGE } from '@/lib/constants';
+import { calculateNights } from '@/lib/formatters';
 import { BedDouble, Calendar, ChevronRight, ChevronLeft, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useCallback } from 'react';
 import { io } from 'socket.io-client';
+
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface Room {
   id: string;
@@ -31,96 +35,90 @@ interface GroupedRoomType {
   firstAvailableRoomId: string | null;
 }
 
+// ─── Component Main ──────────────────────────────────────────────────────────
+
 function SearchContent() {
+  // ── Hooks ──────────────────────────────────────────────────────────────────
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // URL state
   const urlCheckIn = searchParams.get('checkIn') || '';
   const urlCheckOut = searchParams.get('checkOut') || '';
   
-  // Local form state for the widget
   const [formCheckIn, setFormCheckIn] = useState(urlCheckIn);
   const [formCheckOut, setFormCheckOut] = useState(urlCheckOut);
 
   const [groupedRooms, setGroupedRooms] = useState<GroupedRoomType[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
-
-  // Calculate nights for form & display
-  const calculateNights = (inDate: string, outDate: string) => {
-    if (!inDate || !outDate) return 0;
-    const diff = new Date(outDate).getTime() - new Date(inDate).getTime();
-    return Math.max(0, Math.ceil(diff / (1000 * 3600 * 24)));
-  };
+  
+  const [activeImageIndices, setActiveImageIndices] = useState<Record<string, number>>({});
 
   const nights = calculateNights(urlCheckIn, urlCheckOut);
-  const totalNights = nights > 0 ? nights : 1; // Default to 1 night for price calculation if no dates picked
+  const totalNights = nights > 0 ? nights : 1;
+
+  // ── Data Fetching & Socket ─────────────────────────────────────────────────
+
+  const fetchRooms = useCallback(() => {
+    setLoading(true);
+    let url = '/api/rooms';
+    const params = new URLSearchParams();
+    if (urlCheckIn) params.append('checkIn', urlCheckIn);
+    if (urlCheckOut) params.append('checkOut', urlCheckOut);
+    if (!urlCheckIn || !urlCheckOut) {
+       params.append('status', 'available');
+    }
+    
+    if (params.toString()) url += `?${params.toString()}`;
+
+    fetch(url)
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d)) {
+          const groups: Record<string, GroupedRoomType> = {};
+          
+          d.forEach((room: Room) => {
+            if (!groups[room.roomType]) {
+              groups[room.roomType] = {
+                roomType: room.roomType,
+                representative: { ...room, imageUrls: [] },
+                totalCount: 0,
+                availableCount: 0,
+                isFullyBooked: true,
+                firstAvailableRoomId: null,
+              };
+            }
+            
+            const group = groups[room.roomType];
+
+            if (room.imageUrl && !group.representative.imageUrls!.includes(room.imageUrl)) {
+              group.representative.imageUrls!.push(room.imageUrl);
+            }
+
+            group.totalCount += 1;
+            if (!room.isFullyBooked) {
+              group.availableCount += 1;
+              group.isFullyBooked = false;
+              if (!group.firstAvailableRoomId) {
+                group.firstAvailableRoomId = room.id;
+              }
+            }
+          });
+
+          setGroupedRooms(Object.values(groups));
+        } else {
+          setGroupedRooms([]);
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [urlCheckIn, urlCheckOut]);
 
   useEffect(() => {
-    const fetchRooms = () => {
-      setLoading(true);
-      let url = '/api/rooms';
-      const params = new URLSearchParams();
-      if (urlCheckIn) params.append('checkIn', urlCheckIn);
-      if (urlCheckOut) params.append('checkOut', urlCheckOut);
-      // We only want available rooms showing in the search results
-      if (!urlCheckIn || !urlCheckOut) {
-         // If no dates, maybe we show all available rooms? or require search. Let's fetch all available.
-         params.append('status', 'available');
-      }
-      
-      if (params.toString()) url += `?${params.toString()}`;
-
-      fetch(url)
-        .then((r) => r.json())
-        .then((d) => {
-          if (Array.isArray(d)) {
-            const groups: Record<string, GroupedRoomType> = {};
-            
-            d.forEach((room: Room) => {
-              if (!groups[room.roomType]) {
-                groups[room.roomType] = {
-                  roomType: room.roomType,
-                  representative: { ...room, imageUrls: [] },
-                  totalCount: 0,
-                  availableCount: 0,
-                  isFullyBooked: true,
-                  firstAvailableRoomId: null,
-                };
-              }
-              
-              const group = groups[room.roomType];
-
-              if (room.imageUrl && !group.representative.imageUrls!.includes(room.imageUrl)) {
-                group.representative.imageUrls!.push(room.imageUrl);
-              }
-
-              group.totalCount += 1;
-              if (!room.isFullyBooked) {
-                group.availableCount += 1;
-                group.isFullyBooked = false; // At least one is available
-                if (!group.firstAvailableRoomId) {
-                  group.firstAvailableRoomId = room.id;
-                }
-              }
-            });
-
-            setGroupedRooms(Object.values(groups));
-          } else {
-            setGroupedRooms([]);
-          }
-          setLoading(false);
-        })
-        .catch(() => setLoading(false));
-    };
-
     fetchRooms();
 
     let socket: any;
     try {
-      socket = io(backendUrl, {
+      socket = io(BACKEND_URL, {
         path: '/api/socket.io',
         transports: ['polling'],
       });
@@ -131,10 +129,9 @@ function SearchContent() {
     return () => {
       if (socket) socket.disconnect();
     };
-  }, [urlCheckIn, urlCheckOut, backendUrl]);
+  }, [fetchRooms]);
 
-  // Carousel State tracking map
-  const [activeImageIndices, setActiveImageIndices] = useState<Record<string, number>>({});
+  // ── Handlers ───────────────────────────────────────────────────────────────
 
   const nextImage = (e: React.MouseEvent, type: string, length: number) => {
     e.preventDefault();
@@ -159,6 +156,8 @@ function SearchContent() {
     if (formCheckOut) query.append('checkOut', formCheckOut);
     router.push('/search?' + query.toString(), { scroll: false });
   };
+
+  // ── JSX ────────────────────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen bg-zinc-50 text-gray-900 font-sans">
@@ -237,7 +236,7 @@ function SearchContent() {
                 const room = group.representative;
                 const images = room.imageUrls && room.imageUrls.length > 0 ? room.imageUrls : (room.imageUrl ? [room.imageUrl] : []);
                 const currentImageIndex = activeImageIndices[room.roomType] || 0;
-                const currentDisplayUrl = images.length > 0 ? `${backendUrl}${images[currentImageIndex]}` : 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&q=80&w=800';
+                const currentDisplayUrl = images.length > 0 ? `${BACKEND_URL}${images[currentImageIndex]}` : FALLBACK_ROOM_IMAGE;
 
                 return (
                 <div 
@@ -284,12 +283,12 @@ function SearchContent() {
                     <h2 className="text-xl font-serif font-semibold text-gray-900 mb-2 capitalize">{room.roomType}</h2>
                     
                     <div className="flex items-center text-xs text-gray-500 mb-3 space-x-4">
-                      <span className="flex items-center"><BedDouble className="w-3.5 h-3.5 mr-1" /> Guest House</span>
+                       <span className="flex items-center"><BedDouble className="w-3.5 h-3.5 mr-1" /> Guest House</span>
                       <span className="flex items-center"><Users className="w-3.5 h-3.5 mr-1" /> Tamu maks: {room.capacity}</span>
                     </div>
 
                     <div className="text-sm text-gray-600 mb-4 line-clamp-2">
-                      {room.description || "Enjoy a luxurious stay with premium amenities designed for absolute comfort."}
+                       {room.description || "Enjoy a luxurious stay with premium amenities designed for absolute comfort."}
                     </div>
 
                     <div className="flex flex-wrap gap-2 mb-4">
@@ -353,6 +352,8 @@ function SearchContent() {
     </div>
   );
 }
+
+// ─── Export ──────────────────────────────────────────────────────────────────
 
 export default function SearchPage() {
   return (

@@ -1,59 +1,53 @@
 import { Router } from 'express';
 
-const router = Router();
-
+import addonsRoutes from './addons.routes';
 import amenitiesRoutes from './amenities.routes';
 import auditLogsRoutes from './audit-logs.routes';
+import dashboardRoutes from './dashboard.routes';
 import expensesRoutes from './expenses.routes';
 import facilitiesRoutes from './facilities.routes';
 import galleryRoutes from './gallery.routes';
 import guestsRoutes from './guests.routes';
 import incomesRoutes from './incomes.routes';
 import messagesRoutes from './messages.routes';
+import pricingRoutes from './pricing.routes';
 import reservationsRoutes from './reservations.routes';
 import reviewsRoutes from './reviews.routes';
+import rolesRoutes from './roles.routes';
+import roomRoutes from './room.routes';
 import staysRoutes from './stays.routes';
 import transactionsRoutes from './transactions.routes';
+import uploadRoutes from './upload.routes';
 import usersRoutes from './users.routes';
-router.use('/users', usersRoutes);
+import { checkBookingAccess, forgotBooking, publicBook } from '../controllers/public-booking.controller';
+import { guestAccessRateLimiter, publicRateLimiter } from '../middlewares/rate-limit.middleware';
+
+const router = Router();
+
+// Modular Routes
+router.use('/addons', addonsRoutes);
+router.use('/amenities', amenitiesRoutes);
+router.use('/audit-logs', auditLogsRoutes);
+router.use('/dashboard', dashboardRoutes);
+router.use('/expenses', expensesRoutes);
+router.use('/facilities', facilitiesRoutes);
+router.use('/gallery', galleryRoutes);
 router.use('/guests', guestsRoutes);
+router.use('/incomes', incomesRoutes);
+router.use('/messages', messagesRoutes);
+router.use('/pricing', pricingRoutes);
 router.use('/reservations', reservationsRoutes);
+router.use('/reviews', reviewsRoutes);
+router.use('/roles', rolesRoutes);
+router.use('/rooms', roomRoutes);
 router.use('/stays', staysRoutes);
 router.use('/transactions', transactionsRoutes);
-router.use('/amenities', amenitiesRoutes);
-router.use('/facilities', facilitiesRoutes);
-router.use('/expenses', expensesRoutes);
-router.use('/incomes', incomesRoutes);
-router.use('/gallery', galleryRoutes);
-router.use('/reviews', reviewsRoutes);
-router.use('/messages', messagesRoutes);
-router.use('/audit-logs', auditLogsRoutes);
-
-import dashboardRoutes from './dashboard.routes';
-router.use('/dashboard', dashboardRoutes);
-
-import uploadRoutes from './upload.routes';
 router.use('/upload', uploadRoutes);
+router.use('/users', usersRoutes);
 
-// Rooms route is already manual, import it
-import roomRoutes from './room.routes';
-router.use('/rooms', roomRoutes);
-
-
-import rolesRoutes from './roles.routes';
-router.use('/roles', rolesRoutes);
-
-import addonsRoutes from './addons.routes';
-router.use('/addons', addonsRoutes);
-
-import pricingRoutes from './pricing.routes';
-router.use('/pricing', pricingRoutes);
-
-import { publicRateLimiter, guestAccessRateLimiter } from '../middlewares/rate-limit.middleware';
-import { publicBook, checkBookingAccess, forgotBooking } from '../controllers/public-booking.controller';
+// Public API Routes (with rate limiting)
 router.post('/public/book', publicRateLimiter, publicBook);
 router.post('/public/check-booking', guestAccessRateLimiter, checkBookingAccess);
 router.post('/public/forgot-booking', guestAccessRateLimiter, forgotBooking);
 
 export default router;
-

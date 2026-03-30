@@ -3,11 +3,13 @@
 import PublicFooter from '@/components/layout/PublicFooter';
 import PublicNavbar from '@/components/layout/PublicNavbar';
 import ScrollReveal from '@/components/ui/ScrollReveal';
-import { BedDouble, Users, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Users, ChevronRight, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState, Suspense } from 'react';
+import { useCallback, useEffect, useMemo, useState, Suspense } from 'react';
 import { io } from 'socket.io-client';
 import { useSearchParams } from 'next/navigation';
+
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface Room {
   id: string;
@@ -22,23 +24,51 @@ interface Room {
   imageUrls?: string[];
 }
 
+// ─── Constants ───────────────────────────────────────────────────────────────
+
+const FALLBACK_IMAGE =
+  'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&q=80&w=800';
+
+// ─── RoomCard Component ─────────────────────────────────────────────────────
+
 function RoomCard({ room, backendUrl }: { room: Room; backendUrl: string }) {
-  const images = room.imageUrls && room.imageUrls.length > 0 ? room.imageUrls : (room.imageUrl ? [room.imageUrl] : []);
+  // ── Hooks ──────────────────────────────────────────────────────────────────
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const nextImage = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setCurrentIndex((prev) => (prev + 1) % images.length);
-  };
-  const prevImage = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
-  };
+  const images = useMemo(() => {
+    if (room.imageUrls && room.imageUrls.length > 0) return room.imageUrls;
+    if (room.imageUrl) return [room.imageUrl];
+    return [];
+  }, [room.imageUrls, room.imageUrl]);
 
-  const currentDisplayUrl = images.length > 0 ? `${backendUrl}${images[currentIndex]}` : 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&q=80&w=800';
+  const currentDisplayUrl = useMemo(
+    () => (images.length > 0 ? `${backendUrl}${images[currentIndex]}` : FALLBACK_IMAGE),
+    [images, backendUrl, currentIndex],
+  );
+
+  // ── Handlers ───────────────────────────────────────────────────────────────
+
+  const nextImage = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      setCurrentIndex((prev) => (prev + 1) % images.length);
+    },
+    [images.length],
+  );
+
+  const prevImage = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+    },
+    [images.length],
+  );
+
+  // ── JSX ────────────────────────────────────────────────────────────────────
 
   return (
     <div className="group bg-white border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col h-full rounded-xl">
+      {/* Image Carousel */}
       <div className="relative aspect-4/3 overflow-hidden bg-gray-100 group/carousel">
         <img
           src={currentDisplayUrl}
@@ -71,11 +101,12 @@ function RoomCard({ room, backendUrl }: { room: Room; backendUrl: string }) {
         )}
       </div>
 
+      {/* Room Details */}
       <div className="p-6 flex flex-col flex-1">
         <h3 className="text-2xl font-serif text-gray-900 mb-2 capitalize">
           {room.roomType} Room
         </h3>
-        
+
         <div className="flex items-center text-sm text-gray-500 mb-4 space-x-4 font-light">
           <span className="flex items-center">
             <Users className="w-4 h-4 mr-1.5" /> {room.capacity} Guests
@@ -103,18 +134,22 @@ function RoomCard({ room, backendUrl }: { room: Room; backendUrl: string }) {
         </div>
 
         <p className="text-sm text-gray-600 font-light mb-6 line-clamp-2 flex-1">
-          {room.description || "Enjoy a luxurious stay with premium amenities designed for absolute comfort."}
+          {room.description ||
+            'Enjoy a luxurious stay with premium amenities designed for absolute comfort.'}
         </p>
 
+        {/* Price & CTA */}
         <div className="pt-6 border-t border-gray-100 flex items-end justify-between mt-auto">
           <div>
-            <span className="text-xs uppercase tracking-widest text-gray-500 block mb-1">Nightly Rate</span>
+            <span className="text-xs uppercase tracking-widest text-gray-500 block mb-1">
+              Nightly Rate
+            </span>
             <div className="text-xl font-serif text-gray-900">
               Rp {Number(room.pricePerNight).toLocaleString('id-ID')}
             </div>
           </div>
           <Link
-            href={`/search?checkIn=&checkOut=`} // The user can be taken to find rooms
+            href="/search?checkIn=&checkOut="
             className="text-sm font-bold uppercase tracking-widest text-red-700 hover:text-black transition-colors flex items-center"
           >
             Check Availability <ChevronRight className="w-4 h-4 ml-1" />
@@ -125,48 +160,38 @@ function RoomCard({ room, backendUrl }: { room: Room; backendUrl: string }) {
   );
 }
 
+// ─── RoomsContent Component ─────────────────────────────────────────────────
+
 function RoomsContent() {
+  // ── Hooks ──────────────────────────────────────────────────────────────────
   const searchParams = useSearchParams();
   const typeFilter = searchParams.get('type');
-  
+
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
+  // ── Data Fetching & Socket ─────────────────────────────────────────────────
+
+  const fetchRooms = useCallback(() => {
+    fetch('/api/rooms')
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d)) {
+          const filteredRooms = typeFilter
+            ? d.filter((r: Room) => r.roomType === typeFilter)
+            : d;
+          setRooms(filteredRooms);
+        } else {
+          setRooms([]);
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [typeFilter]);
+
   useEffect(() => {
-    const fetchRooms = () => {
-      let url = '/api/rooms';
-      const params = new URLSearchParams();
-      if (params.toString()) url += `?${params.toString()}`;
-
-      fetch(url)
-        .then((r) => r.json())
-        .then((d) => {
-          if (Array.isArray(d)) {
-            // Group by roomType and aggregate images
-            const grouped: Record<string, Room> = {};
-            d.forEach((room: Room) => {
-              if (!grouped[room.roomType]) {
-                grouped[room.roomType] = { ...room, imageUrls: [] };
-              }
-              if (room.imageUrl && !grouped[room.roomType].imageUrls!.includes(room.imageUrl)) {
-                grouped[room.roomType].imageUrls!.push(room.imageUrl);
-              }
-            });
-            let uniqueTypes = Object.values(grouped);
-            if (typeFilter) {
-              uniqueTypes = uniqueTypes.filter((r) => r.roomType === typeFilter);
-            }
-            setRooms(uniqueTypes as Room[]);
-          } else {
-            setRooms([]);
-          }
-          setLoading(false);
-        })
-        .catch(() => setLoading(false));
-    };
-
     fetchRooms();
 
     let socket: any;
@@ -177,12 +202,16 @@ function RoomsContent() {
       });
       socket.on('room_booked', fetchRooms);
       socket.on('room_freed', fetchRooms);
-    } catch (e) {}
+    } catch (e) {
+      /* socket connection failed silently */
+    }
 
     return () => {
       if (socket) socket.disconnect();
     };
-  }, [typeFilter, backendUrl]);
+  }, [fetchRooms, backendUrl]);
+
+  // ── JSX ────────────────────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen bg-zinc-50 text-gray-900 font-sans selection:bg-red-900 selection:text-white">
@@ -195,8 +224,8 @@ function RoomsContent() {
             <h1 className="text-4xl md:text-5xl font-serif mb-4">Accommodations</h1>
             <div className="w-16 h-0.5 bg-red-700 mx-auto mb-6" />
             <p className="text-gray-400 font-light max-w-2xl mx-auto">
-              Find your perfect retreat. From cozy standard rooms to expansive family suites, 
-              each space is designed to elevate your stay.
+              Find your perfect retreat. From cozy standard rooms to expansive family suites, each
+              space is designed to elevate your stay.
             </p>
           </div>
         </ScrollReveal>
@@ -228,9 +257,15 @@ function RoomsContent() {
   );
 }
 
+// ─── Page Export ──────────────────────────────────────────────────────────────
+
 export default function PublicRoomsPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-zinc-50 flex items-center justify-center">Loading...</div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-zinc-50 flex items-center justify-center">Loading...</div>
+      }
+    >
       <RoomsContent />
     </Suspense>
   );

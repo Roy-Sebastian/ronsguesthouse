@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+
 import * as AuditLogsService from '../services/audit-logs.service';
 
 export const getAll = async (req: Request, res: Response) => {

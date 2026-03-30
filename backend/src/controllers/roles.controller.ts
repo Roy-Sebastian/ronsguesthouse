@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+
 import * as RolesService from '../services/roles.service';
 
 export const getRoles = (req: Request, res: Response) => {

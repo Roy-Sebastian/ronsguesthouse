@@ -122,12 +122,11 @@ export default function DashboardLayout({
   children: React.ReactNode;
   role: string;
 }) {
+  // ── Hooks ──────────────────────────────────────────────────────────────────
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const navSections = navByRole[role] || [];
-  const user = session?.user;
   const { reservationBadge, clearReservationBadge } = useNotifications();
 
   // Auto-clear reservation badge when user visits any reservations page
@@ -141,16 +140,20 @@ export default function DashboardLayout({
   // merged with any per-user custom overrides stored in session.
   // Superadmin gets wildcard '*' so all nav items always pass hasPermission().
   const effectivePermissions = useMemo(() => {
-    if ((user as any)?.role === 'superadmin') return new Set(['*']);
+    if ((session?.user as any)?.role === 'superadmin') return new Set(['*']);
     const roleDefaults = defaultRoleMatrix[role] || {};
     const rolekeys = Object.entries(roleDefaults)
       .filter(([, v]) => v)
       .map(([k]) => k);
-    const custom = Array.isArray((user as any)?.permissions)
-      ? ((user as any).permissions as string[])
+    const custom = Array.isArray((session?.user as any)?.permissions)
+      ? ((session?.user as any).permissions as string[])
       : [];
     return new Set([...rolekeys, ...custom]);
-  }, [role, user]);
+  }, [role, session?.user]);
+
+  // ── Variables & Derived State ──────────────────────────────────────────────
+  const navSections = navByRole[role] || [];
+  const user = session?.user;
 
   const hasPermission = (permission?: string) => {
     if (!permission) return true;

@@ -1,6 +1,8 @@
 'use client';
 
 import { AlertCircle, CreditCard, Plus, Search, X } from 'lucide-react';
+import { formatRp } from '@/lib/formatters';
+
 import { useEffect, useState } from 'react';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/ui/SortableHeader';
@@ -68,12 +70,7 @@ export default function ReceptionistTransactionsPage() {
     }
   };
 
-  const formatRp = (v: number) =>
-    new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      maximumFractionDigits: 0,
-    }).format(v);
+  
 
   const pendingReservations = reservations
     .map((r) => {
