@@ -12,7 +12,11 @@ build/
 
 # env
 .env
+<<<<<<< HEAD
 
+=======
+.env.production.local
+>>>>>>> 4cb5ef6e63435a5a57acff678c6628f70291cd49
 
 # debug
 npm-debug.log*
