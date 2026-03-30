@@ -34,11 +34,11 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.checkPaymentStatus = exports.notification = exports.createSnapToken = exports.charge = void 0;
-const MidtransService = __importStar(require("../services/midtrans.service"));
+const client_1 = require("@prisma/client");
+const logger_1 = require("../config/logger");
 const reservation_repository_1 = require("../repositories/reservation.repository");
 const transaction_repository_1 = require("../repositories/transaction.repository");
-const logger_1 = require("../config/logger");
-const client_1 = require("@prisma/client");
+const MidtransService = __importStar(require("../services/midtrans.service"));
 const charge = async (req, res) => {
     try {
         const { amount } = req.body;

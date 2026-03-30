@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.globalErrorHandler = void 0;
-const AppError_1 = require("../utils/AppError");
 const logger_1 = require("../config/logger");
+const AppError_1 = require("../utils/AppError");
 const globalErrorHandler = (err, req, res, next) => {
     let statusCode = 500;
     let message = 'Internal Server Error';

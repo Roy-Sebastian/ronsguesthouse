@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.startExpirationJob = startExpirationJob;
-const prisma_1 = require("../config/prisma");
-const logger_1 = require("../config/logger");
 const client_1 = require("@prisma/client");
+const logger_1 = require("../config/logger");
+const prisma_1 = require("../config/prisma");
 const INTERVAL_MS = 60_000; // run every 60 seconds
 /**
  * Background job that marks pending reservations past their expiresAt as expired.

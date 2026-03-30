@@ -2,8 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getRoles = getRoles;
 exports.updateRoles = updateRoles;
-const user_repository_1 = require("../repositories/user.repository");
 const rbac_1 = require("../config/rbac");
+const user_repository_1 = require("../repositories/user.repository");
 function getRoles() {
     return (0, rbac_1.loadRoleMatrix)();
 }

@@ -5,8 +5,8 @@ exports.getRoomById = getRoomById;
 exports.createRoom = createRoom;
 exports.updateRoom = updateRoom;
 exports.deleteRoom = deleteRoom;
-const room_repository_1 = require("../repositories/room.repository");
 const pricing_service_1 = require("./pricing.service");
+const room_repository_1 = require("../repositories/room.repository");
 async function getRooms(status, type, checkIn, checkOut) {
     const rooms = await room_repository_1.roomRepository.findAll({
         where: {
