@@ -1,6 +1,10 @@
 'use client';
 
 import { TableActions } from '@/components/ui/TableActions';
+import { STATUS_BADGE, STATUS_LABEL } from '@/lib/constants';
+
+import { formatRp, fmtDate } from '@/lib/formatters';
+
 
 
 import { CalendarCheck, Plus, Search, X } from 'lucide-react';
@@ -8,22 +12,8 @@ import { useEffect, useState } from 'react';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 
-const statusBadge: Record<string, string> = {
-  confirmed: 'bg-blue-50 text-blue-700 border-blue-100',
-  checked_in: 'bg-green-50 text-green-700 border-green-100',
-  checked_out: 'bg-gray-100 text-gray-600 border-gray-200',
-  cancelled: 'bg-red-50 text-red-700 border-red-100',
-  pending: 'bg-amber-50 text-amber-700 border-amber-100',
-  no_show: 'bg-red-50 text-red-700 border-red-100',
-};
-const statusLabel: Record<string, string> = {
-  confirmed: 'Dikonfirmasi',
-  checked_in: 'Check In',
-  checked_out: 'Check Out',
-  cancelled: 'Dibatalkan',
-  pending: 'Pending',
-  no_show: 'No Show',
-};
+
+
 
 export default function SuperadminReservationsPage() {
   const [reservations, setReservations] = useState<any[]>([]);
@@ -127,12 +117,7 @@ export default function SuperadminReservationsPage() {
     fetchAll();
   };
 
-  const formatRp = (v: number) =>
-    new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      maximumFractionDigits: 0,
-    }).format(v);
+  
   const fmtDate = (d: string) =>
     d
       ? new Date(d).toLocaleDateString('id-ID', {
@@ -322,9 +307,9 @@ export default function SuperadminReservationsPage() {
                   </td>
                   <td className="px-5 py-4">
                     <span
-                      className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${statusBadge[r.status] || 'bg-gray-100 text-gray-500'}`}
+                      className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${STATUS_BADGE[r.status] || 'bg-gray-100 text-gray-500'}`}
                     >
-                      {statusLabel[r.status] || r.status}
+                      {STATUS_LABEL[r.status] || r.status}
                     </span>
                   </td>
                   <td className="px-5 py-4">

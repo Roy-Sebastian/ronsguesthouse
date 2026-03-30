@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+
 import * as ReviewsService from '../services/reviews.service';
 
 export const getAll = async (req: Request, res: Response) => {

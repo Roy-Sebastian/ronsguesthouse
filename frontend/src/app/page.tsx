@@ -5,10 +5,8 @@ import PublicNavbar from '@/components/layout/PublicNavbar';
 import ScrollReveal from '@/components/ui/ScrollReveal';
 import {
   BedDouble,
-  Calendar,
   ChevronRight,
   MapPin,
-  Search,
   Star,
   Users,
   Wifi,
@@ -16,13 +14,14 @@ import {
   Car,
   Shield,
   Clock,
-  Tv,
-  Phone,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
+import { BACKEND_URL, FALLBACK_HERO_IMAGE } from '@/lib/constants';
+
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface Room {
   id: string;
@@ -35,12 +34,7 @@ interface Room {
   roomAmenities: { amenity: { name: string } }[];
   imageUrl?: string;
 }
-interface Review {
-  id: string;
-  rating: number;
-  comment: string;
-  guest?: { fullName: string };
-}
+
 interface Facility {
   id: string;
   name: string;
@@ -48,7 +42,20 @@ interface Facility {
   icon: string;
 }
 
+// ─── Constants ───────────────────────────────────────────────────────────────
+
+const HARDCODED_REVIEWS = [
+  { id: 1, rating: 5, comment: "Pengalaman menginap yang luar biasa! Pelayanan bersih dan nyaman.", guest: "Budi Santoso", room: "Standard Suite" },
+  { id: 2, rating: 5, comment: "Sangat direkomendasikan. Lokasi strategis dan staf ramah.", guest: "Siti Aminah", room: "Deluxe Room" },
+  { id: 3, rating: 4, comment: "Fasilitas lengkap dan harga bersahabat. Recommended!", guest: "Agus Pratama", room: "Family Suite" },
+  { id: 4, rating: 5, comment: "Nyaman seperti di rumah sendiri. Dekat dengan pusat kota.", guest: "Rina Wijaya", room: "Standard Suite" },
+  { id: 5, rating: 5, comment: "Kamar bersih dan wangi. Overall sangat memuaskan.", guest: "Dedi Setiawan", room: "Deluxe Room" },
+];
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
 export default function Home() {
+  // ── Hooks ──────────────────────────────────────────────────────────────────
   const router = useRouter();
 
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -56,38 +63,32 @@ export default function Home() {
   const [heroImages, setHeroImages] = useState<any[]>([]);
   const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
 
-  const hardcodedReviews = [
-    { id: 1, rating: 5, comment: "Pengalaman menginap yang luar biasa! Pelayanan bersih dan nyaman.", guest: "Budi Santoso", room: "Standard Suite" },
-    { id: 2, rating: 5, comment: "Sangat direkomendasikan. Lokasi strategis dan staf ramah.", guest: "Siti Aminah", room: "Deluxe Room" },
-    { id: 3, rating: 4, comment: "Fasilitas lengkap dan harga bersahabat. Recommended!", guest: "Agus Pratama", room: "Family Suite" },
-    { id: 4, rating: 5, comment: "Nyaman seperti di rumah sendiri. Dekat dengan pusat kota.", guest: "Rina Wijaya", room: "Standard Suite" },
-    { id: 5, rating: 5, comment: "Kamar bersih dan wangi. Overall sangat memuaskan.", guest: "Dedi Setiawan", room: "Deluxe Room" },
-  ];
-
-  // Search State
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
 
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+  // ── Data Fetching & Socket ─────────────────────────────────────────────────
 
-  // Sockets & Fetching
+  const fetchRooms = useCallback(() => {
+    fetch('/api/rooms')
+      .then((r) => r.json())
+      .then((d) => {
+        if (!Array.isArray(d)) return setRooms([]);
+        
+        // Group rooms by roomType to show only 1 representing each type in Featured
+        const groupedRooms = d.reduce((acc: any, room: Room) => {
+          if (!acc[room.roomType]) {
+            acc[room.roomType] = room;
+          }
+          return acc;
+        }, {});
+        
+        // Convert to array and slice
+        setRooms(Object.values(groupedRooms).slice(0, 3) as Room[]);
+      })
+      .catch(() => { });
+  }, []);
+
   useEffect(() => {
-    const fetchRooms = () => {
-      fetch('/api/rooms')
-        .then((r) => r.json())
-        .then((d) => {
-          if (!Array.isArray(d)) return setRooms([]);
-          const grouped: Record<string, Room> = {};
-          d.forEach((room: Room) => {
-            if (!grouped[room.roomType]) grouped[room.roomType] = room;
-          });
-          setRooms(Object.values(grouped).slice(0, 3));
-        })
-        .catch(() => { });
-    };
-
-    fetchRooms();
-
     fetchRooms();
 
     fetch('/api/gallery?category=hero&isActive=true')
@@ -117,9 +118,8 @@ export default function Home() {
     return () => {
       if (socket) socket.disconnect();
     };
-  }, []);
+  }, [fetchRooms]);
 
-  // Hero Slider Interval
   useEffect(() => {
     if (heroImages.length <= 1) return;
     const interval = setInterval(() => {
@@ -127,6 +127,8 @@ export default function Home() {
     }, 5000); // 5 seconds interval
     return () => clearInterval(interval);
   }, [heroImages]);
+
+  // ── Handlers & Helpers ─────────────────────────────────────────────────────
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,7 +138,6 @@ export default function Home() {
     router.push('/search?' + query.toString());
   };
 
-  // Facility icon map
   const getIcon = (name: string) => {
     const n = name.toLowerCase();
     if (n.includes('wifi')) return <Wifi className="w-8 h-8" />;
@@ -146,6 +147,8 @@ export default function Home() {
     if (n.includes('aman') || n.includes('security')) return <Shield className="w-8 h-8" />;
     return <Clock className="w-8 h-8" />;
   };
+
+  // ── JSX ────────────────────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen bg-white text-gray-900 font-sans selection:bg-red-900 selection:text-white">
@@ -163,7 +166,7 @@ export default function Home() {
               key={image.id}
               className={`absolute inset-0 w-full h-full bg-contain bg-no-repeat bg-center transition-opacity duration-1000 ease-in-out z-10 ${index === currentHeroIndex ? 'opacity-100' : 'opacity-0'}`}
               style={{
-                backgroundImage: `url('${backendUrl}${image.imageUrl}')`,
+                backgroundImage: `url('${BACKEND_URL}${image.imageUrl}')`,
               }}
             />
           ))
@@ -171,13 +174,10 @@ export default function Home() {
           <div
             className="absolute inset-0 w-full h-full bg-cover bg-center z-10"
             style={{
-              backgroundImage: "url('https://images.unsplash.com/photo-1542314831-c53cd4b85ca4?auto=format&fit=crop&q=80&w=2000')",
+              backgroundImage: `url('${FALLBACK_HERO_IMAGE}')`,
             }}
           />
         )}
-
-        <div className="relative z-30 text-center w-full max-w-5xl px-4 mt-[-10vh]">
-        </div>
       </section>
 
       {/* FLOATING SEARCH BAR COMPONENT */}
@@ -255,7 +255,7 @@ export default function Home() {
               <div className="group cursor-pointer">
                 <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden mb-4">
                   <img
-                    src={room.imageUrl ? `${backendUrl}${room.imageUrl}` : 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&q=80&w=800'}
+                    src={room.imageUrl ? `${BACKEND_URL}${room.imageUrl}` : 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&q=80&w=800'}
                     alt={room.roomType}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
@@ -362,7 +362,7 @@ export default function Home() {
 
         <div className="w-full relative overflow-hidden">
           <div className="flex w-max animate-marquee space-x-6 pb-4 cursor-pointer">
-            {[...hardcodedReviews, ...hardcodedReviews].map((review, index) => (
+            {[...HARDCODED_REVIEWS, ...HARDCODED_REVIEWS].map((review, index) => (
               <div key={index} className="w-[300px] md:w-[350px] p-6 bg-white/10 border border-white/20 hover:border-white/40 rounded-lg flex flex-col h-full shadow-sm transition-all text-left flex-shrink-0 whitespace-normal">
                 <div className="flex justify-start mb-6">
                   {Array.from({ length: 5 }).map((_, i) => (
@@ -374,7 +374,7 @@ export default function Home() {
                 </div>
 
                 <div className="w-16 h-16 rounded-full bg-white/20 mb-4 shrink-0 flex items-center justify-center font-bold text-white/50 text-xl">
-                  {review.guest.charAt(0)}
+                  {review.guest?.charAt(0)}
                 </div>
 
                 <div className="mt-auto">

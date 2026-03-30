@@ -1,4 +1,5 @@
 import { Router } from 'express';
+
 import { create, getAll, remove, getAvailable, update } from '../controllers/addons.controller';
 import { requireAuth, requirePermission } from '../middlewares/auth.middleware';
 

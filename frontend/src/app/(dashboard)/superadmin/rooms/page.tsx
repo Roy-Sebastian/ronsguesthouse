@@ -1,6 +1,8 @@
 'use client';
 
 import { TableActions } from '@/components/ui/TableActions';
+import { formatRp } from '@/lib/formatters';
+
 
 import FilePondPluginFileValidateType from 'filepond-plugin-file-validate-type';
 import FilePondPluginImagePreview from 'filepond-plugin-image-preview';
@@ -145,12 +147,7 @@ export default function AdminRoomsPage() {
         ? f.selectedAmenities.filter((aid) => aid !== id)
         : [...f.selectedAmenities, id],
     }));
-  const formatRp = (v: number) =>
-    new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      maximumFractionDigits: 0,
-    }).format(v);
+  
 
   const filtered = rooms.filter(
     (r) =>

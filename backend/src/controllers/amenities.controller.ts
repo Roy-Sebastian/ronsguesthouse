@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+
 import * as AmenitiesService from '../services/amenities.service';
 
 export const getAll = async (req: Request, res: Response) => {

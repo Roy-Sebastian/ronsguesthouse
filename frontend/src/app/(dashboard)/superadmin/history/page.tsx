@@ -1,6 +1,8 @@
 'use client';
 
 import { History, Search } from 'lucide-react';
+import { formatRp, fmtDate } from '@/lib/formatters';
+
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { Pagination } from '@/components/ui/Pagination';
@@ -92,12 +94,7 @@ export default function SuperadminHistoryPage() {
     );
   };
 
-  const formatRp = (v: number) =>
-    new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      maximumFractionDigits: 0,
-    }).format(v || 0);
+  
 
   const { sortedData, handleSort, sortBy, sortOrder } = useTableSort(stays);
 

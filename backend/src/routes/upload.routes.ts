@@ -1,4 +1,5 @@
 import { Router } from 'express';
+
 import * as controller from '../controllers/upload.controller';
 import { requireAuth, requirePermission } from '../middlewares/auth.middleware';
 import { uploadMedia } from '../middlewares/upload.middleware';

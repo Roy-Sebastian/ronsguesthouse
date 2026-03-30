@@ -25,6 +25,10 @@ import {
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
+import { STATUS_BADGE, STATUS_LABEL } from '@/lib/constants';
+
+import { formatRp, calculateDays } from '@/lib/formatters';
+
 import { useEffect, useState } from 'react';
 import { Bar, Doughnut } from 'react-chartjs-2';
 
@@ -38,22 +42,8 @@ ChartJS.register(
   Legend
 );
 
-const statusBadge: Record<string, string> = {
-  confirmed: 'bg-blue-50 text-blue-700',
-  checked_in: 'bg-green-50 text-green-700',
-  checked_out: 'bg-gray-100 text-gray-700',
-  cancelled: 'bg-red-50 text-red-700',
-  pending: 'bg-amber-50 text-amber-700',
-  no_show: 'bg-red-50 text-red-700',
-};
-const statusLabel: Record<string, string> = {
-  confirmed: 'Confirmed',
-  checked_in: 'Check In',
-  checked_out: 'Check Out',
-  cancelled: 'Cancelled',
-  pending: 'Pending',
-  no_show: 'No Show',
-};
+
+
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<any>(null);
@@ -65,20 +55,9 @@ export default function AdminDashboard() {
       .catch(() => {});
   }, []);
 
-  const formatRp = (v: number) =>
-    new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      maximumFractionDigits: 0,
-    }).format(v);
+  
 
-  const calculateDays = (start: string, end: string) => {
-    const startD = new Date(start);
-    const endD = new Date(end);
-    const diffTime = Math.abs(endD.getTime() - startD.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays > 0 ? diffDays : 1;
-  };
+  
 
   const lineLabels: string[] =
     stats?.monthlyIncome?.map((item: any) => {
@@ -369,7 +348,7 @@ export default function AdminDashboard() {
                     </td>
                     <td className="px-5 py-4 border-b border-gray-100">
                       <span className="text-gray-600 text-sm">
-                        {statusLabel[r.status] || r.status}
+                        {STATUS_LABEL[r.status] || r.status}
                       </span>
                     </td>
                     <td className="px-5 py-4 border-b border-gray-100 text-sm font-medium text-gray-700">

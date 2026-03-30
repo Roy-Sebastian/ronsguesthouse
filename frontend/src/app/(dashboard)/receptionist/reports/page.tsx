@@ -16,6 +16,8 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { formatRp } from '@/lib/formatters';
+
 import { Bar } from 'react-chartjs-2';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -54,12 +56,7 @@ export default function ReceptionistReportsPage() {
       .catch(() => setLoading(false));
   }, []);
 
-  const formatRp = (v: number) =>
-    new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      maximumFractionDigits: 0,
-    }).format(v);
+  
 
   const fetchIncomesForExport = async (): Promise<IncomeTransaction[]> => {
     try {

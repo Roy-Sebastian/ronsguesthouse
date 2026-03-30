@@ -1,21 +1,24 @@
 import 'dotenv/config'; // Must be the very first import to load env vars early
+import { createServer } from 'http';
+import path from 'path';
 
 import { toNodeHandler } from 'better-auth/node';
 import cors from 'cors';
 import express from 'express';
-import { createServer } from 'http';
+
 import { auth } from './config/auth';
 import { initSocket } from './config/socket';
+import { startExpirationJob } from './jobs/expire-reservations.job';
+import { auditLogMiddleware } from './middlewares/auditLog.middleware';
+import { globalErrorHandler } from './middlewares/error.middleware';
 import apiRoutes from './routes';
 
 const app = express();
 const httpServer = createServer(app);
+const port = process.env.PORT || 3001;
 
 // Initialize Socket.IO
 initSocket(httpServer);
-
-// ... (rest of configuration will be unchanged)
-const port = process.env.PORT || 3001;
 
 // CORS setup to allow the frontend
 app.use(
@@ -33,7 +36,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Static files (for uploads)
-import path from 'path';
 app.use(
   '/uploads',
   express.static(path.join(process.cwd(), 'public', 'uploads')),
@@ -44,17 +46,16 @@ app.get('/', (req, res) => {
   res.send('Rons Guesthouse Backend API (Migrated to Node.js & Express)');
 });
 
-import { auditLogMiddleware } from './middlewares/auditLog.middleware';
+// Audit log middleware
 app.use('/api', auditLogMiddleware);
 
-// -- Register other routes here --
+// API Routes
 app.use('/api', apiRoutes);
 
-import { globalErrorHandler } from './middlewares/error.middleware';
+// Error handling
 app.use(globalErrorHandler);
 
 // Start server
-import { startExpirationJob } from './jobs/expire-reservations.job';
 httpServer.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
   startExpirationJob();

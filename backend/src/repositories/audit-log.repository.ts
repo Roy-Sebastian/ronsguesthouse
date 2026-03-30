@@ -1,6 +1,7 @@
 ﻿import { Prisma } from '@prisma/client';
-import { prisma } from '../config/prisma';
+
 import type { PrismaClientType, PrismaTransactionClient } from './db.repository';
+import { prisma } from '../config/prisma';
 
 export const auditLogRepository = {
   findAll: (args?: Prisma.AuditLogFindManyArgs, tx: PrismaClientType | PrismaTransactionClient = prisma) => tx.auditLog.findMany({ orderBy: { createdAt: 'desc' }, ...args }),

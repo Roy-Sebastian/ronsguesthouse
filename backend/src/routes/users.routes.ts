@@ -1,4 +1,5 @@
 import { Router } from 'express';
+
 import * as controller from '../controllers/users.controller';
 import { requireAuth, requirePermission } from '../middlewares/auth.middleware';
 

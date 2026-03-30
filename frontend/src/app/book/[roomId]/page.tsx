@@ -2,12 +2,15 @@
 
 import PublicFooter from '@/components/layout/PublicFooter';
 import PublicNavbar from '@/components/layout/PublicNavbar';
+import { BACKEND_URL, FALLBACK_ROOM_IMAGE } from '@/lib/constants';
+import { calculateDays } from '@/lib/formatters';
 import { ChevronRight, ArrowLeft, CheckCircle2, User, FileText, CreditCard, BedDouble, Loader2 } from 'lucide-react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface Room {
   id: string;
@@ -20,12 +23,15 @@ interface Room {
   roomAmenities: { amenity: { name: string } }[];
 }
 
+// ─── Component ───────────────────────────────────────────────────────────────
+
 export default function BookingPage() {
+  // ── Hooks ──────────────────────────────────────────────────────────────────
   const router = useRouter();
   const params = useParams();
-  const roomId = params.roomId as string;
-  
   const searchParams = useSearchParams();
+
+  const roomId = params.roomId as string;
   const checkInQuery = searchParams.get('checkIn');
   const checkOutQuery = searchParams.get('checkOut');
 
@@ -44,6 +50,11 @@ export default function BookingPage() {
     specialRequests: '',
   });
 
+  const totalNights = calculateDays(formData.checkIn, formData.checkOut);
+  const totalPrice = room ? totalNights * Number(room.pricePerNight) : 0;
+
+  // ── Data Fetching ──────────────────────────────────────────────────────────
+
   useEffect(() => {
     fetch(`/api/rooms/${roomId}`)
       .then((r) => r.json())
@@ -57,6 +68,8 @@ export default function BookingPage() {
         setLoading(false);
       });
   }, [roomId]);
+
+  // ── Handlers ───────────────────────────────────────────────────────────────
 
   const handleNext = () => {
     if (step === 1) {
@@ -85,21 +98,9 @@ export default function BookingPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const calculateTotalNights = () => {
-    if (!formData.checkIn || !formData.checkOut) return 0;
-    const diff = new Date(formData.checkOut).getTime() - new Date(formData.checkIn).getTime();
-    return Math.max(1, Math.ceil(diff / (1000 * 3600 * 24)));
-  };
-
-  const calculateTotalPrice = () => {
-    if (!room) return 0;
-    return calculateTotalNights() * Number(room.pricePerNight);
-  };
-
   const handleSubmitBooking = async () => {
     setSubmitting(true);
     try {
-      // Single public endpoint: creates guest, reservation, and snap token
       const res = await fetch('/api/public/book', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -120,7 +121,6 @@ export default function BookingPage() {
         throw new Error(data.error || 'Gagal membuat booking');
       }
 
-      // Open Midtrans Snap popup
       const snap = (window as any).snap;
       if (!snap) {
         toast.error('Snap belum dimuat. Silakan refresh halaman.');
@@ -156,6 +156,8 @@ export default function BookingPage() {
     }
   };
 
+  // ── JSX ────────────────────────────────────────────────────────────────────
+
   if (loading) return (
     <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-700"></div>
@@ -170,10 +172,6 @@ export default function BookingPage() {
       </button>
     </div>
   );
-
-  const totalNights = calculateTotalNights();
-  const totalPrice = calculateTotalPrice();
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
   return (
     <div className="min-h-screen bg-zinc-50 text-gray-900 font-sans">
@@ -428,7 +426,7 @@ export default function BookingPage() {
                 
                 <div className="relative aspect-video bg-gray-100 mb-4 overflow-hidden rounded-sm">
                   <img
-                    src={room.imageUrl ? `${backendUrl}${room.imageUrl}` : 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&q=80&w=800'}
+                    src={room.imageUrl ? `${BACKEND_URL}${room.imageUrl}` : FALLBACK_ROOM_IMAGE}
                     alt={room.roomType}
                     className="w-full h-full object-cover"
                   />

@@ -2,6 +2,8 @@
 
 
 import { confirmAction } from '@/lib/dialog';
+import { formatRp, fmtDate } from '@/lib/formatters';
+
 import { parseIncomeDescription } from '@/lib/income-description';
 import {
   BarElement,
@@ -118,12 +120,7 @@ export default function SuperadminIncomePage() {
     fetchData();
   };
 
-  const formatRp = (v: number) =>
-    new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      maximumFractionDigits: 0,
-    }).format(v || 0);
+  
 
   const fmtDate = (d: string) =>
     d

@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+
 import { appendLine, extractAddOnLines } from './addon.utils';
 
 type SyncPaidTransactionIncomeForAddOnParams = {

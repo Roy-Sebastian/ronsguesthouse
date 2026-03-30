@@ -1,5 +1,5 @@
-import { roomRepository } from '../repositories/room.repository';
 import { checkRoomAvailability } from './pricing.service';
+import { roomRepository } from '../repositories/room.repository';
 
 export async function getRooms(status?: string, type?: string, checkIn?: string, checkOut?: string) {
   const rooms = await roomRepository.findAll({

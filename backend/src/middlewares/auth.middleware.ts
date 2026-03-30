@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
+
 import { auth } from '../config/auth';
 import { ALL_PERMISSION_KEYS, getRolePermissions } from '../config/rbac';
 

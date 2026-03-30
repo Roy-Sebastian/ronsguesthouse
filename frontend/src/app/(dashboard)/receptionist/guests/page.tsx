@@ -2,6 +2,8 @@
 
 
 import { Eye, Mail, MapPin, Phone, Plus, Search, Users, X } from 'lucide-react';
+import { fmtDate } from '@/lib/formatters';
+
 import { useEffect, useState } from 'react';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/ui/SortableHeader';

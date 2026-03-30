@@ -1,6 +1,7 @@
-import { prisma } from '../config/prisma';
-import { logger } from '../config/logger';
 import { ReservationStatus } from '@prisma/client';
+
+import { logger } from '../config/logger';
+import { prisma } from '../config/prisma';
 
 const INTERVAL_MS = 60_000; // run every 60 seconds
 

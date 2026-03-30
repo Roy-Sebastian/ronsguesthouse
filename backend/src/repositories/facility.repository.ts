@@ -1,6 +1,7 @@
 ﻿import { Prisma } from '@prisma/client';
-import { prisma } from '../config/prisma';
+
 import type { PrismaClientType, PrismaTransactionClient } from './db.repository';
+import { prisma } from '../config/prisma';
 
 export const facilityRepository = {
   findAll: (args?: Prisma.FacilityFindManyArgs, tx: PrismaClientType | PrismaTransactionClient = prisma) => tx.facility.findMany({ orderBy: { createdAt: 'desc' }, ...args }),
