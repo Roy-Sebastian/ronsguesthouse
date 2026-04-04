@@ -28,15 +28,18 @@ import { useEffect, useState } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/ui/SortableHeader';
+import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
-export default function ReceptionistIncomePage() {
+export default function AdminIncomePage() {
   const [stats, setStats] = useState<any>(null);
   const [incomes, setIncomes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [period, setPeriod] = useState('all');
+  const [dateStart, setDateStart] = useState('');
+  const [dateEnd, setDateEnd] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editIncome, setEditIncome] = useState<any>(null);
   const [form, setForm] = useState({
@@ -137,6 +140,14 @@ export default function ReceptionistIncomePage() {
   );
 
   const filteredByPeriod = incomeTransactions.filter((t) => {
+    const incomeTime = new Date(t.incomeDate || t.createdAt).getTime();
+
+    if (dateStart || dateEnd) {
+      if (dateStart && incomeTime < new Date(dateStart + 'T00:00:00').getTime()) return false;
+      if (dateEnd && incomeTime > new Date(dateEnd + 'T23:59:59').getTime()) return false;
+      return true;
+    }
+
     if (period === 'all') return true;
     const d = new Date(t.incomeDate || t.createdAt);
     const now = new Date();
@@ -212,7 +223,9 @@ export default function ReceptionistIncomePage() {
           label: 'Pendapatan (Rp)',
           data: Object.values(groups),
           backgroundColor: 'rgba(230,168,48,0.8)',
-          borderRadius: 8,
+          borderRadius: 4,
+          barPercentage: 0.6,
+          categoryPercentage: 0.8,
           borderSkipped: false,
         },
       ],
@@ -235,7 +248,7 @@ export default function ReceptionistIncomePage() {
         </div>
         <button
           onClick={openCreate}
-          className="btn-dark shadow-sm"
+          className="btn btn-secondary btn-md shadow-sm"
         >
           <Plus size={18} />{' '}
           <span className="hidden sm:inline">Catat Pendapatan</span>
@@ -279,7 +292,7 @@ export default function ReceptionistIncomePage() {
         ].map(({ label, val, icon: Icon, color, bg }) => (
           <div
             key={label}
-            className="bg-white rounded-2xl px-5 py-3 border border-gray-100 shadow-sm flex items-start gap-4"
+            className="bg-white rounded-2xl px-4 py-3 border border-gray-100 shadow-sm flex items-start gap-4"
           >
             <div
               className={`w-11 h-11 rounded-xl ${bg} flex items-center justify-center shrink-0`}
@@ -297,8 +310,8 @@ export default function ReceptionistIncomePage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-5">
-        <div className="search-bar flex-1">
+      <div className="flex flex-col xl:flex-row gap-4 mb-5 xl:items-center">
+        <div className="search-bar flex-1 m-0">
           <Search size={18} className="text-gray-400 ml-1 shrink-0" />
           <input
             className="w-full text-sm outline-none bg-transparent placeholder-gray-400"
@@ -307,7 +320,15 @@ export default function ReceptionistIncomePage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+        <div className="flex flex-wrap gap-2 items-center">
+          <DateRangeFilter
+            startDate={dateStart}
+            endDate={dateEnd}
+            onStartDateChange={(v) => { setDateStart(v); setPeriod('all'); }}
+            onEndDateChange={(v) => { setDateEnd(v); setPeriod('all'); }}
+            className="bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm"
+          />
+          <div className="hidden sm:block w-px h-6 bg-gray-200 mx-2"></div>
           {[
             ['all', 'Semua'],
             ['day', 'Hari Ini'],
@@ -317,8 +338,8 @@ export default function ReceptionistIncomePage() {
           ].map(([val, lbl]) => (
             <button
               key={val}
-              onClick={() => setPeriod(val)}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${period === val ? 'bg-primary text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-500 hover:border-primary/30'}`}
+              onClick={() => { setPeriod(val); setDateStart(''); setDateEnd(''); }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${period === val ? 'bg-primary text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-500 hover:border-primary/30'}`}
             >
               {lbl}
             </button>
@@ -332,13 +353,8 @@ export default function ReceptionistIncomePage() {
           <h2 className="font-semibold text-dark mb-5 text-sm">
             Statistik Pendapatan {period === 'day' ? '(Per Jam)' : '(Per Hari)'}
           </h2>
-          <div className="overflow-x-auto w-full pb-4">
-            <div
-              style={{
-                minWidth: `${Math.max(chartData.labels.length * 60, 600)}px`,
-                height: 240,
-              }}
-            >
+          <div className="w-full">
+            <div style={{ height: 280 }}>
               <Bar
                 data={chartData}
                 options={{
@@ -374,7 +390,7 @@ export default function ReceptionistIncomePage() {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-5 py-3.5 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
+                className="px-4 py-3 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
               <SortableHeader
                 label="Dibuat Oleh"
@@ -382,7 +398,7 @@ export default function ReceptionistIncomePage() {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-5 py-3.5 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
+                className="px-4 py-3 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
               <SortableHeader
                 label="Keterangan"
@@ -390,15 +406,15 @@ export default function ReceptionistIncomePage() {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-5 py-3.5 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
+                className="px-4 py-3 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
               <SortableHeader
-                label="Referensi"
+                label="Sumber & Referensi"
                 field="referenceId"
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-5 py-3.5 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
+                className="px-4 py-3 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
               <SortableHeader
                 label="Jumlah"
@@ -406,9 +422,9 @@ export default function ReceptionistIncomePage() {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-5 py-3.5 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
+                className="px-4 py-3 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
-              <th className="px-5 py-3.5 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100">
+              <th className="px-4 py-3 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100">
                 Aksi
               </th>
             </tr>
@@ -433,13 +449,13 @@ export default function ReceptionistIncomePage() {
                   key={t.id || i}
                   className="hover:bg-gray-50/60 transition-colors border-b border-gray-50 last:border-0"
                 >
-                  <td className="px-5 py-4 text-sm text-gray-500">
+                  <td className="px-4 py-3 text-sm text-gray-500">
                     {fmtDate(t.incomeDate || t.date || t.createdAt)}
                   </td>
-                  <td className="px-5 py-4 text-sm text-gray-500">
+                  <td className="px-4 py-3 text-sm text-gray-500">
                     {t.user?.name || 'Sistem / Anonim'}
                   </td>
-                  <td className="px-5 py-4 text-sm text-dark font-medium whitespace-normal max-w-md">
+                  <td className="px-4 py-3 text-sm text-dark font-medium whitespace-normal max-w-md">
                     {(() => {
                       const parsed = parseIncomeDescription(t.description);
                       return (
@@ -485,31 +501,55 @@ export default function ReceptionistIncomePage() {
                       );
                     })()}
                   </td>
-                  <td className="px-5 py-4 text-xs text-gray-400 font-mono">
-                    {t.transactionId ||
-                      t.referenceId ||
-                      t.id?.slice(0, 12) ||
-                      '-'}
+                  <td className="px-4 py-3">
+                    {t.transactionId ? (
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold tracking-wide uppercase">
+                            Sistem Reservasi
+                          </span>
+                        </div>
+                        {(t.transaction?.reservation?.room?.roomNumber || t.roomNumberSnapshot) && (
+                          <span className="text-sm font-semibold text-[#191919]">
+                            Kamar {t.transaction?.reservation?.room?.roomNumber || t.roomNumberSnapshot}
+                          </span>
+                        )}
+                        <span className="text-xs text-gray-500 truncate max-w-[150px]">
+                          {t.transaction?.reservation?.guest?.fullName || t.guestNameSnapshot || 'Tamu Anonim'}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold tracking-wide uppercase">
+                            Kasir / Manual
+                          </span>
+                        </div>
+                        <span className="text-xs text-gray-400 font-mono mt-1">
+                          {t.referenceId || t.id?.slice(0, 12)}
+                        </span>
+                      </div>
+                    )}
                   </td>
-                  <td className="px-5 py-4 text-sm font-bold text-green-600">
+                  <td className="px-4 py-3 text-sm font-bold text-green-600">
                     + {formatRp(t.amount)}
                   </td>
-                  <td className="px-5 py-4 text-sm">
+                  <td className="px-4 py-3 text-sm">
                     {t.transactionId ? (
-                      <span className="text-xs text-gray-400 italic">
-                        Otomatis dari reservasi
+                      <span className="text-xs text-gray-400 italic opacity-60">
+                        Sistem Terkunci
                       </span>
                     ) : (
                       <div className="flex gap-2">
                         <button
                           onClick={() => openEdit(t)}
-                          className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                          className="btn btn-ghost btn-icon text-blue-600 hover:bg-blue-50 hover:text-blue-700"
                         >
                           <Edit size={16} />
                         </button>
                         <button
                           onClick={() => handleDelete(t.id)}
-                          className="p-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                          className="btn btn-danger btn-sm btn-icon"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -527,7 +567,7 @@ export default function ReceptionistIncomePage() {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-[#E2E8F0] flex justify-between items-center bg-[#F8FAFC]">
+            <div className="px-4 py-3 border-b border-[#E2E8F0] flex justify-between items-center bg-[#F8FAFC]">
               <h3 className="font-semibold text-[#191919] text-lg">
                 {editIncome ? 'Edit Pendapatan' : 'Catat Pendapatan Baru'}
               </h3>
@@ -556,18 +596,39 @@ export default function ReceptionistIncomePage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-[#475569] mb-1.5">
-                    Keterangan
+                    Kategori / Keterangan
                   </label>
-                  <input
-                    type="text"
+                  <select
                     required
-                    placeholder="Contoh: Sewa Ruang Meeting"
-                    value={form.description}
-                    onChange={(e) =>
-                      setForm({ ...form, description: e.target.value })
-                    }
+                    value={form.description.split(' - ')[0] || ''}
+                    onChange={(e) => {
+                      const base = e.target.value;
+                      if (!base) return setForm({ ...form, description: '' });
+                      if (base === 'Lainnya') return setForm({ ...form, description: 'Lainnya - ' });
+                      setForm({ ...form, description: base });
+                    }}
                     className="form-input mb-2"
-                  />
+                  >
+                    <option value="" disabled>-- Pilih Kategori --</option>
+                    <option value="Denda Keterlambatan Check-Out">Denda Keterlambatan Check-Out</option>
+                    <option value="Denda Kerusakan Fasilitas">Denda Kerusakan Fasilitas</option>
+                    <option value="Sewa Ruangan Eksternal">Sewa Ruangan Eksternal</option>
+                    <option value="Penjualan Konsumsi Tambahan">Penjualan Konsumsi Tambahan (Kasir)</option>
+                    <option value="Lainnya">Lainnya (Isi Manual)</option>
+                  </select>
+
+                  {form.description.startsWith('Lainnya') && (
+                    <input
+                      type="text"
+                      required
+                      placeholder="Tuliskan keterangan manual..."
+                      value={form.description.replace('Lainnya - ', '')}
+                      onChange={(e) =>
+                        setForm({ ...form, description: `Lainnya - ${e.target.value}` })
+                      }
+                      className="form-input mb-2"
+                    />
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-[#475569] mb-1.5">

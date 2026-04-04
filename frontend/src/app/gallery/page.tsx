@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import PublicFooter from '@/components/layout/PublicFooter';
 import PublicNavbar from '@/components/layout/PublicNavbar';
@@ -59,12 +59,12 @@ export default function GalleryPage() {
       <PublicNavbar />
 
       {/* Hero Header */}
-      <section className="bg-black text-white pt-32 pb-20 px-4">
+      <section className="bg-white text-gray-900 pt-32 pb-20 px-4 border-b border-gray-100">
         <ScrollReveal>
           <div className="max-w-7xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl font-serif mb-4">Our Gallery</h1>
-            <div className="w-16 h-0.5 bg-red-700 mx-auto mb-6" />
-            <p className="text-gray-400 font-light max-w-2xl mx-auto">
+            <div className="w-16 h-0.5 bg-red-800 mx-auto mb-6" />
+            <p className="text-gray-600 font-light max-w-2xl mx-auto">
               Explore our beautiful rooms, amenities, and surrounding landscapes.
             </p>
           </div>
@@ -75,7 +75,7 @@ export default function GalleryPage() {
       <section className="py-10 px-6 max-w-7xl mx-auto min-h-[50vh] mb-20">
         {loading ? (
           <div className="flex justify-center items-center h-40">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-700"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-800"></div>
           </div>
         ) : (
           <>

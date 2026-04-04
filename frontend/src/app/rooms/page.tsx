@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import PublicFooter from '@/components/layout/PublicFooter';
 import PublicNavbar from '@/components/layout/PublicNavbar';
@@ -124,7 +124,7 @@ function RoomCard({ room, backendUrl }: { room: Room; backendUrl: string }) {
             </span>
           ))}
           {room.roomAmenities?.length > 4 && (
-            <span className="text-gray-500 uppercase tracking-widest text-xs font-bold inline-block mb-3 border-b border-red-700 pb-1">
+            <span className="text-gray-500 uppercase tracking-widest text-xs font-bold inline-block mb-3 border-b border-red-800 pb-1">
               Guest House
             </span>
           )}
@@ -150,7 +150,7 @@ function RoomCard({ room, backendUrl }: { room: Room; backendUrl: string }) {
           </div>
           <Link
             href="/search?checkIn=&checkOut="
-            className="text-sm font-bold uppercase tracking-widest text-red-700 hover:text-black transition-colors flex items-center"
+            className="text-sm font-bold uppercase tracking-widest text-red-800 hover:text-black transition-colors flex items-center"
           >
             Check Availability <ChevronRight className="w-4 h-4 ml-1" />
           </Link>
@@ -218,12 +218,12 @@ function RoomsContent() {
       <PublicNavbar />
 
       {/* Hero Header */}
-      <section className="bg-black text-white pt-32 pb-20 px-4">
+      <section className="bg-white text-gray-900 pt-32 pb-20 px-4 border-b border-gray-100">
         <ScrollReveal>
           <div className="max-w-7xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl font-serif mb-4">Accommodations</h1>
-            <div className="w-16 h-0.5 bg-red-700 mx-auto mb-6" />
-            <p className="text-gray-400 font-light max-w-2xl mx-auto">
+            <div className="w-16 h-0.5 bg-red-800 mx-auto mb-6" />
+            <p className="text-gray-600 font-light max-w-2xl mx-auto">
               Find your perfect retreat. From cozy standard rooms to expansive family suites, each
               space is designed to elevate your stay.
             </p>
@@ -235,7 +235,7 @@ function RoomsContent() {
       <section className="py-20 px-4 max-w-7xl mx-auto min-h-[50vh]">
         {loading ? (
           <div className="flex justify-center items-center h-40">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-700"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-800"></div>
           </div>
         ) : rooms.length === 0 ? (
           <div className="text-center py-20 text-gray-500 font-light text-xl border border-dashed border-gray-300">

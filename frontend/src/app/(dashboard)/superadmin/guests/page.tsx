@@ -7,11 +7,14 @@ import { fmtDate } from '@/lib/formatters';
 import { useEffect, useState } from 'react';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/ui/SortableHeader';
+import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
 
-export default function SuperadminGuestsPage() {
+export default function AdminGuestsPage() {
   const [guests, setGuests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [dateStart, setDateStart] = useState('');
+  const [dateEnd, setDateEnd] = useState('');
   const [selected, setSelected] = useState<any>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -68,12 +71,27 @@ export default function SuperadminGuestsPage() {
     setSaving(false);
   };
 
-  const filtered = guests.filter(
-    (g) =>
+  const filtered = guests.filter((g) => {
+    let dateMatch = true;
+    if (dateStart || dateEnd) {
+      const gDate = new Date(g.createdAt).getTime();
+      if (dateStart) {
+        const start = new Date(dateStart + 'T00:00:00').getTime();
+        if (gDate < start) dateMatch = false;
+      }
+      if (dateEnd) {
+        const end = new Date(dateEnd + 'T23:59:59').getTime();
+        if (gDate > end) dateMatch = false;
+      }
+    }
+
+    const searchMatch = !search ||
       g.fullName?.toLowerCase().includes(search.toLowerCase()) ||
       g.email?.toLowerCase().includes(search.toLowerCase()) ||
-      g.phone?.includes(search),
-  );
+      g.phone?.includes(search);
+      
+    return dateMatch && searchMatch;
+  });
 
   const fmtDate = (d: string) =>
     d
@@ -97,7 +115,7 @@ export default function SuperadminGuestsPage() {
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="px-5 py-2.5 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-lg transition-colors inline-flex items-center gap-2 shadow-sm"
+          className="btn btn-primary btn-md"
         >
           <Plus size={16} /> <span className="hidden sm:inline">Tambah Tamu</span></button>
       </div>
@@ -135,13 +153,22 @@ export default function SuperadminGuestsPage() {
         ))}
       </div>
 
-      <div className="search-bar flex-1">
-        <Search size={18} className="text-gray-400 ml-2 shrink-0" />
-        <input
-          className="w-full text-sm outline-none bg-transparent placeholder-gray-400"
-          placeholder="Cari nama, email, atau nomor telepon..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="search-bar flex-1 m-0">
+          <Search size={18} className="text-gray-400 ml-2 shrink-0" />
+          <input
+            className="w-full text-sm outline-none bg-transparent placeholder-gray-400"
+            placeholder="Cari nama, email, atau nomor telepon..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <DateRangeFilter
+          startDate={dateStart}
+          endDate={dateEnd}
+          onStartDateChange={setDateStart}
+          onEndDateChange={setDateEnd}
+          className="bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm"
         />
       </div>
 
@@ -410,7 +437,7 @@ export default function SuperadminGuestsPage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex-1 py-2.5 bg-primary hover:bg-primary-hover text-white font-semibold text-sm rounded-xl transition-colors disabled:opacity-60 shadow-sm"
+                  className="btn btn-primary btn-md"
                 >
                   {saving ? 'Menyimpan...' : 'Tambah Tamu'}
                 </button>

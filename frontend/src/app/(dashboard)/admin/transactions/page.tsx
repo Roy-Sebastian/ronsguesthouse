@@ -6,6 +6,7 @@ import { formatRp } from '@/lib/formatters';
 import { useEffect, useState } from 'react';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/ui/SortableHeader';
+import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
 
 const methodOptions = [
   { id: 'cash', label: 'Tunai (Cash)' },
@@ -21,6 +22,8 @@ export default function ReceptionistTransactionsPage() {
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [dateStart, setDateStart] = useState('');
+  const [dateEnd, setDateEnd] = useState('');
   const [form, setForm] = useState({
     reservationId: '',
     amount: '',
@@ -88,14 +91,26 @@ export default function ReceptionistTransactionsPage() {
     })
     .filter((r) => r.status !== 'cancelled' && r.isPaidStr !== 'Lunas');
 
-  const filtered = transactions.filter(
-    (t) =>
-      !search ||
-      t.reservation?.guest?.fullName
-        ?.toLowerCase()
-        .includes(search.toLowerCase()) ||
-      t.id.includes(search),
-  );
+  const filtered = transactions.filter((t) => {
+    let dateMatch = true;
+    if (dateStart || dateEnd) {
+      const txD = new Date(t.paymentDate).getTime();
+      if (dateStart) {
+        const start = new Date(dateStart + 'T00:00:00').getTime();
+        if (txD < start) dateMatch = false;
+      }
+      if (dateEnd) {
+        const end = new Date(dateEnd + 'T23:59:59').getTime();
+        if (txD > end) dateMatch = false;
+      }
+    }
+
+    const searchMatch = !search ||
+      t.reservation?.guest?.fullName?.toLowerCase().includes(search.toLowerCase()) ||
+      t.id.includes(search);
+
+    return dateMatch && searchMatch;
+  });
 
   const { sortedData, handleSort, sortBy, sortOrder } = useTableSort(filtered);
 
@@ -111,7 +126,7 @@ export default function ReceptionistTransactionsPage() {
           </p>
         </div>
         <button
-          className="btn-primary"
+          className="btn btn-secondary btn-md"
           onClick={() => {
             setForm({
               reservationId: '',
@@ -135,7 +150,7 @@ export default function ReceptionistTransactionsPage() {
             <div className="text-sm text-red-700 flex flex-col gap-1">
               {pendingReservations.map((r) => (
                 <div key={r.id}>
-                  {r.guest?.fullName} (Kamar {r.room?.roomNumber}) — Kurang:{' '}
+                  {r.guest?.fullName} (Kamar {r.room?.roomNumber}) - Kurang:{' '}
                   <strong>{formatRp(r.total - r.paid)}</strong>
                 </div>
               ))}
@@ -144,13 +159,22 @@ export default function ReceptionistTransactionsPage() {
         </div>
       )}
 
-      <div className="search-bar flex-1">
-        <Search size={18} className="text-gray-400 ml-2 shrink-0" />
-        <input
-          className="w-full text-sm outline-none bg-transparent placeholder-gray-400 text-gray-700"
-          placeholder="Cari nama tamu, ID Transaksi..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="search-bar flex-1 m-0">
+          <Search size={18} className="text-gray-400 ml-2 shrink-0" />
+          <input
+            className="w-full text-sm outline-none bg-transparent placeholder-gray-400 text-gray-700"
+            placeholder="Cari nama tamu, ID Transaksi..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <DateRangeFilter
+          startDate={dateStart}
+          endDate={dateEnd}
+          onStartDateChange={setDateStart}
+          onEndDateChange={setDateEnd}
+          className="bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm"
         />
       </div>
 
@@ -259,7 +283,7 @@ export default function ReceptionistTransactionsPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 border-b border-gray-50 text-xs text-gray-500 font-mono">
-                    {t.referenceId || '—'}
+                    {t.referenceId || '-'}
                   </td>
                   <td className="px-6 py-4 border-b border-gray-50 font-bold text-primary">
                     {formatRp(Number(t.amount))}
@@ -369,14 +393,14 @@ export default function ReceptionistTransactionsPage() {
               <div className="flex justify-end gap-3 mt-4">
                 <button
                   type="button"
-                  className="px-5 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors"
+                  className="btn btn-outline btn-md"
                   onClick={() => setShowModal(false)}
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="btn-primary"
+                  className="btn btn-secondary btn-md"
                   disabled={saving}
                 >
                   {saving ? 'Memproses...' : 'Simpan Pembayaran'}

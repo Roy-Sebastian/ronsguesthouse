@@ -103,6 +103,7 @@ export interface MidtransNotificationBody {
   gross_amount: string;
   signature_key: string;
   status_code: string;
+  payment_type?: string;
 }
 
 export async function processMidtransNotification(body: MidtransNotificationBody) {
@@ -175,9 +176,16 @@ export async function processMidtransNotification(body: MidtransNotificationBody
       return;
     }
 
-    // Mark as paid
+    // Determine actual payment method from Midtrans
+    let pMethod: 'cash' | 'transfer' | 'qris' | 'credit_card' | 'debit_card' = 'transfer';
+    if (body.payment_type) {
+      if (body.payment_type === 'credit_card') pMethod = 'credit_card';
+      else if (body.payment_type === 'qris' || body.payment_type === 'gopay' || body.payment_type === 'shopeepay') pMethod = 'qris';
+    }
+
+    // Mark as paid and update payment method
     await transactionRepository.update(transaction.id, {
-      data: { paymentStatus: 'paid', paymentDate: new Date() },
+      data: { paymentStatus: 'paid', paymentDate: new Date(), paymentMethod: pMethod },
     });
 
     // Dashboard Integration: Create Income record
@@ -189,7 +197,7 @@ export async function processMidtransNotification(body: MidtransNotificationBody
         incomeDate: new Date(),
         sourceType: 'RESERVATION',
         referenceId: reservation.id,
-        paymentMethod: transaction.paymentMethod || 'transfer',
+        paymentMethod: pMethod,
         status: 'paid',
         guestNameSnapshot: reservation.guest?.fullName,
         roomNumberSnapshot: reservation.room?.roomNumber,

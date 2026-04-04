@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import PublicFooter from "@/components/layout/PublicFooter";
 import PublicNavbar from "@/components/layout/PublicNavbar";
 import ScrollReveal from "@/components/ui/ScrollReveal";
@@ -29,12 +29,12 @@ export default function AboutPage() {
       <PublicNavbar />
 
       {/* Hero Header */}
-      <section className="bg-black text-white pt-32 pb-20 px-4">
+      <section className="bg-white text-gray-900 pt-32 pb-20 px-4 border-b border-gray-100">
         <ScrollReveal>
           <div className="max-w-7xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl font-serif mb-4">About Us</h1>
-            <div className="w-16 h-0.5 bg-red-700 mx-auto mb-6" />
-            <p className="text-gray-400 font-light max-w-2xl mx-auto">
+            <div className="w-16 h-0.5 bg-red-800 mx-auto mb-6" />
+            <p className="text-gray-600 font-light max-w-2xl mx-auto">
               Welcome to Ron's Guest House, your elegant retreat situated in the heart of Berastagi. 
               We offer a perfect blend of modern comfort and traditional warmth.
             </p>
@@ -57,7 +57,7 @@ export default function AboutPage() {
                  {/* Text block */}
                  <div className="flex flex-col justify-center h-full pt-4">
                      <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-8 font-sans">Profile</h2>
-                     <div className="space-y-6 text-gray-400 font-medium text-base md:text-lg leading-relaxed">
+                     <div className="space-y-6 text-gray-600 font-medium text-base md:text-lg leading-relaxed">
                          <p>Experience the luxury and charm of a premier guest house designed for travelers seeking both relaxation and adventure. Our property features thoughtfully appointed rooms and suites that cater to every need.</p>
                          <p>Whether you are visiting for a weekend getaway or an extended stay, our dedicated staff is here to ensure your experience is nothing short of exceptional. We take pride in our pristine accommodations and personalized service.</p>
                          <p>From the moment you arrive, you will understand why Ron's Guest House is considered a landmark destination in the beautiful highlands of North Sumatra.</p>
@@ -74,7 +74,7 @@ export default function AboutPage() {
                  {/* Text block */}
                  <div className="flex flex-col justify-center h-full pt-4 order-2 lg:order-1">
                      <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-8 font-sans">Our Story</h2>
-                     <div className="space-y-6 text-gray-400 font-medium text-base md:text-lg leading-relaxed">
+                     <div className="space-y-6 text-gray-600 font-medium text-base md:text-lg leading-relaxed">
                          <p>Founded with a passion for hospitality, Ron's Guest House has grown from a humble resting place into a top-tier sanctuary for tourists visiting Berastagi. We believe in creating memorable experiences.</p>
                          <p>Every detail, from the contemporary architecture to the lush garden amenities, has been carefully selected to reflect our high standards of excellence and our deep respect for local culture.</p>
                          <p>Our commitment remains steadfast: providing an atmosphere where every guest feels like family, surrounded by the breathtaking views of the Karo highlands.</p>

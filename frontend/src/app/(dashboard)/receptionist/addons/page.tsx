@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { TableActions } from '@/components/ui/TableActions';
 import { confirmAction } from '@/lib/dialog';
@@ -75,17 +75,17 @@ export default function SuperadminAddonsPage() {
       <div className="p-8 max-w-6xl mx-auto space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
+            <h1 className="page-title flex items-center gap-2">
               <ShoppingBag className="text-primary" />
               Master Layanan / Add-On
             </h1>
-            <p className="text-gray-500 text-sm mt-1">
+            <p className="page-subtitle">
               Kelola layanan tambahan tamu tanpa manajemen stok.
             </p>
           </div>
           <button
             onClick={openCreate}
-            className="bg-primary text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-primary-dark transition-colors"
+            className="btn btn-secondary btn-md"
           >
             <Plus size={18} /> Tambah Layanan
           </button>
@@ -100,7 +100,7 @@ export default function SuperadminAddonsPage() {
                 placeholder="Cari layanan..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="form-input pl-9"
               />
             </div>
           </div>
@@ -174,15 +174,15 @@ export default function SuperadminAddonsPage() {
             <form onSubmit={handleCreate} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nama Layanan</label>
-                <input required type="text" value={form.name} onChange={e=>setForm({...form, name: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="cth: Extra Bed" />
+                <input required type="text" value={form.name} onChange={e=>setForm({...form, name: e.target.value})} className="form-input" placeholder="cth: Extra Bed" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Harga</label>
-                <input required type="number" value={form.price} onChange={e=>setForm({...form, price: Number(e.target.value)})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="0" />
+                <input required type="number" value={form.price} onChange={e=>setForm({...form, price: Number(e.target.value)})} className="form-input" placeholder="0" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
-                <select value={form.category} onChange={e=>setForm({...form, category: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                <select value={form.category} onChange={e=>setForm({...form, category: e.target.value})} className="form-input">
                   <option value="general">Umum</option>
                   <option value="extra_bed">Extra Bed</option>
                   <option value="food">Makanan / Minuman</option>
@@ -191,8 +191,8 @@ export default function SuperadminAddonsPage() {
                 </select>
               </div>
               <div className="pt-4 flex justify-end gap-3">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">Batal</button>
-                <button type="submit" disabled={saving} className="px-4 py-2 text-sm font-medium bg-primary text-white hover:bg-primary-dark rounded-lg transition-colors">
+                <button type="button" onClick={() => setShowModal(false)} className="btn btn-ghost btn-md">Batal</button>
+                <button type="submit" disabled={saving} className="btn btn-secondary btn-md disabled:opacity-50">
                   {saving ? 'Menyimpan...' : 'Simpan'}
                 </button>
               </div>

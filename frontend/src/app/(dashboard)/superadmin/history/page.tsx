@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { History, Search } from 'lucide-react';
 import { formatRp, fmtDate } from '@/lib/formatters';

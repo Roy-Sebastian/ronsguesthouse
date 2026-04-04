@@ -1,10 +1,10 @@
-'use client';
+﻿'use client';
 
 import PublicNavbar from '@/components/layout/PublicNavbar';
 import PublicFooter from '@/components/layout/PublicFooter';
 import ScrollReveal from '@/components/ui/ScrollReveal';
 import { BACKEND_URL } from '@/lib/constants';
-import { Search, Loader2 } from 'lucide-react';
+import { Search, Loader2, Star } from 'lucide-react';
 import { useState } from 'react';
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -71,12 +71,12 @@ export default function CheckBookingPage() {
       <PublicNavbar />
 
       {/* Hero Header */}
-      <section className="bg-black text-white pt-32 pb-20 px-4">
+      <section className="bg-white text-gray-900 pt-32 pb-20 px-4 border-b border-gray-100">
         <ScrollReveal>
           <div className="max-w-7xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl font-serif mb-4">Check Booking</h1>
-            <div className="w-16 h-0.5 bg-red-700 mx-auto mb-6" />
-            <p className="text-gray-400 font-light max-w-2xl mx-auto">
+            <div className="w-16 h-0.5 bg-red-800 mx-auto mb-6" />
+            <p className="text-gray-600 font-light max-w-2xl mx-auto">
               Enter your email and booking code to track your reservation status.
             </p>
           </div>
@@ -96,7 +96,7 @@ export default function CheckBookingPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="nama@email.com"
                     required
-                    className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all outline-none"
+                    className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-red-800 focus:border-red-800 transition-all outline-none"
                   />
                 </div>
                 <div className="space-y-2">
@@ -107,7 +107,7 @@ export default function CheckBookingPage() {
                     onChange={(e) => setBookingCode(e.target.value.toUpperCase())}
                     placeholder="RONS-XXXXXXXX"
                     required
-                    className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all outline-none uppercase"
+                    className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-red-800 focus:border-red-800 transition-all outline-none uppercase"
                   />
                 </div>
               </div>
@@ -179,12 +179,27 @@ export default function CheckBookingPage() {
                       </div>
                       <div className="flex justify-between font-bold pt-2 border-t border-neutral-100">
                         <span className="text-neutral-900">Total Amount</span>
-                        <span className="text-red-700">Rp {Number(result.totalPrice).toLocaleString('id-ID')}</span>
+                        <span className="text-red-800">Rp {Number(result.totalPrice).toLocaleString('id-ID')}</span>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Review CTA for checked_out */}
+          {result && result.status === 'checked_out' && (
+            <div className="mt-6 bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] ring-1 ring-neutral-200/50 p-6 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <Star className="w-8 h-8 text-yellow-500 mx-auto mb-3" />
+              <h3 className="text-lg font-bold text-neutral-900 mb-2">Bagaimana pengalaman Anda?</h3>
+              <p className="text-sm text-neutral-500 mb-4">Berikan ulasan untuk membantu kami meningkatkan pelayanan</p>
+              <a
+                href={`/review?code=${encodeURIComponent(result.bookingCode)}&email=${encodeURIComponent(email)}`}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-red-800 hover:bg-red-900 text-white rounded-xl font-medium tracking-wide transition-all shadow-lg shadow-red-900/20 text-sm"
+              >
+                <Star className="w-4 h-4" /> Tulis Ulasan
+              </a>
             </div>
           )}
         </div>

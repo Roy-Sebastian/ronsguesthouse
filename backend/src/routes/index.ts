@@ -20,6 +20,7 @@ import transactionsRoutes from './transactions.routes';
 import uploadRoutes from './upload.routes';
 import usersRoutes from './users.routes';
 import { checkBookingAccess, forgotBooking, publicBook } from '../controllers/public-booking.controller';
+import { getApprovedReviews, submitPublicReview } from '../controllers/reviews.controller';
 import { guestAccessRateLimiter, publicRateLimiter } from '../middlewares/rate-limit.middleware';
 
 const router = Router();
@@ -49,5 +50,7 @@ router.use('/users', usersRoutes);
 router.post('/public/book', publicRateLimiter, publicBook);
 router.post('/public/check-booking', guestAccessRateLimiter, checkBookingAccess);
 router.post('/public/forgot-booking', guestAccessRateLimiter, forgotBooking);
+router.get('/public/reviews', publicRateLimiter, getApprovedReviews);
+router.post('/public/reviews', publicRateLimiter, submitPublicReview);
 
 export default router;

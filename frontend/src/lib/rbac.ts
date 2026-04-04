@@ -104,9 +104,9 @@ export const defaultRoleMatrix: Record<string, Record<string, boolean>> = {
   superadmin: Object.fromEntries(allKeys.map((key) => [key, true])),
   admin: {
     'dashboard.view': true,
-    'user.view': true,
-    'user.create': true,
-    'user.edit': true,
+    'user.view': false,
+    'user.create': false,
+    'user.edit': false,
     'user.delete': false,
     'guest.view': true,
     'guest.create': true,

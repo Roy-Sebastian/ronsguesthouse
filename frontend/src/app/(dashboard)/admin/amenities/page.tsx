@@ -64,7 +64,7 @@ export default function AdminAmenitiesPage() {
           </p>
         </div>
         <button
-          className="btn-dark"
+          className="btn btn-secondary btn-md"
           onClick={() => setShowModal(true)}
         >
           <Plus size={16} /> <span className="hidden sm:inline">Tambah Amenitas</span></button>
@@ -172,14 +172,14 @@ export default function AdminAmenitiesPage() {
               <div className="flex justify-end gap-3 mt-4">
                 <button
                   type="button"
-                  className="px-5 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors"
+                  className="btn btn-outline btn-md"
                   onClick={() => setShowModal(false)}
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="btn-primary"
+                  className="btn btn-secondary btn-md"
                   disabled={saving}
                 >
                   {saving ? 'Menyimpan...' : 'Simpan'}

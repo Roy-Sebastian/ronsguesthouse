@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import PublicFooter from '@/components/layout/PublicFooter';
 import PublicNavbar from '@/components/layout/PublicNavbar';
@@ -51,12 +51,12 @@ export default function ContactPage() {
       <PublicNavbar />
 
       {/* Hero Header */}
-      <section className="bg-black text-white pt-32 pb-20 px-4">
+      <section className="bg-white text-gray-900 pt-32 pb-20 px-4 border-b border-gray-100">
         <ScrollReveal>
           <div className="max-w-7xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl font-serif mb-4">Contact Us</h1>
-            <div className="w-16 h-0.5 bg-red-700 mx-auto mb-6" />
-            <p className="text-gray-400 font-light max-w-2xl mx-auto">
+            <div className="w-16 h-0.5 bg-red-800 mx-auto mb-6" />
+            <p className="text-gray-600 font-light max-w-2xl mx-auto">
               We look forward to welcoming you. Reach out for reservations, inquiries, or bespoke requests.
             </p>
           </div>
@@ -76,7 +76,7 @@ export default function ContactPage() {
 
             <div className="space-y-8">
               <div className="flex items-start space-x-4">
-                <MapPin className="text-red-700 w-6 h-6 shrink-0 mt-1" />
+                <MapPin className="text-red-800 w-6 h-6 shrink-0 mt-1" />
                 <div>
                   <h4 className="text-sm font-bold uppercase tracking-widest text-gray-900 mb-1">Address</h4>
                   <p className="text-gray-600 font-light">Jl. Cendrawasih No. 12, Gundaling I<br/>Kec. Berastagi, Kab. Karo, Sumatera Utara</p>
@@ -84,7 +84,7 @@ export default function ContactPage() {
               </div>
 
               <div className="flex items-start space-x-4">
-                <Phone className="text-red-700 w-6 h-6 shrink-0 mt-1" />
+                <Phone className="text-red-800 w-6 h-6 shrink-0 mt-1" />
                 <div>
                   <h4 className="text-sm font-bold uppercase tracking-widest text-gray-900 mb-1">Phone</h4>
                   <p className="text-gray-600 font-light">+62 811 1234 5678</p>
@@ -92,7 +92,7 @@ export default function ContactPage() {
               </div>
 
               <div className="flex items-start space-x-4">
-                <Mail className="text-red-700 w-6 h-6 shrink-0 mt-1" />
+                <Mail className="text-red-800 w-6 h-6 shrink-0 mt-1" />
                 <div>
                   <h4 className="text-sm font-bold uppercase tracking-widest text-gray-900 mb-1">Email</h4>
                   <p className="text-gray-600 font-light">info@ronsguesthouse.com</p>
@@ -129,7 +129,7 @@ export default function ContactPage() {
                     required
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    className="w-full border-b border-gray-300 py-2 bg-transparent focus:outline-none focus:border-red-700 transition-colors font-light text-gray-900 placeholder-gray-300"
+                    className="w-full border-b border-gray-300 py-2 bg-transparent focus:outline-none focus:border-red-800 transition-colors font-light text-gray-900 placeholder-gray-300"
                     placeholder="John Doe"
                   />
                 </div>
@@ -140,7 +140,7 @@ export default function ContactPage() {
                     required
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    className="w-full border-b border-gray-300 py-2 bg-transparent focus:outline-none focus:border-red-700 transition-colors font-light text-gray-900 placeholder-gray-300"
+                    className="w-full border-b border-gray-300 py-2 bg-transparent focus:outline-none focus:border-red-800 transition-colors font-light text-gray-900 placeholder-gray-300"
                     placeholder="john@example.com"
                   />
                 </div>
@@ -153,7 +153,7 @@ export default function ContactPage() {
                     type="tel"
                     value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    className="w-full border-b border-gray-300 py-2 bg-transparent focus:outline-none focus:border-red-700 transition-colors font-light text-gray-900 placeholder-gray-300"
+                    className="w-full border-b border-gray-300 py-2 bg-transparent focus:outline-none focus:border-red-800 transition-colors font-light text-gray-900 placeholder-gray-300"
                     placeholder="+62 812..."
                   />
                 </div>
@@ -164,7 +164,7 @@ export default function ContactPage() {
                     required
                     value={form.subject}
                     onChange={(e) => setForm({ ...form, subject: e.target.value })}
-                    className="w-full border-b border-gray-300 py-2 bg-transparent focus:outline-none focus:border-red-700 transition-colors font-light text-gray-900 placeholder-gray-300"
+                    className="w-full border-b border-gray-300 py-2 bg-transparent focus:outline-none focus:border-red-800 transition-colors font-light text-gray-900 placeholder-gray-300"
                     placeholder="Reservation Inquiry"
                   />
                 </div>
@@ -177,7 +177,7 @@ export default function ContactPage() {
                   rows={5}
                   value={form.message}
                   onChange={(e) => setForm({ ...form, message: e.target.value })}
-                  className="w-full border-b border-gray-300 py-2 bg-transparent focus:outline-none focus:border-red-700 transition-colors font-light text-gray-900 placeholder-gray-300 resize-none"
+                  className="w-full border-b border-gray-300 py-2 bg-transparent focus:outline-none focus:border-red-800 transition-colors font-light text-gray-900 placeholder-gray-300 resize-none"
                   placeholder="How can we assist you?"
                 />
               </div>

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { Image as ImageIcon, Trash2, Upload, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -105,7 +105,7 @@ export default function AdminGalleryPage() {
           </p>
         </div>
         <button
-          className="btn-dark"
+          className="btn btn-secondary btn-md"
           onClick={() => setShowModal(true)}
         >
           <Upload size={16} /> Upload Foto
@@ -279,7 +279,7 @@ export default function AdminGalleryPage() {
               <div className="flex justify-end gap-3 mt-4">
                 <button
                   type="button"
-                  className="px-5 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors"
+                  className="btn btn-outline btn-md"
                   onClick={() => {
                     setShowModal(false);
                     setPreview('');
@@ -292,7 +292,7 @@ export default function AdminGalleryPage() {
                 </button>
                 <button
                   type="submit"
-                  className="btn-primary"
+                  className="btn btn-secondary btn-md"
                   disabled={saving || !file}
                 >
                   {saving ? 'Mengunggah...' : 'Upload'}

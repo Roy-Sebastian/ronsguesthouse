@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { TableActions } from '@/components/ui/TableActions';
 import { formatRp } from '@/lib/formatters';
@@ -168,7 +168,7 @@ export default function AdminRoomsPage() {
           </p>
         </div>
         <button
-          className="btn-dark"
+          className="btn btn-secondary btn-md"
           onClick={openCreate}
         >
           <Plus size={16} /> <span className="hidden sm:inline">Tambah Kamar</span></button>
@@ -472,7 +472,7 @@ export default function AdminRoomsPage() {
             <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 shrink-0 bg-gray-50/50">
               <button
                 type="button"
-                className="px-5 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors"
+                className="btn btn-outline btn-md"
                 onClick={() => setShowModal(false)}
               >
                 Batal
@@ -480,7 +480,7 @@ export default function AdminRoomsPage() {
               <button
                 type="submit"
                 form="roomForm"
-                className="btn-dark"
+                className="btn btn-secondary btn-md"
                 disabled={saving}
               >
                 {saving ? 'Menyimpan...' : 'Simpan Kamar'}

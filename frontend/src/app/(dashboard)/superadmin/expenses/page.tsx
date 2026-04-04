@@ -16,15 +16,18 @@ import { useEffect, useState } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/ui/SortableHeader';
+import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
-export default function SuperadminExpensesPage() {
+export default function AdminExpensesPage() {
   const [expenses, setExpenses] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [period, setPeriod] = useState('all');
+  const [dateStart, setDateStart] = useState('');
+  const [dateEnd, setDateEnd] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editExpense, setEditExpense] = useState<any>(null);
   const [form, setForm] = useState({
@@ -117,6 +120,14 @@ export default function SuperadminExpensesPage() {
       !search || t.description?.toLowerCase().includes(search.toLowerCase());
     if (!matchSearch) return false;
 
+    const expenseTime = new Date(t.expenseDate || t.createdAt).getTime();
+
+    if (dateStart || dateEnd) {
+      if (dateStart && expenseTime < new Date(dateStart + 'T00:00:00').getTime()) return false;
+      if (dateEnd && expenseTime > new Date(dateEnd + 'T23:59:59').getTime()) return false;
+      return true;
+    }
+
     if (period === 'all') return true;
     const d = new Date(t.expenseDate || t.createdAt);
     const now = new Date();
@@ -186,7 +197,9 @@ export default function SuperadminExpensesPage() {
           label: 'Pengeluaran (Rp)',
           data: Object.values(groups),
           backgroundColor: 'rgba(239, 68, 68, 0.8)',
-          borderRadius: 8,
+          borderRadius: 4,
+          barPercentage: 0.6,
+          categoryPercentage: 0.8,
           borderSkipped: false,
         },
       ],
@@ -209,7 +222,7 @@ export default function SuperadminExpensesPage() {
           </p>
         </div>
         <button
-          className="btn-primary"
+          className="btn btn-secondary btn-md"
           onClick={openCreate}
         >
           <Plus size={16} />{' '}
@@ -217,8 +230,8 @@ export default function SuperadminExpensesPage() {
         </button>
       </div>
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="search-bar flex-1">
+      <div className="flex flex-col xl:flex-row gap-4 mb-6 xl:items-center">
+        <div className="search-bar flex-1 m-0">
           <Search size={18} className="text-gray-400 ml-2 shrink-0" />
           <input
             className="w-full text-sm outline-none bg-transparent placeholder-gray-400 text-gray-700"
@@ -227,7 +240,15 @@ export default function SuperadminExpensesPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+        <div className="flex flex-wrap gap-2 items-center">
+          <DateRangeFilter
+            startDate={dateStart}
+            endDate={dateEnd}
+            onStartDateChange={(v) => { setDateStart(v); setPeriod('all'); }}
+            onEndDateChange={(v) => { setDateEnd(v); setPeriod('all'); }}
+            className="bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm"
+          />
+          <div className="hidden sm:block w-px h-6 bg-gray-200 mx-2"></div>
           {[
             ['all', 'Semua'],
             ['day', 'Hari Ini'],
@@ -237,8 +258,8 @@ export default function SuperadminExpensesPage() {
           ].map(([val, lbl]) => (
             <button
               key={val}
-              onClick={() => setPeriod(val)}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+              onClick={() => { setPeriod(val); setDateStart(''); setDateEnd(''); }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 period === val
                   ? 'bg-primary text-white shadow-sm'
                   : 'bg-white border border-gray-200 text-gray-500 hover:border-primary/30'
@@ -257,13 +278,8 @@ export default function SuperadminExpensesPage() {
             Statistik Pengeluaran{' '}
             {period === 'day' ? '(Per Jam)' : '(Per Hari)'}
           </h2>
-          <div className="overflow-x-auto w-full pb-4">
-            <div
-              style={{
-                minWidth: `${Math.max(chartData.labels.length * 60, 600)}px`,
-                height: 240,
-              }}
-            >
+          <div className="w-full">
+            <div style={{ height: 280 }}>
               <Bar
                 data={chartData}
                 options={{
@@ -300,7 +316,7 @@ export default function SuperadminExpensesPage() {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
+                className="px-4 py-3 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
               <SortableHeader
                 label="Kategori"
@@ -308,7 +324,7 @@ export default function SuperadminExpensesPage() {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
+                className="px-4 py-3 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
               <SortableHeader
                 label="Deskripsi"
@@ -316,7 +332,7 @@ export default function SuperadminExpensesPage() {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
+                className="px-4 py-3 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
               <SortableHeader
                 label="Jumlah"
@@ -324,7 +340,7 @@ export default function SuperadminExpensesPage() {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
+                className="px-4 py-3 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
               <SortableHeader
                 label="Dicatat Oleh"
@@ -332,9 +348,9 @@ export default function SuperadminExpensesPage() {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
+                className="px-4 py-3 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
-              <th className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100">
+              <th className="px-4 py-3 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100">
                 Aksi
               </th>
             </tr>
@@ -361,43 +377,45 @@ export default function SuperadminExpensesPage() {
                   key={ex.id}
                   className="hover:bg-gray-50/50 transition-colors"
                 >
-                  <td className="px-6 py-4 border-b border-gray-50 text-sm text-gray-500">
+                  <td className="px-4 py-3 border-b border-gray-50 text-sm text-gray-500">
                     {new Date(ex.expenseDate).toLocaleDateString('id-ID')}
                   </td>
-                  <td className="px-6 py-4 border-b border-gray-50">
-                    <span className="px-2.5 py-1 text-[0.65rem] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 rounded-md">
-                      {ex.category === 'utilities'
-                        ? 'Operasional'
-                        : ex.category === 'salary'
-                          ? 'Gaji'
-                          : ex.category === 'maintenance'
-                            ? 'Perawatan'
-                            : ex.category === 'marketing'
-                              ? 'Pemasaran'
-                              : ex.category === 'supplies'
-                                ? 'Persediaan'
-                                : 'Lainnya'}
+                  <td className="px-4 py-3 border-b border-gray-50">
+                    <span className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest rounded-md ${
+                      ex.category === 'utilities' ? 'bg-blue-50 text-blue-600' :
+                      ex.category === 'salary' ? 'bg-purple-50 text-purple-600' :
+                      ex.category === 'maintenance' ? 'bg-orange-50 text-orange-600' :
+                      ex.category === 'marketing' ? 'bg-pink-50 text-pink-600' :
+                      ex.category === 'supplies' ? 'bg-teal-50 text-teal-600' :
+                      'bg-gray-100 text-gray-600'
+                    }`}>
+                      {ex.category === 'utilities' ? 'Operasional' : 
+                       ex.category === 'salary' ? 'Gaji' : 
+                       ex.category === 'maintenance' ? 'Perawatan' : 
+                       ex.category === 'marketing' ? 'Pemasaran' : 
+                       ex.category === 'supplies' ? 'Persediaan' : 
+                       'Lainnya'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 border-b border-gray-50 text-sm text-gray-700">
-                    {ex.description || '—'}
+                  <td className="px-4 py-3 border-b border-gray-50 text-sm text-gray-700">
+                    {ex.description || '-'}
                   </td>
-                  <td className="px-6 py-4 border-b border-gray-50 font-bold text-red-600">
+                  <td className="px-4 py-3 border-b border-gray-50 font-bold text-red-600">
                     {formatRp(Number(ex.amount))}
                   </td>
-                  <td className="px-6 py-4 border-b border-gray-50 text-xs text-gray-500">
+                  <td className="px-4 py-3 border-b border-gray-50 text-xs text-gray-500">
                     {ex.user?.name}
                   </td>
-                  <td className="px-6 py-4 border-b border-gray-50">
+                  <td className="px-4 py-3 border-b border-gray-50">
                     <div className="flex items-center gap-2">
                       <button
-                        className="p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 rounded-lg transition-colors"
+                        className="btn btn-ghost btn-icon text-gray-500 hover:text-gray-900 hover:bg-gray-100"
                         onClick={() => openEdit(ex)}
                       >
                         <Edit size={16} />
                       </button>
                       <button
-                        className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-colors"
+                        className="btn btn-danger btn-sm btn-icon"
                         onClick={() => handleDelete(ex.id)}
                       >
                         <Trash2 size={16} />
@@ -419,7 +437,7 @@ export default function SuperadminExpensesPage() {
           }}
         >
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-slideUp">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
               <h2 className="font-serif text-xl font-bold text-dark">
                 {editExpense ? 'Edit Pengeluaran' : 'Catat Pengeluaran Baru'}
               </h2>
@@ -501,14 +519,14 @@ export default function SuperadminExpensesPage() {
               <div className="flex justify-end gap-3 mt-4">
                 <button
                   type="button"
-                  className="px-5 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors"
+                  className="btn btn-outline btn-md"
                   onClick={() => setShowModal(false)}
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="btn-primary"
+                  className="btn btn-secondary btn-md"
                   disabled={saving}
                 >
                   {saving ? 'Menyimpan...' : 'Simpan Catatan'}

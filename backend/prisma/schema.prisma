@@ -4,6 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  
 }
 
 // =================== ENUMS ===================
@@ -286,6 +287,7 @@ model Reservation {
   stay          Stay?
   transaction   Transaction?
   bookingAddons BookingAddOn[]
+  review        Review?
 
   @@index([roomId, checkInDate, checkOutDate])
   @@index([status, expiresAt])
@@ -375,15 +377,17 @@ model Expense {
 // =================== REVIEWS ===================
 
 model Review {
-  id        String       @id @default(cuid())
-  guestId   String
-  rating    Int // 1-5
-  comment   String
-  status    ReviewStatus @default(pending)
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  id            String       @id @default(cuid())
+  guestId       String
+  reservationId String?      @unique
+  rating        Int // 1-5
+  comment       String
+  status        ReviewStatus @default(pending)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
-  guest Guest @relation(fields: [guestId], references: [id])
+  guest       Guest        @relation(fields: [guestId], references: [id])
+  reservation Reservation? @relation(fields: [reservationId], references: [id])
 
   @@map("reviews")
 }

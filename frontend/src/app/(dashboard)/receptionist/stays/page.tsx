@@ -5,24 +5,25 @@ import { useEffect, useState } from 'react';
 import AddOnModal from '@/components/features/AddOnModal';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/ui/SortableHeader';
+import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
 
 export default function ReceptionistStaysPage() {
   const [stays, setStays] = useState<any[]>([]);
   const [reservations, setReservations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [dateStart, setDateStart] = useState('');
+  const [dateEnd, setDateEnd] = useState('');
   const [addonReservationId, setAddonReservationId] = useState<string | null>(null);
 
   const fetchStays = async () => {
     setLoading(true);
     const [stRes, resRes] = await Promise.all([
-      fetch('/api/stays?limit=1000')
+      fetch('/api/stays')
         .then((r) => r.json())
-        .then((r) => r.data || [])
         .catch(() => []),
-      fetch('/api/reservations?limit=1000')
+      fetch('/api/reservations')
         .then((r) => r.json())
-        .then((r) => r.data || r)
         .catch(() => []),
     ]);
     setStays(Array.isArray(stRes) ? stRes : []);
@@ -69,9 +70,26 @@ export default function ReceptionistStaysPage() {
     }
   };
 
+  const matchDate = (startObj: string | Date, endObj: string | Date | null) => {
+    if (!dateStart && !dateEnd) return true;
+    const startT = new Date(startObj).getTime();
+    const endT = endObj ? new Date(endObj).getTime() : new Date().getTime(); // default to now if not checked out
+
+    if (dateStart) {
+      const fStart = new Date(dateStart + 'T00:00:00').getTime();
+      if (endT < fStart) return false;
+    }
+    if (dateEnd) {
+      const fEnd = new Date(dateEnd + 'T23:59:59').getTime();
+      if (startT > fEnd) return false;
+    }
+    return true;
+  };
+
   const pendingArrivals = reservations.filter(
     (r) =>
       r.status === 'confirmed' &&
+      matchDate(r.checkInDate, r.checkOutDate) &&
       (!search ||
         r.guest?.fullName?.toLowerCase().includes(search.toLowerCase()) ||
         r.room?.roomNumber?.includes(search)),
@@ -79,13 +97,14 @@ export default function ReceptionistStaysPage() {
   const activeStays = stays.filter(
     (s) =>
       !s.checkOutAt &&
+      matchDate(s.checkInAt, s.checkOutAt) &&
       (!search ||
         s.reservation?.guest?.fullName
           ?.toLowerCase()
           .includes(search.toLowerCase()) ||
         s.reservation?.room?.roomNumber?.includes(search)),
   );
-  const historyStays = stays.filter((s) => s.checkOutAt).slice(0, 5);
+  const historyStays = stays.filter((s) => s.checkOutAt && matchDate(s.checkInAt, s.checkOutAt));
 
   const { sortedData: sortedHistoryStays, handleSort, sortBy, sortOrder } = useTableSort(historyStays);
 
@@ -100,13 +119,22 @@ export default function ReceptionistStaysPage() {
         </p>
       </div>
 
-      <div className="search-bar flex-1">
-        <Search size={18} className="text-gray-400 ml-2 shrink-0" />
-        <input
-          className="w-full text-sm outline-none bg-transparent placeholder-gray-400 text-gray-700"
-          placeholder="Cari nama tamu atau nomor kamar..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+      <div className="flex flex-col md:flex-row gap-4 mb-8">
+        <div className="search-bar flex-1 m-0">
+          <Search size={18} className="text-gray-400 ml-2 shrink-0" />
+          <input
+            className="w-full text-sm outline-none bg-transparent placeholder-gray-400 text-gray-700"
+            placeholder="Cari nama tamu atau nomor kamar..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <DateRangeFilter
+          startDate={dateStart}
+          endDate={dateEnd}
+          onStartDateChange={setDateStart}
+          onEndDateChange={setDateEnd}
+          className="bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm"
         />
       </div>
 
@@ -154,7 +182,7 @@ export default function ReceptionistStaysPage() {
                       </div>
                     </div>
                     <button
-                      className="px-3.5 py-2 bg-dark hover:bg-dark-2 text-white text-xs font-semibold rounded-lg transition-colors inline-flex items-center gap-1.5 shrink-0"
+                      className="btn btn-secondary btn-md"
                       onClick={() => handleCheckIn(r.id)}
                     >
                       <LogIn size={14} /> Check In
@@ -220,7 +248,7 @@ export default function ReceptionistStaysPage() {
                         <PackagePlus size={14} /> + Layanan
                       </button>
                       <button
-                        className="px-3.5 py-2 bg-primary hover:bg-primary-hover text-white text-xs font-semibold rounded-lg transition-colors inline-flex items-center justify-center gap-1.5 shrink-0"
+                        className="btn btn-primary btn-md"
                         onClick={() => handleCheckOut(s.id)}
                       >
                         <LogOut size={14} /> Selesai
@@ -308,7 +336,7 @@ export default function ReceptionistStaysPage() {
                   <td className="px-6 py-4 border-b border-gray-50 text-xs text-gray-500">
                     {s.checkOutAt
                       ? new Date(s.checkOutAt).toLocaleString('id-ID')
-                      : '—'}
+                      : '-'}
                   </td>
                 </tr>
               ))

@@ -193,14 +193,14 @@ export default function EditStayModal({ stay, onClose, onSuccess, onRefresh }: E
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-medium rounded-lg transition-colors"
+              className="btn btn-outline btn-md"
             >
               Batal
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="px-4 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-70 flex items-center gap-2"
+              className="btn btn-primary btn-md"
             >
               {saving && (
                 <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

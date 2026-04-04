@@ -213,7 +213,7 @@ function SearchContent() {
 
                 <button 
                   type="submit"
-                  className="w-full bg-black hover:bg-gray-800 text-white font-bold py-3 uppercase tracking-wider text-sm transition-colors"
+                  className="btn btn-secondary w-full uppercase tracking-wider py-3 rounded-none md:rounded-lg"
                 >
                   Periksa ketersediaan
                 </button>
@@ -315,7 +315,7 @@ function SearchContent() {
                     {group.isFullyBooked ? (
                       <button 
                         disabled
-                        className="w-full bg-gray-200 text-gray-400 font-medium py-2.5 px-4 text-sm flex items-center justify-center uppercase tracking-widest cursor-not-allowed"
+                        className="btn w-full uppercase tracking-widest bg-gray-200 text-gray-500 rounded-none md:rounded-xl cursor-not-allowed"
                       >
                         Tidak tersedia
                       </button>
@@ -332,7 +332,7 @@ function SearchContent() {
                         )}
                         <Link 
                           href={urlCheckIn && urlCheckOut ? `/book/${group.firstAvailableRoomId}?checkIn=${urlCheckIn}&checkOut=${urlCheckOut}` : `/book/${group.firstAvailableRoomId}`}
-                          className="w-full text-center bg-red-700 hover:bg-red-800 text-white font-medium py-2.5 px-4 text-sm transition-colors flex items-center justify-center group uppercase tracking-widest"
+                          className="btn btn-primary w-full uppercase tracking-widest group rounded-none md:rounded-xl"
                         >
                           Rincian & pesanan <ChevronRight className="w-4 h-4 ml-1 opacity-70 group-hover:opacity-100 transition-opacity" />
                         </Link>

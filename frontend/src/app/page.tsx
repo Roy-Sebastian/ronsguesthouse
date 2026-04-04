@@ -44,12 +44,12 @@ interface Facility {
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const HARDCODED_REVIEWS = [
-  { id: 1, rating: 5, comment: "Pengalaman menginap yang luar biasa! Pelayanan bersih dan nyaman.", guest: "Budi Santoso", room: "Standard Suite" },
-  { id: 2, rating: 5, comment: "Sangat direkomendasikan. Lokasi strategis dan staf ramah.", guest: "Siti Aminah", room: "Deluxe Room" },
-  { id: 3, rating: 4, comment: "Fasilitas lengkap dan harga bersahabat. Recommended!", guest: "Agus Pratama", room: "Family Suite" },
-  { id: 4, rating: 5, comment: "Nyaman seperti di rumah sendiri. Dekat dengan pusat kota.", guest: "Rina Wijaya", room: "Standard Suite" },
-  { id: 5, rating: 5, comment: "Kamar bersih dan wangi. Overall sangat memuaskan.", guest: "Dedi Setiawan", room: "Deluxe Room" },
+const FALLBACK_REVIEWS = [
+  { id: '1', rating: 5, comment: "Pengalaman menginap yang luar biasa! Pelayanan bersih dan nyaman.", guest: "Budi S.", room: "standard Room" },
+  { id: '2', rating: 5, comment: "Sangat direkomendasikan. Lokasi strategis dan staf ramah.", guest: "Siti A.", room: "deluxe Room" },
+  { id: '3', rating: 4, comment: "Fasilitas lengkap dan harga bersahabat. Recommended!", guest: "Agus P.", room: "family Room" },
+  { id: '4', rating: 5, comment: "Nyaman seperti di rumah sendiri. Dekat dengan pusat kota.", guest: "Rina W.", room: "standard Room" },
+  { id: '5', rating: 5, comment: "Kamar bersih dan wangi. Overall sangat memuaskan.", guest: "Dedi S.", room: "deluxe Room" },
 ];
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -60,6 +60,7 @@ export default function Home() {
 
   const [rooms, setRooms] = useState<Room[]>([]);
   const [facilities, setFacilities] = useState<Facility[]>([]);
+  const [reviews, setReviews] = useState<any[]>([]);
   const [heroImages, setHeroImages] = useState<any[]>([]);
   const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
 
@@ -103,6 +104,11 @@ export default function Home() {
     fetch('/api/facilities')
       .then((r) => r.json())
       .then((d) => setFacilities(Array.isArray(d) ? d : []))
+      .catch(() => { });
+
+    fetch('/api/public/reviews')
+      .then((r) => r.json())
+      .then((d) => { if (Array.isArray(d) && d.length > 0) setReviews(d); })
       .catch(() => { });
 
     let socket: any;
@@ -192,7 +198,7 @@ export default function Home() {
               Destination
             </label>
             <div className="flex items-center text-gray-800 font-serif text-lg">
-              <MapPin className="w-5 h-5 mr-2 text-red-700" />
+              <MapPin className="w-5 h-5 mr-2 text-red-800" />
               <input
                 type="text"
                 value="Ron's Guesthouse"
@@ -234,7 +240,7 @@ export default function Home() {
           {/* Submit Button */}
           <button
             type="submit"
-            className="bg-black hover:bg-gray-800 text-white w-full md:w-auto px-8 py-4 md:py-5 md:min-w-[200px] flex items-center justify-center font-bold uppercase tracking-widest text-sm transition-colors"
+            className="btn btn-secondary w-full md:w-auto px-8 py-4 md:py-5 md:min-w-[200px] uppercase tracking-widest text-sm font-bold rounded-none md:rounded-r-full"
           >
             Find Rooms
           </button>
@@ -245,7 +251,7 @@ export default function Home() {
       <section className="py-20 px-4 max-w-7xl mx-auto bg-white">
         <ScrollReveal>
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-serif text-gray-900 mb-4 inline-block border-t-4 border-red-700 pt-4">Featured Accommodations</h2>
+            <h2 className="text-3xl md:text-4xl font-serif text-gray-900 mb-4 inline-block border-t-4 border-red-800 pt-4">Featured Accommodations</h2>
           </div>
         </ScrollReveal>
 
@@ -261,7 +267,7 @@ export default function Home() {
                   />
                 </div>
 
-                <h3 className="text-2xl font-serif text-gray-900 mb-2 group-hover:text-red-700 transition-colors capitalize">
+                <h3 className="text-2xl font-serif text-gray-900 mb-2 group-hover:text-red-800 transition-colors capitalize">
                   {room.roomType} Room
                 </h3>
 
@@ -283,7 +289,7 @@ export default function Home() {
                   </div>
                   <Link
                     href={`/rooms?type=${room.roomType}`}
-                    className="text-sm font-bold uppercase tracking-widest text-red-700 hover:text-black transition-colors flex items-center"
+                    className="text-sm font-bold uppercase tracking-widest text-red-800 hover:text-black transition-colors flex items-center"
                   >
                     View Details <ChevronRight className="w-4 h-4 ml-1" />
                   </Link>
@@ -313,7 +319,7 @@ export default function Home() {
       <section className="py-20 px-4 max-w-7xl mx-auto bg-white border-t border-gray-200">
         <ScrollReveal>
           <div className="mb-12">
-            <h2 className="text-3xl md:text-4xl font-serif text-gray-900 mb-4 inline-block border-t-4 border-red-700 pt-4">Our Facilities</h2>
+            <h2 className="text-3xl md:text-4xl font-serif text-gray-900 mb-4 inline-block border-t-4 border-red-800 pt-4">Our Facilities</h2>
           </div>
         </ScrollReveal>
 
@@ -321,7 +327,7 @@ export default function Home() {
           {facilities.length > 0 ? facilities.map((fac) => (
             <ScrollReveal key={fac.id}>
               <div className="flex flex-col items-center justify-center p-8 bg-white border border-gray-100 rounded-lg aspect-square text-center shadow-sm hover:shadow-md transition-shadow">
-                <div className="text-red-700 mb-4">
+                <div className="text-red-800 mb-4">
                   {getIcon(fac.name)}
                 </div>
                 <h4 className="text-sm font-bold text-gray-900 mb-2 truncate w-full">{fac.name}</h4>
@@ -339,7 +345,7 @@ export default function Home() {
       </section>
 
       {/* REVIEWS SECTION */}
-      <section className="pt-20 pb-32 px-4 bg-black text-white relative overflow-hidden">
+      <section className="pt-20 pb-32 px-4 bg-gray-50 text-gray-900 relative overflow-hidden">
         <style dangerouslySetInnerHTML={{
           __html: `
           @keyframes marquee {
@@ -356,14 +362,14 @@ export default function Home() {
 
         <ScrollReveal>
           <div className="max-w-7xl mx-auto mb-12">
-            <h2 className="text-3xl md:text-4xl font-serif mb-4 inline-block border-t-4 border-red-700 pt-4 text-white">What Our Guests Say</h2>
+            <h2 className="text-3xl md:text-4xl font-serif mb-4 inline-block border-t-4 border-red-800 pt-4 text-gray-900">What Our Guests Say</h2>
           </div>
         </ScrollReveal>
 
         <div className="w-full relative overflow-hidden">
           <div className="flex w-max animate-marquee space-x-6 pb-4 cursor-pointer">
-            {[...HARDCODED_REVIEWS, ...HARDCODED_REVIEWS].map((review, index) => (
-              <div key={index} className="w-[300px] md:w-[350px] p-6 bg-white/10 border border-white/20 hover:border-white/40 rounded-lg flex flex-col h-full shadow-sm transition-all text-left flex-shrink-0 whitespace-normal">
+            {[...(reviews.length > 0 ? reviews : FALLBACK_REVIEWS), ...(reviews.length > 0 ? reviews : FALLBACK_REVIEWS)].map((review, index) => (
+              <div key={index} className="w-[300px] md:w-[350px] p-6 bg-white border border-gray-200 hover:border-gray-300 shadow-sm rounded-lg flex flex-col h-full transition-all text-left flex-shrink-0 whitespace-normal">
                 <div className="flex justify-start mb-6">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <Star
@@ -373,16 +379,16 @@ export default function Home() {
                   ))}
                 </div>
 
-                <div className="w-16 h-16 rounded-full bg-white/20 mb-4 shrink-0 flex items-center justify-center font-bold text-white/50 text-xl">
+                <div className="w-16 h-16 rounded-full bg-gray-100 mb-4 shrink-0 flex items-center justify-center font-bold text-gray-400 text-xl">
                   {review.guest?.charAt(0)}
                 </div>
 
                 <div className="mt-auto">
-                  <h4 className="text-sm font-bold text-white mb-1 truncate font-serif">
+                  <h4 className="text-sm font-bold text-gray-900 mb-1 truncate font-serif">
                     {review.guest}
                   </h4>
-                  <div className="text-xs text-red-500 font-bold uppercase tracking-widest mb-3">{review.room}</div>
-                  <p className="text-sm text-gray-300 font-medium leading-relaxed italic">
+                  <div className="text-xs text-red-800 font-bold uppercase tracking-widest mb-3">{review.room}</div>
+                  <p className="text-sm text-gray-600 font-medium leading-relaxed italic">
                     "{review.comment}"
                   </p>
                 </div>

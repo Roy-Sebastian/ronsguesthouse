@@ -49,6 +49,12 @@ export const auth = betterAuth({
     process.env.FRONTEND_URL || 'http://localhost:3000',
   ],
   baseURL: process.env.BASE_URL || 'http://localhost:3001',
+  advanced: {
+    crossSubDomainCookies: {
+      enabled: true,
+      domain: process.env.NODE_ENV === 'production' ? '.ronsguesthouse.com' : undefined,
+    },
+  },
 });
 
 export type Session = typeof auth.$Infer.Session;

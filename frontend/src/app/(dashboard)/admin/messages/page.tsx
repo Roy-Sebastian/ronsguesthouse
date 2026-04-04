@@ -1,12 +1,15 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { Mail, CheckCircle, Search, MailOpen, Phone } from "lucide-react";
+import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
 
 export default function AdminMessagesPage() {
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [dateStart, setDateStart] = useState("");
+  const [dateEnd, setDateEnd] = useState("");
   const [selected, setSelected] = useState<any>(null);
 
   const fetchMessages = async () => {
@@ -26,7 +29,23 @@ export default function AdminMessagesPage() {
     }
   };
 
-  const filtered = messages.filter(m => !search || m.name.toLowerCase().includes(search.toLowerCase()) || m.subject.toLowerCase().includes(search.toLowerCase()));
+  const filtered = messages.filter(m => {
+    let dateMatch = true;
+    if (dateStart || dateEnd) {
+      const mDate = new Date(m.createdAt).getTime();
+      if (dateStart) {
+        const start = new Date(dateStart + 'T00:00:00').getTime();
+        if (mDate < start) dateMatch = false;
+      }
+      if (dateEnd) {
+        const end = new Date(dateEnd + 'T23:59:59').getTime();
+        if (mDate > end) dateMatch = false;
+      }
+    }
+
+    const searchMatch = !search || m.name.toLowerCase().includes(search.toLowerCase()) || m.subject.toLowerCase().includes(search.toLowerCase());
+    return dateMatch && searchMatch;
+  });
 
   return (
     <>
@@ -35,9 +54,18 @@ export default function AdminMessagesPage() {
         <p className="page-subtitle">Pertanyaan dan masukan dari pengunjung</p>
       </div>
 
-      <div className="search-bar flex-1">
-        <Search size={18} className="text-gray-400 ml-2 shrink-0" />
-        <input className="w-full text-sm outline-none bg-transparent placeholder-gray-400 text-gray-700" placeholder="Cari nama pengirim atau subjek..." value={search} onChange={e => setSearch(e.target.value)} />
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="search-bar flex-1 m-0">
+          <Search size={18} className="text-gray-400 ml-2 shrink-0" />
+          <input className="w-full text-sm outline-none bg-transparent placeholder-gray-400 text-gray-700" placeholder="Cari nama pengirim atau subjek..." value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+        <DateRangeFilter
+          startDate={dateStart}
+          endDate={dateEnd}
+          onStartDateChange={setDateStart}
+          onEndDateChange={setDateEnd}
+          className="bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm"
+        />
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6">
@@ -96,8 +124,8 @@ export default function AdminMessagesPage() {
                 </div>
               </div>
               <div className="px-8 py-4 border-t border-gray-100 shrink-0 flex gap-3">
-                <a href={`mailto:${selected.email}`} className="px-4 py-2 bg-dark hover:bg-dark-2 text-white text-sm font-semibold rounded-lg transition-colors flex items-center gap-2">Balas via Email</a>
-                {selected.phone && <a href={`https://wa.me/${selected.phone.replace(/^0/,"62")}`} target="_blank" rel="noreferrer" className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors flex items-center gap-2">Balas via WhatsApp</a>}
+                <a href={`mailto:${selected.email}`} className="btn btn-secondary btn-md">Balas via Email</a>
+                {selected.phone && <a href={`https://wa.me/${selected.phone.replace(/^0/,"62")}`} target="_blank" rel="noreferrer" className="btn btn-success btn-md">Balas via WhatsApp</a>}
               </div>
             </>
           ) : (

@@ -6,11 +6,14 @@ import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/ui/SortableHeader';
+import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
 
 export default function AuditLogsPage() {
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [dateStart, setDateStart] = useState('');
+  const [dateEnd, setDateEnd] = useState('');
 
   useEffect(() => {
     fetch('/api/audit-logs')
@@ -35,13 +38,27 @@ export default function AuditLogsPage() {
     };
   }, []);
 
-  const filtered = logs.filter(
-    (l) =>
-      !search ||
+  const filtered = logs.filter((l) => {
+    let dateMatch = true;
+    if (dateStart || dateEnd) {
+      const logD = new Date(l.createdAt).getTime();
+      if (dateStart) {
+        const start = new Date(dateStart + 'T00:00:00').getTime();
+        if (logD < start) dateMatch = false;
+      }
+      if (dateEnd) {
+        const end = new Date(dateEnd + 'T23:59:59').getTime();
+        if (logD > end) dateMatch = false;
+      }
+    }
+
+    const searchMatch = !search ||
       l.action?.toLowerCase().includes(search.toLowerCase()) ||
       l.user?.name?.toLowerCase().includes(search.toLowerCase()) ||
-      l.entity?.toLowerCase().includes(search.toLowerCase()),
-  );
+      l.entity?.toLowerCase().includes(search.toLowerCase());
+
+    return dateMatch && searchMatch;
+  });
 
   const { sortedData, handleSort, sortBy, sortOrder } = useTableSort(filtered);
 
@@ -56,13 +73,22 @@ export default function AuditLogsPage() {
         </div>
       </div>
 
-      <div className="search-bar flex-1">
-        <Search size={18} className="text-gray-400 ml-2 shrink-0" />
-        <input
-          className="w-full text-sm outline-none bg-transparent placeholder-gray-400 text-gray-700"
-          placeholder="Cari aktivitas, pengguna, entitas..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="search-bar flex-1 m-0">
+          <Search size={18} className="text-gray-400 ml-2 shrink-0" />
+          <input
+            className="w-full text-sm outline-none bg-transparent placeholder-gray-400 text-gray-700"
+            placeholder="Cari aktivitas, pengguna, entitas..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <DateRangeFilter
+          startDate={dateStart}
+          endDate={dateEnd}
+          onStartDateChange={setDateStart}
+          onEndDateChange={setDateEnd}
+          className="bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm"
         />
       </div>
 
@@ -164,7 +190,7 @@ export default function AuditLogsPage() {
                     {log.entity}
                   </td>
                   <td className="px-6 py-4 border-b border-gray-50 text-xs text-gray-400 font-mono">
-                    {log.entityId?.slice(0, 8) || '—'}
+                    {log.entityId?.slice(0, 8) || '-'}
                   </td>
                 </tr>
               ))

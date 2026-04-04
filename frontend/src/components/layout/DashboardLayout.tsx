@@ -10,6 +10,7 @@ import {
   CalendarCheck,
   ChevronRight,
   CreditCard,
+  DollarSign,
   FileBarChart2,
   History,
   Image as ImageIcon,
@@ -69,6 +70,7 @@ const STAFF_NAV_SECTIONS = (role: string): { section: string; items: NavItem[] }
     section: 'Master Data',
     items: [
       { label: 'Kamar', href: `/${role}/rooms`, icon: BedDouble, permission: 'room.view' },
+      { label: 'Harga Kamar', href: `/${role}/pricing`, icon: DollarSign, permission: 'room.edit' },
       { label: 'Fasilitas', href: `/${role}/facilities`, icon: Building2, permission: 'facility.manage' },
       { label: 'Amenitas', href: `/${role}/amenities`, icon: Wrench, permission: 'amenity.manage' },
       { label: 'Layanan / Add-On', href: `/${role}/addons`, icon: ShoppingBag, permission: 'addon.manage' },
@@ -125,8 +127,9 @@ export default function DashboardLayout({
   // ── Hooks ──────────────────────────────────────────────────────────────────
   const pathname = usePathname();
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, isPending } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { reservationBadge, clearReservationBadge } = useNotifications();
 
   // Auto-clear reservation badge when user visits any reservations page
@@ -135,6 +138,13 @@ export default function DashboardLayout({
       clearReservationBadge();
     }
   }, [pathname, clearReservationBadge]);
+
+  // Prevent back-forward cache (BFCache) / Soft-Navigation from showing stale sensitive pages
+  useEffect(() => {
+    if (!isPending && !session) {
+      window.location.replace('/login');
+    }
+  }, [session, isPending]);
 
   // Permissions = role-based defaults (from defaultRoleMatrix, single source of truth)
   // merged with any per-user custom overrides stored in session.
@@ -222,7 +232,7 @@ export default function DashboardLayout({
 
   const handleSignOut = async () => {
     await signOut();
-    router.push('/login');
+    window.location.href = '/login'; // Hard navigation to purge client-side cache completely
   };
 
   return (
@@ -315,7 +325,7 @@ export default function DashboardLayout({
             </div>
           </div>
           <button
-            onClick={handleSignOut}
+            onClick={() => setShowLogoutConfirm(true)}
             className="flex items-center gap-2 w-full px-3 py-2 text-sm text-white/50 hover:text-white/80 hover:bg-white/5 rounded-lg transition-colors"
           >
             <LogOut size={15} /> Keluar
@@ -355,6 +365,36 @@ export default function DashboardLayout({
         {/* Page */}
         <main className="flex-1 p-6 md:p-8">{children}</main>
       </div>
+
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 bg-black/60 z-[999] flex items-center justify-center p-4 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-slideUp">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <LogOut size={32} />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Konfirmasi Keluar</h3>
+              <p className="text-sm text-gray-500 mb-6">
+                Apakah Anda yakin ingin keluar dari akun ini?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowLogoutConfirm(false)}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm hover:bg-gray-50 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleSignOut}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white font-semibold text-sm hover:bg-red-700 transition-colors shadow-sm"
+                >
+                  Ya, Keluar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

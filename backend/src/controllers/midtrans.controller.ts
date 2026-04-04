@@ -143,3 +143,24 @@ export const checkPaymentStatus = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to fetch payment status' });
   }
 };
+
+/**
+ * Public endpoint to force synchronisation of an order
+ * Useful for local development when Webhook is not reachable.
+ */
+export const publicForceSync = async (req: Request, res: Response) => {
+  try {
+    const { order_id } = req.params;
+    if (!order_id) return res.status(400).json({ error: 'order_id required' });
+
+    // 1. Fetch latest real data securely from Midtrans API
+    const response = await MidtransService.checkTransactionStatus(String(order_id));
+    
+    // 2. Process it
+    await MidtransService.processMidtransNotification(response);
+    
+    res.json({ success: true, message: 'Transaction synced correctly' });
+  } catch (error: any) {
+    res.status(500).json({ error: 'Failed to sync' });
+  }
+};

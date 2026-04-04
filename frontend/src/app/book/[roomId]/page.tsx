@@ -129,13 +129,18 @@ export default function BookingPage() {
       }
 
       snap.pay(data.payment.token, {
-        onSuccess: (_result: any) => {
+        onSuccess: async (_result: any) => {
+          // Force manual backend synchronization (useful for localhost testing without webhook)
+          try {
+             await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/transactions/midtrans/sync/${_result.order_id}`);
+          } catch(e) {}
+
           setBookingCode(data.bookingCode);
           setStep(4);
           toast.success('Pembayaran berhasil! Booking Anda telah dikonfirmasi.');
           setSubmitting(false);
         },
-        onPending: (_result: any) => {
+        onPending: async (_result: any) => {
           setBookingCode(data.bookingCode);
           setStep(4);
           toast.success('Booking berhasil dibuat! Menunggu konfirmasi pembayaran.');
@@ -160,14 +165,14 @@ export default function BookingPage() {
 
   if (loading) return (
     <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-700"></div>
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-800"></div>
     </div>
   );
 
   if (!room) return (
     <div className="min-h-screen bg-zinc-50 flex flex-col items-center justify-center">
       <h1 className="text-2xl font-serif mb-4">Kamar Tidak Ditemukan</h1>
-      <button onClick={() => router.push('/rooms')} className="text-red-700 hover:underline">
+      <button onClick={() => router.push('/rooms')} className="text-red-800 hover:underline">
         Kembali ke Daftar Kamar
       </button>
     </div>
@@ -189,26 +194,26 @@ export default function BookingPage() {
         {/* Stepper Header */}
         {step < 4 && (
           <div className="flex items-center justify-between mb-12 border-b border-gray-200 pb-8">
-            <div className={`flex flex-col items-center ${step >= 1 ? 'text-red-700' : 'text-gray-400'}`}>
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${step >= 1 ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-gray-100'}`}>
+            <div className={`flex flex-col items-center ${step >= 1 ? 'text-red-800' : 'text-gray-400'}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${step >= 1 ? 'bg-red-50 text-red-800 border border-red-200' : 'bg-gray-100'}`}>
                 <User className="w-4 h-4" />
               </div>
               <span className="text-xs font-bold uppercase tracking-widest text-center">Data Tamu</span>
             </div>
             
-            <div className={`flex-1 h-0.5 mx-4 ${step >= 2 ? 'bg-red-700' : 'bg-gray-200'}`} />
+            <div className={`flex-1 h-0.5 mx-4 ${step >= 2 ? 'bg-red-800' : 'bg-gray-200'}`} />
             
-            <div className={`flex flex-col items-center ${step >= 2 ? 'text-red-700' : 'text-gray-400'}`}>
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${step >= 2 ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-gray-100'}`}>
+            <div className={`flex flex-col items-center ${step >= 2 ? 'text-red-800' : 'text-gray-400'}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${step >= 2 ? 'bg-red-50 text-red-800 border border-red-200' : 'bg-gray-100'}`}>
                 <FileText className="w-4 h-4" />
               </div>
               <span className="text-xs font-bold uppercase tracking-widest text-center">Detail Booking</span>
             </div>
 
-            <div className={`flex-1 h-0.5 mx-4 ${step >= 3 ? 'bg-red-700' : 'bg-gray-200'}`} />
+            <div className={`flex-1 h-0.5 mx-4 ${step >= 3 ? 'bg-red-800' : 'bg-gray-200'}`} />
             
-            <div className={`flex flex-col items-center ${step >= 3 ? 'text-red-700' : 'text-gray-400'}`}>
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${step >= 3 ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-gray-100'}`}>
+            <div className={`flex flex-col items-center ${step >= 3 ? 'text-red-800' : 'text-gray-400'}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${step >= 3 ? 'bg-red-50 text-red-800 border border-red-200' : 'bg-gray-100'}`}>
                 <CreditCard className="w-4 h-4" />
               </div>
               <span className="text-xs font-bold uppercase tracking-widest text-center">Pembayaran</span>
@@ -232,7 +237,7 @@ export default function BookingPage() {
                       type="date" 
                       value={formData.checkIn}
                       onChange={(e) => setFormData({...formData, checkIn: e.target.value})}
-                      className="w-full border border-gray-300 px-4 py-3 outline-none focus:border-red-700 transition-colors"
+                      className="w-full border border-gray-300 px-4 py-3 outline-none focus:border-red-800 transition-colors"
                     />
                   </div>
                   <div>
@@ -241,7 +246,7 @@ export default function BookingPage() {
                       type="date" 
                       value={formData.checkOut}
                       onChange={(e) => setFormData({...formData, checkOut: e.target.value})}
-                      className="w-full border border-gray-300 px-4 py-3 outline-none focus:border-red-700 transition-colors"
+                      className="w-full border border-gray-300 px-4 py-3 outline-none focus:border-red-800 transition-colors"
                     />
                   </div>
                 </div>
@@ -254,7 +259,7 @@ export default function BookingPage() {
                       placeholder="Sesuai KTP / Paspor"
                       value={formData.guestName}
                       onChange={(e) => setFormData({...formData, guestName: e.target.value})}
-                      className="w-full border border-gray-300 px-4 py-3 outline-none focus:border-red-700 transition-colors"
+                      className="w-full border border-gray-300 px-4 py-3 outline-none focus:border-red-800 transition-colors"
                     />
                   </div>
                   
@@ -265,7 +270,7 @@ export default function BookingPage() {
                         type="email" 
                         value={formData.guestEmail}
                         onChange={(e) => setFormData({...formData, guestEmail: e.target.value})}
-                        className="w-full border border-gray-300 px-4 py-3 outline-none focus:border-red-700 transition-colors"
+                        className="w-full border border-gray-300 px-4 py-3 outline-none focus:border-red-800 transition-colors"
                       />
                     </div>
                     <div>
@@ -274,7 +279,7 @@ export default function BookingPage() {
                         type="tel" 
                         value={formData.guestPhone}
                         onChange={(e) => setFormData({...formData, guestPhone: e.target.value})}
-                        className="w-full border border-gray-300 px-4 py-3 outline-none focus:border-red-700 transition-colors"
+                        className="w-full border border-gray-300 px-4 py-3 outline-none focus:border-red-800 transition-colors"
                       />
                     </div>
                   </div>
@@ -285,7 +290,7 @@ export default function BookingPage() {
                       rows={3}
                       value={formData.specialRequests}
                       onChange={(e) => setFormData({...formData, specialRequests: e.target.value})}
-                      className="w-full border border-gray-300 px-4 py-3 outline-none focus:border-red-700 transition-colors"
+                      className="w-full border border-gray-300 px-4 py-3 outline-none focus:border-red-800 transition-colors"
                       placeholder="Cth: Tolong siapkan extra bed..."
                     />
                   </div>
@@ -359,7 +364,7 @@ export default function BookingPage() {
                 <h2 className="text-2xl font-serif mb-6 text-gray-900 border-b border-gray-100 pb-4">Pembayaran</h2>
                 
                 <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-red-50 text-red-700 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <div className="w-16 h-16 bg-red-50 text-red-800 rounded-full flex items-center justify-center mx-auto mb-6">
                     <CreditCard className="w-8 h-8" />
                   </div>
                   <h3 className="text-xl font-serif mb-3 text-gray-900">Pembayaran Online via Midtrans</h3>
@@ -371,7 +376,7 @@ export default function BookingPage() {
                   <button 
                     onClick={handleSubmitBooking} 
                     disabled={submitting}
-                    className="bg-red-700 hover:bg-red-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-10 py-4 text-sm font-bold uppercase tracking-widest transition-colors inline-flex items-center gap-3"
+                    className="bg-red-800 hover:bg-red-900 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-10 py-4 text-sm font-bold uppercase tracking-widest transition-colors inline-flex items-center gap-3"
                   >
                     {submitting ? (
                       <>
@@ -407,7 +412,7 @@ export default function BookingPage() {
                     <div className="font-mono text-2xl font-bold text-red-800 tracking-wider">
                       {bookingCode}
                     </div>
-                    <p className="text-xs text-gray-400 mt-3">Gunakan kode ini dan alamat email Anda untuk melacak pesanan di halaman <Link href="/check-booking" className="text-red-700 hover:underline font-medium">Cek Pesanan</Link>.</p>
+                    <p className="text-xs text-gray-400 mt-3">Gunakan kode ini dan alamat email Anda untuk melacak pesanan di halaman <Link href="/check-booking" className="text-red-800 hover:underline font-medium">Cek Pesanan</Link>.</p>
                   </div>
                 )}
 
@@ -450,7 +455,7 @@ export default function BookingPage() {
 
                 <div className="flex justify-between items-end">
                   <span className="text-xs font-bold uppercase tracking-widest text-gray-500">Total Pembayaran</span>
-                  <span className="text-2xl font-serif text-red-700">Rp {totalPrice.toLocaleString('id-ID')}</span>
+                  <span className="text-2xl font-serif text-red-800">Rp {totalPrice.toLocaleString('id-ID')}</span>
                 </div>
               </div>
             </div>

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import {
   BarElement,
@@ -237,7 +237,7 @@ export default function SuperadminReportsPage() {
           </button>
           <button 
             onClick={handleExportPDF}
-            className="px-4 py-2 bg-dark hover:bg-dark-2 text-white text-sm font-semibold rounded-lg transition-colors flex items-center gap-2"
+            className="btn btn-secondary btn-md"
           >
             <FileText size={16} /> Export PDF
           </button>

@@ -14,6 +14,7 @@ router.post(
 	midtransController.charge,
 );
 router.post('/midtrans/notification', midtransController.notification);
+router.get('/midtrans/sync/:order_id', publicRateLimiter, midtransController.publicForceSync);
 
 // POST /api/transactions/payment/snap-token — rate-limited, requires auth
 router.post('/payment/snap-token', publicRateLimiter, requireAuth, midtransController.createSnapToken);

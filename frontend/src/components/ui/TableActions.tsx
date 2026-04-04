@@ -53,7 +53,7 @@ export function TableActions({
             e.stopPropagation();
             onView();
           }}
-          className="p-1.5 min-w-[32px] min-h-[32px] text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-100 flex items-center justify-center"
+          className="btn btn-ghost btn-icon text-blue-600 hover:bg-blue-50 hover:text-blue-700"
           title="View Details"
         >
           <Eye size={16} />
@@ -65,7 +65,7 @@ export function TableActions({
             e.stopPropagation();
             onEdit();
           }}
-          className="p-1.5 min-w-[32px] min-h-[32px] text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors border border-transparent hover:border-orange-100 flex items-center justify-center"
+          className="btn btn-ghost btn-icon text-orange-600 hover:bg-orange-50 hover:text-orange-700"
           title="Edit"
         >
           <Edit size={16} />
@@ -77,7 +77,7 @@ export function TableActions({
             e.stopPropagation();
             onDelete();
           }}
-          className="p-1.5 min-w-[32px] min-h-[32px] text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100 flex items-center justify-center"
+          className="btn btn-danger btn-icon"
           title="Delete"
         >
           <Trash2 size={16} />

@@ -165,7 +165,7 @@ export default function AddOnModal({ reservationId, onClose, onSuccess }: AddOnM
               <button
                 type="submit"
                 disabled={saving || !form.addOnId}
-                className="flex-[2] py-3 bg-primary hover:bg-primary-hover text-white font-semibold text-sm rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md flex items-center justify-center gap-2"
+                className="btn btn-primary btn-md"
               >
                 {saving ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

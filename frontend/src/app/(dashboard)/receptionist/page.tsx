@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useEffect, useState } from "react";
 import { CalendarCheck, LogIn, LogOut, Users, Loader2, Info } from "lucide-react";
 import Link from "next/link";
@@ -28,7 +28,7 @@ export default function ReceptionistDashboard() {
     <>
       <div className="mb-8">
         <h1 className="page-title">Dashboard Resepsionis</h1>
-        <p className="page-subtitle">Aktivitas hari ini — {new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
+        <p className="page-subtitle">Aktivitas hari ini - {new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -81,7 +81,7 @@ export default function ReceptionistDashboard() {
                         <span>{r.numGuests} Tamu</span>
                       </div>
                     </div>
-                    <Link href="/receptionist/reservations" className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg transition-colors shrink-0">
+                    <Link href="/receptionist/reservations" className="btn btn-success btn-md">
                       Kelola
                     </Link>
                   </div>

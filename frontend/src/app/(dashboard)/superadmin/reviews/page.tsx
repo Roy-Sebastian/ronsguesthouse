@@ -1,21 +1,27 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { Star, CheckCircle, XCircle, Trash2, Clock } from "lucide-react";
+import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
 
 export default function AdminReviewsPage() {
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("pending");
+  const [dateStart, setDateStart] = useState("");
+  const [dateEnd, setDateEnd] = useState("");
 
   const fetchReviews = async () => {
     setLoading(true);
-    const data = await fetch(`/api/reviews?status=${filter}`).then(r => r.json()).catch(() => []);
+    let url = `/api/reviews?status=${filter}`;
+    if (dateStart) url += `&startDate=${dateStart}`;
+    if (dateEnd) url += `&endDate=${dateEnd}`;
+    const data = await fetch(url).then(r => r.json()).catch(() => []);
     setReviews(Array.isArray(data) ? data : []);
     setLoading(false);
   };
 
-  useEffect(() => { fetchReviews(); }, [filter]);
+  useEffect(() => { fetchReviews(); }, [filter, dateStart, dateEnd]);
 
   const updateStatus = async (id: string, status: string) => {
     if (!confirm(`Tandai ulasan sebagai ${status}?`)) return;
@@ -54,6 +60,16 @@ export default function AdminReviewsPage() {
         ))}
       </div>
 
+      <div className="mb-6 flex justify-end">
+        <DateRangeFilter
+          startDate={dateStart}
+          endDate={dateEnd}
+          onStartDateChange={setDateStart}
+          onEndDateChange={setDateEnd}
+          className="bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm"
+        />
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {loading ? (
           <div className="col-span-full py-20 text-center"><div className="w-8 h-8 mx-auto border-3 border-primary/30 border-t-primary rounded-full animate-spin" /></div>
@@ -73,11 +89,11 @@ export default function AdminReviewsPage() {
               <div className="flex justify-end gap-2 pt-4 border-t border-gray-100">
                 {filter === "pending" && (
                   <>
-                    <button className="px-3 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5" onClick={() => updateStatus(r.id, "approved")}><CheckCircle size={14} /> Setujui</button>
-                    <button className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5" onClick={() => updateStatus(r.id, "rejected")}><XCircle size={14} /> Tolak</button>
+                    <button className="btn btn-success btn-sm" onClick={() => updateStatus(r.id, "approved")}><CheckCircle size={14} /> Setujui</button>
+                    <button className="btn btn-danger btn-sm" onClick={() => updateStatus(r.id, "rejected")}><XCircle size={14} /> Tolak</button>
                   </>
                 )}
-                <button className="p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors" onClick={() => handleDelete(r.id)}><Trash2 size={16} /></button>
+                <button className="btn btn-ghost btn-icon text-gray-400 hover:text-red-600 hover:bg-red-50" onClick={() => handleDelete(r.id)}><Trash2 size={16} /></button>
               </div>
             </div>
           ))
