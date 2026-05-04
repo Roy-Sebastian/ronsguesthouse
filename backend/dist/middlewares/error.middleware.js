@@ -10,8 +10,13 @@ const globalErrorHandler = (err, req, res, next) => {
         statusCode = err.statusCode;
         message = err.message;
     }
+    else if (typeof err.statusCode === 'number') {
+        // Handle Object.assign(new Error(...), { statusCode }) pattern used across services
+        statusCode = err.statusCode;
+        message = err.message || message;
+    }
     else {
-        // Other unknown errors (e.g. Prisma errors, generic exceptions)
+        // Truly unexpected errors
         logger_1.logger.error('Unhandled Error:', err);
         message = err.message || message;
     }

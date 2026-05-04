@@ -7,6 +7,7 @@ export const STATUS_BADGE: Record<string, string> = {
   checked_out: 'bg-gray-100 text-gray-600 border-gray-200',
   cancelled: 'bg-red-50 text-red-700 border-red-100',
   pending: 'bg-amber-50 text-amber-700 border-amber-100',
+  expired: 'bg-orange-50 text-orange-700 border-orange-100',
   no_show: 'bg-red-50 text-red-700 border-red-100',
 };
 
@@ -17,6 +18,7 @@ export const STATUS_LABEL: Record<string, string> = {
   checked_out: 'Check Out',
   cancelled: 'Dibatalkan',
   pending: 'Pending',
+  expired: 'Kadaluarsa',
   no_show: 'No Show',
 };
 
@@ -39,7 +41,6 @@ export const ROLE_REDIRECTS: Record<string, string> = {
   superadmin: '/superadmin',
   admin: '/admin',
   receptionist: '/receptionist',
-  guest: '/guest',
 };
 
 // ─── Fallback Images ─────────────────────────────────────────────────────────

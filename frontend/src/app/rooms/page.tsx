@@ -103,8 +103,8 @@ function RoomCard({ room, backendUrl }: { room: Room; backendUrl: string }) {
 
       {/* Room Details */}
       <div className="p-6 flex flex-col flex-1">
-        <h3 className="text-2xl font-serif text-gray-900 mb-2 capitalize">
-          {room.roomType} Room
+        <h3 className="text-2xl font-serif text-gray-900 mb-2">
+          {room.roomType.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())} Room
         </h3>
 
         <div className="flex items-center text-sm text-gray-500 mb-4 space-x-4 font-light">
@@ -175,14 +175,20 @@ function RoomsContent() {
   // ── Data Fetching & Socket ─────────────────────────────────────────────────
 
   const fetchRooms = useCallback(() => {
-    fetch('/api/rooms')
+    fetch(`${backendUrl}/api/rooms`)
       .then((r) => r.json())
       .then((d) => {
         if (Array.isArray(d)) {
-          const filteredRooms = typeFilter
+          const filtered: Room[] = typeFilter
             ? d.filter((r: Room) => r.roomType === typeFilter)
             : d;
-          setRooms(filteredRooms);
+          const seen = new Set<string>();
+          const deduped = filtered.filter((r) => {
+            if (seen.has(r.roomType)) return false;
+            seen.add(r.roomType);
+            return true;
+          });
+          setRooms(deduped);
         } else {
           setRooms([]);
         }
@@ -224,7 +230,7 @@ function RoomsContent() {
             <h1 className="text-4xl md:text-5xl font-serif mb-4">Accommodations</h1>
             <div className="w-16 h-0.5 bg-red-800 mx-auto mb-6" />
             <p className="text-gray-600 font-light max-w-2xl mx-auto">
-              Find your perfect retreat. From cozy standard rooms to expansive family suites, each
+              Find your perfect retreat. From cozy Standard rooms to elegant Suites with private balcony, each
               space is designed to elevate your stay.
             </p>
           </div>

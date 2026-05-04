@@ -18,11 +18,16 @@ const routes_1 = __importDefault(require("./routes"));
 const app = (0, express_1.default)();
 const httpServer = (0, http_1.createServer)(app);
 const port = process.env.PORT || 3001;
+// Trust Cloudflare proxy to get real client IPs
+app.set('trust proxy', true);
 // Initialize Socket.IO
 (0, socket_1.initSocket)(httpServer);
-// CORS setup to allow the frontend
+// CORS setup to allow the frontend (supports comma-separated FRONTEND_URL for www + non-www)
+const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:3000')
+    .split(',')
+    .map((s) => s.trim());
 app.use((0, cors_1.default)({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: allowedOrigins,
     credentials: true,
 }));
 // Better Auth Express Middleware
@@ -40,6 +45,10 @@ app.get('/', (req, res) => {
 app.use('/api', auditLog_middleware_1.auditLogMiddleware);
 // API Routes
 app.use('/api', routes_1.default);
+// 404 handler
+app.use((_req, res) => {
+    res.status(404).json({ error: 'Not found' });
+});
 // Error handling
 app.use(error_middleware_1.globalErrorHandler);
 // Start server

@@ -44,7 +44,12 @@ export const update = async (req: Request, res: Response) => {
 
 export const remove = async (req: Request, res: Response) => {
 	try {
-		await UsersService.deleteUser(String(req.params.id));
+		const ctx: RequesterContext & { requesterId?: string } = {
+			role: req.user?.role,
+			permissions: req.user?.permissions,
+			requesterId: req.user?.id,
+		};
+		await UsersService.deleteUser(String(req.params.id), ctx);
 		res.json({ success: true });
 	} catch (error: any) {
 		res.status(400).json({ error: error.message });

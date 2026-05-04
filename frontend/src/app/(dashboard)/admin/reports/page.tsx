@@ -1,4 +1,5 @@
-﻿'use client';
+'use client';
+import { apiFetch } from '@/lib/apiFetch';
 
 import {
   BarElement,
@@ -10,12 +11,14 @@ import {
 } from 'chart.js';
 import {
   Activity,
+  CalendarRange,
   DollarSign,
   FileSpreadsheet,
   FileText,
+  Search,
   TrendingUp,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { formatRp } from '@/lib/formatters';
 
 import { Bar } from 'react-chartjs-2';
@@ -35,7 +38,35 @@ interface IncomeTransaction {
   amount: number;
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function buildStatsUrl(start: string, end: string) {
+  const params = new URLSearchParams();
+  if (start) params.set('dateStart', start);
+  if (end)   params.set('dateEnd',   end);
+  const qs = params.toString();
+  return `/dashboard/stats${qs ? '?' + qs : ''}`;
+}
+
+function buildIncomesUrl(start: string, end: string) {
+  const params = new URLSearchParams();
+  if (start) params.set('dateStart', start);
+  if (end)   params.set('dateEnd',   end);
+  const qs = params.toString();
+  return `/incomes${qs ? '?' + qs : ''}`;
+}
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
 export default function AdminReportsPage() {
+  // Date filter state
+  const [filterStart, setFilterStart] = useState('');
+  const [filterEnd,   setFilterEnd]   = useState('');
+
+  // Applied period (only updated when "Tampilkan Laporan" is clicked)
+  const [appliedStart, setAppliedStart] = useState('');
+  const [appliedEnd,   setAppliedEnd]   = useState('');
+
   const [data, setData] = useState<{
     totalIncome: number;
     totalExpense: number;
@@ -44,23 +75,54 @@ export default function AdminReportsPage() {
     monthlyExpenses: any[];
     recentTransactions: any[];
   } | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [dateError, setDateError] = useState('');
 
-  useEffect(() => {
-    fetch('/api/dashboard/stats')
+  const fetchStats = useCallback((start: string, end: string) => {
+    setLoading(true);
+    apiFetch(buildStatsUrl(start, end))
       .then((r) => r.json())
-      .then((d) => {
-        setData(d);
-        setLoading(false);
-      })
+      .then((d) => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
 
-  
+  // Initial load — all-time
+  useEffect(() => { fetchStats('', ''); }, [fetchStats]);
+
+  const handleApply = () => {
+    // Validate dates
+    if (filterStart && filterEnd && filterStart > filterEnd) {
+      setDateError('Tanggal akhir harus lebih besar dari tanggal awal');
+      return;
+    }
+    setDateError('');
+    setAppliedStart(filterStart);
+    setAppliedEnd(filterEnd);
+    fetchStats(filterStart, filterEnd);
+  };
+
+  const handleReset = () => {
+    setFilterStart('');
+    setFilterEnd('');
+    setDateError('');
+    setAppliedStart('');
+    setAppliedEnd('');
+    fetchStats('', '');
+  };
+
+  const periodLabel = (() => {
+    if (appliedStart && appliedEnd)
+      return `${new Date(appliedStart).toLocaleDateString('id-ID')} – ${new Date(appliedEnd).toLocaleDateString('id-ID')}`;
+    if (appliedStart) return `Mulai ${new Date(appliedStart).toLocaleDateString('id-ID')}`;
+    if (appliedEnd)   return `s/d ${new Date(appliedEnd).toLocaleDateString('id-ID')}`;
+    return 'Semua Periode';
+  })();
+
+  // ── Export helpers ────────────────────────────────────────────────────────
 
   const fetchIncomesForExport = async (): Promise<IncomeTransaction[]> => {
     try {
-      const res = await fetch('/api/incomes'); 
+      const res = await apiFetch(buildIncomesUrl(appliedStart, appliedEnd));
       if (!res.ok) throw new Error('API request failed');
       const json = await res.json();
       const records = Array.isArray(json) ? json : json.data || [];
@@ -72,9 +134,8 @@ export default function AdminReportsPage() {
         amount: Number(inc.amount),
       }));
     } catch {
-      // Fallback: Using recentTransactions data from dashboard stats if fetching fails
-      const fallbackIncomes = data?.recentTransactions.filter((tx: any) => tx.type === 'INCOME') || [];
-      return fallbackIncomes.map((tx: any) => ({
+      const fallback = data?.recentTransactions.filter((tx: any) => tx.type === 'INCOME') || [];
+      return fallback.map((tx: any) => ({
         id: tx.id || Math.random().toString(),
         date: tx.date || new Date().toISOString(),
         description: tx.description || 'Pendapatan',
@@ -96,22 +157,81 @@ export default function AdminReportsPage() {
     const worksheet = XLSX.utils.json_to_sheet(worksheetData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Laporan Pendapatan');
-    XLSX.writeFile(workbook, 'Laporan_Pendapatan.xlsx');
+    const filename = appliedStart || appliedEnd
+      ? `Laporan_Pendapatan_${appliedStart || 'awal'}_sd_${appliedEnd || 'akhir'}.xlsx`
+      : 'Laporan_Pendapatan.xlsx';
+    XLSX.writeFile(workbook, filename);
   };
 
   const handleExportPDF = async () => {
     const incomes = await fetchIncomesForExport();
-    const doc = new jsPDF();
+    const doc = new jsPDF({ orientation: 'portrait', format: 'a4' });
+    const W = doc.internal.pageSize.getWidth();
+    const H = doc.internal.pageSize.getHeight();
 
-    doc.setFontSize(16);
-    doc.text('Laporan Pendapatan Hotel', 14, 20);
-
-    doc.setFontSize(11);
     const today = new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
-    doc.text(`Periode: ${data?.monthlyIncome?.[0]?.month || '-'} s/d ${data?.monthlyIncome?.[data.monthlyIncome.length - 1]?.month || '-'}`, 14, 30);
-    doc.text(`Dicetak pada: ${today}`, 14, 36);
+    const totalPendapatan = incomes.reduce((sum, item) => sum + item.amount, 0);
 
-    const tableColumn = ['Tanggal', 'Deskripsi', 'Metode Pembayaran', 'Jumlah'];
+    // -- Header band
+    doc.setFillColor('#0f172a');
+    doc.rect(0, 0, W, 50, 'F');
+    doc.setFillColor('#C4922A');
+    doc.rect(0, 47, W, 3, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.setTextColor('#FFFFFF');
+    doc.text("RON'S GUEST HOUSE", 14, 20);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor('#94a3b8');
+    doc.text('LAPORAN KEUANGAN', 14, 29);
+
+    // Period label on header
+    doc.setFontSize(8);
+    doc.setTextColor('#64748b');
+    doc.text(`Periode: ${periodLabel}`, 14, 38);
+    doc.text(`Dicetak: ${today}`, W - 14, 29, { align: 'right' });
+
+    // -- Stats cards
+    const statsY = 58;
+    const cardW = (W - 28 - 8) / 3;
+    const cardH = 26;
+
+    const stats = [
+      { label: 'TOTAL PENDAPATAN', value: formatRp(data?.totalIncome || 0), accent: '#16a34a' },
+      { label: 'TOTAL PENGELUARAN', value: formatRp(data?.totalExpense || 0), accent: '#dc2626' },
+      { label: 'LABA BERSIH', value: formatRp(data?.netProfit || 0), accent: '#C4922A' },
+    ];
+
+    stats.forEach((stat, i) => {
+      const x = 14 + i * (cardW + 4);
+      doc.setFillColor('#F8F6F2');
+      doc.rect(x, statsY, cardW, cardH, 'F');
+      doc.setFillColor(stat.accent);
+      doc.rect(x, statsY, 3, cardH, 'F');
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6.5);
+      doc.setTextColor('#6b7280');
+      doc.text(stat.label, x + 7, statsY + 8);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor('#1f2937');
+      doc.text(stat.value, x + 7, statsY + 19);
+    });
+
+    // -- Section title
+    const sectionY = statsY + cardH + 10;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor('#374151');
+    doc.text('RINCIAN TRANSAKSI PENDAPATAN', 14, sectionY);
+    doc.setDrawColor('#C4922A');
+    doc.setLineWidth(0.5);
+    doc.line(14, sectionY + 2, 66, sectionY + 2);
+
+    // -- Data table
     const tableRows = incomes.map((item) => [
       new Date(item.date).toLocaleDateString('id-ID'),
       item.description,
@@ -119,23 +239,63 @@ export default function AdminReportsPage() {
       formatRp(item.amount),
     ]);
 
-    const totalPendapatan = incomes.reduce((sum, item) => sum + item.amount, 0);
-
     autoTable(doc, {
-      startY: 45,
-      head: [tableColumn],
+      startY: sectionY + 6,
+      head: [['Tanggal', 'Deskripsi', 'Metode', 'Jumlah']],
       body: tableRows,
-      theme: 'grid',
-      styles: { fontSize: 10 },
-      headStyles: { fillColor: '#0f172a' },
+      theme: 'plain',
+      styles: {
+        fontSize: 8,
+        cellPadding: { top: 3.5, bottom: 3.5, left: 5, right: 5 },
+        textColor: [55, 65, 81] as [number, number, number],
+        lineColor: [235, 232, 225] as [number, number, number],
+        lineWidth: 0.3,
+      },
+      headStyles: {
+        fillColor: [15, 23, 42] as [number, number, number],
+        textColor: [255, 255, 255] as [number, number, number],
+        fontStyle: 'bold',
+        fontSize: 7.5,
+        cellPadding: { top: 5, bottom: 5, left: 5, right: 5 },
+      },
+      alternateRowStyles: { fillColor: [248, 246, 242] as [number, number, number] },
+      columnStyles: {
+        0: { cellWidth: 27 },
+        1: { cellWidth: 'auto' },
+        2: { cellWidth: 28 },
+        3: { cellWidth: 38, halign: 'right', fontStyle: 'bold' },
+      },
+      margin: { left: 14, right: 14 },
     });
 
-    const finalY = (doc as any).lastAutoTable.finalY || 45;
-    doc.setFontSize(12);
-    doc.text(`Total Pendapatan: ${formatRp(totalPendapatan)}`, 14, finalY + 10);
+    // -- Total row
+    const finalY = (doc as any).lastAutoTable.finalY || sectionY + 30;
+    doc.setFillColor('#0f172a');
+    doc.rect(14, finalY, W - 28, 11, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor('#ffffff');
+    doc.text('TOTAL PENDAPATAN', 19, finalY + 7.5);
+    doc.text(formatRp(totalPendapatan), W - 19, finalY + 7.5, { align: 'right' });
 
-    doc.save('Laporan_Pendapatan.pdf');
+    // -- Footer
+    const footerY = H - 12;
+    doc.setDrawColor('#C4922A');
+    doc.setLineWidth(0.4);
+    doc.line(14, footerY - 4, W - 14, footerY - 4);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor('#9ca3af');
+    doc.text("Ron's Guest House  •  Laporan Keuangan Resmi", 14, footerY);
+    doc.text(today, W - 14, footerY, { align: 'right' });
+
+    const filename = appliedStart || appliedEnd
+      ? `Laporan_Keuangan_${appliedStart || 'awal'}_sd_${appliedEnd || 'akhir'}.pdf`
+      : 'Laporan_Keuangan_RonsGuestHouse.pdf';
+    doc.save(filename);
   };
+
+  // ── Chart data ────────────────────────────────────────────────────────────
 
   const months = Array.from(
     new Set([
@@ -149,23 +309,14 @@ export default function AdminReportsPage() {
     datasets: [
       {
         label: 'Pendapatan',
-        data: months.map((m) => {
-          const inc =
-            data?.monthlyIncome?.find((i: any) => i.month === m)?.income || 0;
-          return Number(inc);
-        }),
+        data: months.map((m) => Number(data?.monthlyIncome?.find((i: any) => i.month === m)?.income || 0)),
         backgroundColor: 'oklch(75% 0.183 55.934)',
         borderRadius: 4,
         barPercentage: 0.65,
       },
       {
         label: 'Pengeluaran',
-        data: months.map((m) => {
-          const exp =
-            data?.monthlyExpenses?.find((e: any) => e.month === m)?.expense ||
-            0;
-          return Number(exp);
-        }),
+        data: months.map((m) => Number(data?.monthlyExpenses?.find((e: any) => e.month === m)?.expense || 0)),
         backgroundColor: '#1a3a4a',
         borderRadius: 4,
         barPercentage: 0.65,
@@ -179,25 +330,14 @@ export default function AdminReportsPage() {
     plugins: {
       legend: {
         position: 'bottom' as const,
-        labels: {
-          font: { size: 12 as const },
-          padding: 20,
-          usePointStyle: true,
-        },
+        labels: { font: { size: 12 as const }, padding: 20, usePointStyle: true },
       },
       tooltip: {
-        callbacks: {
-          label: (ctx: any) =>
-            ` ${ctx.dataset.label}: ${formatRp(ctx.raw as number)}`,
-        },
+        callbacks: { label: (ctx: any) => ` ${ctx.dataset.label}: ${formatRp(ctx.raw as number)}` },
       },
     },
     scales: {
-      x: {
-        grid: { display: false },
-        border: { display: false },
-        ticks: { font: { size: 12 as const }, color: '#6b7280' },
-      },
+      x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 12 as const }, color: '#6b7280' } },
       y: {
         grid: { color: '#f0ece5' },
         border: { display: false },
@@ -217,71 +357,103 @@ export default function AdminReportsPage() {
 
   const { sortedData: sortedTransactions, handleSort, sortBy, sortOrder } = useTableSort(data?.recentTransactions || []);
 
+  // ── Render ────────────────────────────────────────────────────────────────
+
   return (
     <>
       <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="page-title">
-            Laporan Keuangan
-          </h1>
+          <h1 className="page-title">Laporan Keuangan</h1>
           <p className="page-subtitle">
-            Ringkasan pendapatan dan pengeluaran
+            {loading ? 'Memuat...' : `Menampilkan: ${periodLabel}`}
           </p>
         </div>
         <div className="flex gap-3">
-          <button 
+          <button
             onClick={handleExportExcel}
             className="px-4 py-2 border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-lg transition-colors flex items-center gap-2"
           >
             <FileSpreadsheet size={16} /> Export Excel
           </button>
-          <button 
+          <button
             onClick={handleExportPDF}
-            className="btn btn-secondary btn-md"
+            className="btn btn-primary btn-md"
           >
             <FileText size={16} /> Export PDF
           </button>
         </div>
       </div>
 
+      {/* ── Period Filter ──────────────────────────────────────────────────── */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-8">
+        <div className="flex items-center gap-2 mb-4">
+          <CalendarRange size={16} className="text-primary" />
+          <h3 className="font-semibold text-gray-800 text-sm">Filter Periode Laporan</h3>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-gray-500 font-medium">Tanggal Awal</label>
+            <input
+              type="date"
+              value={filterStart}
+              onChange={(e) => { setFilterStart(e.target.value); setDateError(''); }}
+              className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-gray-500 font-medium">Tanggal Akhir</label>
+            <input
+              type="date"
+              value={filterEnd}
+              min={filterStart || undefined}
+              onChange={(e) => { setFilterEnd(e.target.value); setDateError(''); }}
+              className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
+            />
+          </div>
+          <div className="flex gap-2 pb-0.5">
+            <button
+              onClick={handleApply}
+              disabled={loading}
+              className="px-5 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-lg transition-colors flex items-center gap-2 disabled:opacity-60 shadow-sm"
+            >
+              {loading ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Search size={15} />
+              )}
+              Tampilkan Laporan
+            </button>
+            {(appliedStart || appliedEnd) && (
+              <button
+                onClick={handleReset}
+                className="px-4 py-2 border border-gray-200 hover:bg-gray-50 text-gray-600 text-sm font-semibold rounded-lg transition-colors"
+              >
+                Reset
+              </button>
+            )}
+          </div>
+        </div>
+        {dateError && (
+          <p className="mt-2 text-sm text-red-600 flex items-center gap-1.5">
+            <span>⚠</span> {dateError}
+          </p>
+        )}
+      </div>
+
+      {/* ── Stats Cards ──────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {[
-          {
-            label: 'Total Pendapatan',
-            value: formatRp(data?.totalIncome || 0),
-            icon: TrendingUp,
-            color: 'text-green-600',
-            bg: 'bg-green-50',
-          },
-          {
-            label: 'Total Pengeluaran',
-            value: formatRp(data?.totalExpense || 0),
-            icon: DollarSign,
-            color: 'text-red-600',
-            bg: 'bg-red-50',
-          },
-          {
-            label: 'Laba Bersih',
-            value: formatRp(data?.netProfit || 0),
-            icon: Activity,
-            color: 'text-dark',
-            bg: 'bg-dark/5',
-          },
+          { label: 'Total Pendapatan', value: formatRp(data?.totalIncome || 0), icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-50' },
+          { label: 'Total Pengeluaran', value: formatRp(data?.totalExpense || 0), icon: DollarSign, color: 'text-red-600', bg: 'bg-red-50' },
+          { label: 'Laba Bersih', value: formatRp(data?.netProfit || 0), icon: Activity, color: 'text-dark', bg: 'bg-dark/5' },
         ].map(({ label, value, icon: Icon, color, bg }) => (
-          <div
-            key={label}
-            className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-5"
-          >
-            <div
-              className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${bg} ${color}`}
-            >
+          <div key={label} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-5">
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${bg} ${color}`}>
               <Icon size={28} />
             </div>
             <div>
-              <div
-                className={`text-2xl font-serif font-bold ${label === 'Laba Bersih' ? 'text-primary' : 'text-gray-800'}`}
-              >
-                {value}
+              <div className={`text-2xl font-serif font-bold ${label === 'Laba Bersih' ? 'text-primary' : 'text-gray-800'}`}>
+                {loading ? <div className="w-24 h-6 bg-gray-100 rounded animate-pulse" /> : value}
               </div>
               <div className="text-sm font-semibold text-gray-500">{label}</div>
             </div>
@@ -289,26 +461,26 @@ export default function AdminReportsPage() {
         ))}
       </div>
 
+      {/* ── Chart + Recent Transactions ───────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
           <h3 className="font-serif text-lg font-bold text-dark flex items-center gap-2 mb-6">
             <TrendingUp size={18} className="text-primary" />
             Grafik Keuangan Bulanan
           </h3>
-          {months.length > 0 ? (
+          {loading ? (
+            <div className="h-80 flex items-center justify-center">
+              <div className="w-8 h-8 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
+            </div>
+          ) : months.length > 0 ? (
             <div className="overflow-x-auto" style={{ height: 320 }}>
-              <div
-                style={{
-                  minWidth: Math.max(months.length * 60, 600) + 'px',
-                  height: '100%',
-                }}
-              >
+              <div style={{ minWidth: Math.max(months.length * 60, 600) + 'px', height: '100%' }}>
                 <Bar data={barChartData} options={barChartOptions} />
               </div>
             </div>
           ) : (
             <div className="h-80 flex items-center justify-center text-gray-400">
-              Data belum tersedia
+              Tidak ada data pada periode ini
             </div>
           )}
         </div>
@@ -324,38 +496,10 @@ export default function AdminReportsPage() {
             <table className="w-full text-left border-collapse whitespace-nowrap">
               <thead>
                 <tr>
-                  <SortableHeader
-                    label="Tanggal"
-                    field="date"
-                    sortBy={sortBy}
-                    sortOrder={sortOrder}
-                    onSort={handleSort}
-                    className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
-                  />
-                  <SortableHeader
-                    label="Jenis"
-                    field="type"
-                    sortBy={sortBy}
-                    sortOrder={sortOrder}
-                    onSort={handleSort}
-                    className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
-                  />
-                  <SortableHeader
-                    label="Keterangan"
-                    field="description"
-                    sortBy={sortBy}
-                    sortOrder={sortOrder}
-                    onSort={handleSort}
-                    className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
-                  />
-                  <SortableHeader
-                    label="Jumlah"
-                    field="amount"
-                    sortBy={sortBy}
-                    sortOrder={sortOrder}
-                    onSort={handleSort}
-                    className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
-                  />
+                  <SortableHeader label="Tanggal" field="date" sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort} />
+                  <SortableHeader label="Jenis"   field="type" sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort} />
+                  <SortableHeader label="Keterangan" field="description" sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort} />
+                  <SortableHeader label="Jumlah"  field="amount" sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort} />
                 </tr>
               </thead>
               <tbody>
@@ -368,33 +512,23 @@ export default function AdminReportsPage() {
                 ) : (data?.recentTransactions || []).length === 0 ? (
                   <tr>
                     <td colSpan={4} className="py-20 text-center text-gray-400">
-                      Belum ada transaksi
+                      Tidak ada transaksi pada periode ini
                     </td>
                   </tr>
                 ) : (
                   sortedTransactions.map((tx: any, idx: number) => (
-                    <tr
-                      key={idx}
-                      className="hover:bg-gray-50/50 transition-colors"
-                    >
-                      <td className="px-6 py-4 border-b border-gray-50 text-xs text-gray-500">
+                    <tr key={idx} className="hover:bg-red-50/20 transition-colors">
+                      <td className="px-6 py-4 border-b border-gray-100 text-xs text-gray-500">
                         {new Date(tx.date).toLocaleDateString('id-ID')}
                       </td>
-                      <td className="px-6 py-4 border-b border-gray-50">
-                        <span
-                          className={`px-2 py-1 text-[0.65rem] font-bold uppercase tracking-wider rounded-md ${tx.type === 'INCOME' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}
-                        >
+                      <td className="px-6 py-4 border-b border-gray-100">
+                        <span className={`px-2 py-1 text-[0.65rem] font-bold uppercase tracking-wider rounded-md ${tx.type === 'INCOME' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
                           {tx.type === 'INCOME' ? 'Pendapatan' : 'Pengeluaran'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 border-b border-gray-50 text-sm text-gray-700">
-                        {tx.description}
-                      </td>
-                      <td
-                        className={`px-6 py-4 border-b border-gray-50 font-bold text-sm ${tx.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}`}
-                      >
-                        {tx.type === 'INCOME' ? '+' : '-'}
-                        {formatRp(Number(tx.amount))}
+                      <td className="px-6 py-4 border-b border-gray-100 text-sm text-gray-700">{tx.description}</td>
+                      <td className={`px-6 py-4 border-b border-gray-100 font-bold text-sm ${tx.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}`}>
+                        {tx.type === 'INCOME' ? '+' : '-'}{formatRp(Number(tx.amount))}
                       </td>
                     </tr>
                   ))

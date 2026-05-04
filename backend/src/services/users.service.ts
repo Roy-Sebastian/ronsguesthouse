@@ -1,3 +1,6 @@
+import bcrypt from 'bcryptjs';
+
+import { prisma } from '../config/prisma';
 import { getRolePermissions } from '../config/rbac';
 import { userRepository } from '../repositories/user.repository';
 
@@ -45,16 +48,61 @@ export async function getUserById(id: string) {
 }
 
 export async function createUser(body: any, ctx: RequesterContext) {
-  const safe = sanitizePayload(ctx, body || {});
-  return userRepository.create({ data: safe as any });
+  const { password, email, name, phone, role, permissions } = body || {};
+
+  if (!email || !password || !name) throw new Error('Nama, email, dan password wajib diisi');
+  if (password.length < 8) throw new Error('Password minimal 8 karakter');
+
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) throw new Error('Email sudah terdaftar');
+
+  const safe = sanitizePayload(ctx, { role, permissions, phone });
+  const hashed = await bcrypt.hash(password, 10);
+
+  const user = await prisma.user.create({
+    data: {
+      name,
+      email,
+      emailVerified: true,
+      role: safe.role || 'receptionist',
+      permissions: safe.permissions || [],
+      phone: safe.phone || null,
+      isActive: true,
+    },
+  });
+
+  await prisma.account.create({
+    data: {
+      userId: user.id,
+      accountId: user.id,
+      providerId: 'credential',
+      password: hashed,
+    },
+  });
+
+  return user;
 }
 
 export async function updateUser(id: string, body: any, ctx: RequesterContext) {
-  const safe = sanitizePayload(ctx, body || {});
-  delete safe.password;
-  return userRepository.update(id, { data: safe });
+  const { password, ...rest } = body || {};
+  const safe = sanitizePayload(ctx, rest);
+  const user = await userRepository.update(id, { data: safe });
+
+  if (password && typeof password === 'string' && password.length >= 8) {
+    const hashed = await bcrypt.hash(password, 10);
+    await prisma.account.updateMany({
+      where: { userId: id, providerId: 'credential' },
+      data: { password: hashed },
+    });
+  }
+
+  return user;
 }
 
-export async function deleteUser(id: string) {
+export async function deleteUser(id: string, ctx: RequesterContext) {
+  const target = await userRepository.findById(id);
+  if (!target) throw new Error('Pengguna tidak ditemukan');
+  if (target.role === 'superadmin') throw new Error('Akun superadmin tidak dapat dihapus');
+  if (target.id === (ctx as any).requesterId) throw new Error('Tidak dapat menghapus akun sendiri');
   await userRepository.delete(id);
 }

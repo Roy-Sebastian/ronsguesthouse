@@ -4,7 +4,9 @@ import * as AuditLogsService from '../services/audit-logs.service';
 
 export const getAll = async (req: Request, res: Response) => {
 	try {
-		res.json(await AuditLogsService.getAllAuditLogs());
+		const page = Math.max(1, parseInt(String(req.query.page || '1'), 10));
+		const limit = Math.min(200, Math.max(1, parseInt(String(req.query.limit || '50'), 10)));
+		res.json(await AuditLogsService.getAllAuditLogs(page, limit));
 	} catch (error: any) {
 		res.status(500).json({ error: error.message || 'Failed to fetch audit-logs' });
 	}

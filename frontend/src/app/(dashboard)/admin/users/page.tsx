@@ -1,5 +1,7 @@
 ﻿'use client';
+import { apiFetch } from '@/lib/apiFetch';
 
+import { permissionsGroups } from '@/lib/rbac';
 import { TableActions } from '@/components/ui/TableActions';
 
 import {
@@ -31,54 +33,13 @@ const roleBadge: Record<string, string> = {
   superadmin: 'bg-purple-50 text-purple-700',
   admin: 'bg-amber-50 text-amber-700',
   receptionist: 'bg-blue-50 text-blue-700',
-  guest: 'bg-gray-100 text-gray-700',
 };
 
 const roleLabel: Record<string, string> = {
   superadmin: 'Super Admin',
   admin: 'Admin',
   receptionist: 'Resepsionis',
-  guest: 'Tamu',
 };
-
-const AVAILABLE_PERMISSIONS = [
-  { id: 'user.view', label: 'Lihat Pengguna', group: 'User' },
-  { id: 'user.create', label: 'Tambah Pengguna', group: 'User' },
-  { id: 'user.edit', label: 'Edit Pengguna', group: 'User' },
-  { id: 'user.delete', label: 'Hapus Pengguna', group: 'User' },
-  { id: 'guest.view', label: 'Lihat Tamu', group: 'Operasional' },
-  { id: 'guest.create', label: 'Tambah Tamu', group: 'Operasional' },
-  { id: 'guest.edit', label: 'Edit Tamu', group: 'Operasional' },
-  { id: 'reservation.view', label: 'Lihat Reservasi', group: 'Operasional' },
-  { id: 'reservation.create', label: 'Buat Reservasi', group: 'Operasional' },
-  { id: 'reservation.edit', label: 'Edit Reservasi', group: 'Operasional' },
-  { id: 'stay.view', label: 'Lihat Stay', group: 'Operasional' },
-  { id: 'stay.create', label: 'Check-In', group: 'Operasional' },
-  { id: 'stay.edit', label: 'Check-Out / Update Stay', group: 'Operasional' },
-  { id: 'transaction.view', label: 'Lihat Transaksi', group: 'Keuangan' },
-  { id: 'transaction.create', label: 'Buat Transaksi', group: 'Keuangan' },
-  { id: 'transaction.edit', label: 'Edit Transaksi', group: 'Keuangan' },
-  { id: 'income.view', label: 'Lihat Pendapatan', group: 'Keuangan' },
-  { id: 'income.create', label: 'Tambah Pendapatan', group: 'Keuangan' },
-  { id: 'expense.view', label: 'Lihat Pengeluaran', group: 'Keuangan' },
-  { id: 'expense.create', label: 'Tambah Pengeluaran', group: 'Keuangan' },
-  { id: 'report.view', label: 'Lihat Laporan', group: 'Keuangan' },
-  { id: 'room.view', label: 'Lihat Kamar', group: 'Inventory' },
-  { id: 'room.create', label: 'Tambah Kamar', group: 'Inventory' },
-  { id: 'room.edit', label: 'Edit Kamar', group: 'Inventory' },
-  { id: 'room.delete', label: 'Hapus Kamar', group: 'Inventory' },
-  { id: 'facility.manage', label: 'Kelola Fasilitas', group: 'Konten' },
-  { id: 'amenity.manage', label: 'Kelola Amenitas', group: 'Konten' },
-  { id: 'gallery.manage', label: 'Kelola Galeri', group: 'Konten' },
-  { id: 'review.manage', label: 'Kelola Ulasan', group: 'Konten' },
-  { id: 'message.view', label: 'Lihat Pesan', group: 'Konten' },
-  { id: 'message.create', label: 'Tambah Pesan', group: 'Konten' },
-  { id: 'message.edit', label: 'Edit Pesan', group: 'Konten' },
-  { id: 'addon.view', label: 'Lihat Add-On', group: 'Konten' },
-  { id: 'addon.manage', label: 'Kelola Add-On', group: 'Konten' },
-  { id: 'audit.view', label: 'Lihat Audit Log', group: 'Sistem' },
-  { id: 'role.manage', label: 'Kelola Role', group: 'Sistem' },
-];
 
 export default function SuperadminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -101,7 +62,7 @@ export default function SuperadminUsersPage() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/users${search ? `?search=${search}` : ''}`);
+      const res = await apiFetch(`/users${search ? `?search=${search}` : ''}`);
       const data = await res.json();
       setUsers(Array.isArray(data) ? data : []);
     } catch {
@@ -118,7 +79,7 @@ export default function SuperadminUsersPage() {
 
   const toggleStatus = async (id: string, currentStatus: boolean) => {
     try {
-      await fetch(`/api/users/${id}`, {
+      await apiFetch(`/users/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isActive: !currentStatus }),
@@ -136,7 +97,7 @@ export default function SuperadminUsersPage() {
     }
     if (!confirm('Yakin ingin menghapus pengguna ini?')) return;
     try {
-      await fetch(`/api/users/${id}`, { method: 'DELETE' });
+      await apiFetch(`/users/${id}`, { method: 'DELETE' });
       fetchUsers();
     } catch {
       alert('Gagal menghapus');
@@ -204,24 +165,22 @@ export default function SuperadminUsersPage() {
           permissions: form.permissions,
           ...(form.password ? { password: form.password } : {}),
         };
-        res = await fetch(`/api/users/${editId}`, {
+        res = await apiFetch(`/users/${editId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
       } else {
-        // Create - using Better Auth standard signup logic mapped to our roles
-        res = await fetch('/api/auth/sign-up/email', {
+        // Create via admin user endpoint (goes through requirePermission('user.create'))
+        res = await apiFetch('/users', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Origin: window.location.origin,
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             name: form.name,
             email: form.email,
             password: form.password,
             role: form.role,
+            phone: form.phone,
             permissions: form.permissions,
           }),
         });
@@ -229,12 +188,6 @@ export default function SuperadminUsersPage() {
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Gagal menyimpan');
-
-      // If we are doing PATCH on user directly:
-      if (editId && form.password) {
-        // Note: Password changes outside auth system may require bypass logic depending on better auth
-        // For now, assume patch user endpoint updates basic data if implemented
-      }
 
       setShowModal(false);
       fetchUsers();
@@ -257,10 +210,10 @@ export default function SuperadminUsersPage() {
           </p>
         </div>
         <button
-          className="btn btn-secondary btn-md"
+          className="btn btn-primary btn-md"
           onClick={openCreate}
         >
-          <Plus size={16} /> <span className="hidden sm:inline">Tambah Pengguna</span></button>
+          <Plus size={16} /> <span>Tambah Pengguna</span></button>
       </div>
 
       <div className="search-bar flex-1">
@@ -305,7 +258,7 @@ export default function SuperadminUsersPage() {
                 sortOrder={sortOrder}
                 onSort={handleSort}
               />
-              <th className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100">
+              <th>
                 Aksi
               </th>
             </tr>
@@ -328,7 +281,7 @@ export default function SuperadminUsersPage() {
               sortedData.map((u) => (
                 <tr
                   key={u.id}
-                  className="hover:bg-gray-50/50 transition-colors border-b border-gray-50 last:border-0 relative"
+                  className="hover:bg-red-50/20 transition-colors border-b border-gray-100 last:border-0 relative"
                 >
                   <td className="px-6 py-4">
                     <div className="font-semibold text-dark text-sm">
@@ -506,7 +459,6 @@ export default function SuperadminUsersPage() {
                       <option value="receptionist">
                         Resepsionis (Front Desk)
                       </option>
-                      <option value="guest">Tamu Kustom (No access)</option>
                     </select>
                   </div>
                 </div>
@@ -520,27 +472,31 @@ export default function SuperadminUsersPage() {
                     dashboard mereka.
                   </p>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    {AVAILABLE_PERMISSIONS.map((perm) => (
-                      <label
-                        key={perm.id}
-                        className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={form.permissions.includes(perm.id)}
-                          onChange={() => togglePermission(perm.id)}
-                          className="mt-0.5 accent-primary h-4 w-4 rounded"
-                        />
-                        <div>
-                          <div className="text-sm font-medium text-gray-800">
-                            {perm.label}
-                          </div>
-                          <div className="text-[10px] text-gray-500 uppercase tracking-wide mt-0.5">
-                            {perm.group}
-                          </div>
+                  <div className="space-y-4">
+                    {permissionsGroups.map((grp) => (
+                      <div key={grp.group}>
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                          {grp.group}
+                        </p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {grp.permissions.map((perm) => (
+                            <label
+                              key={perm.key}
+                              className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={form.permissions.includes(perm.key)}
+                                onChange={() => togglePermission(perm.key)}
+                                className="mt-0.5 accent-primary h-4 w-4 rounded"
+                              />
+                              <div className="text-sm font-medium text-gray-800">
+                                {perm.label}
+                              </div>
+                            </label>
+                          ))}
                         </div>
-                      </label>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -558,7 +514,7 @@ export default function SuperadminUsersPage() {
               <button
                 type="submit"
                 form="userForm"
-                className="btn btn-secondary btn-md"
+                className="btn btn-primary btn-md"
                 disabled={saving}
               >
                 {saving ? 'Menyimpan...' : 'Simpan Pengguna'}

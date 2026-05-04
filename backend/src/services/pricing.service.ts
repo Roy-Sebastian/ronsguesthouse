@@ -17,6 +17,8 @@
  *    - Enables O(1) availability lookups per date
  */
 
+import { Prisma } from '@prisma/client';
+
 import { logger } from '../config/logger';
 import { prisma } from '../config/prisma';
 import { INACTIVE_STATUSES, MAX_STAY_NIGHTS } from '../constants/reservation.constants';
@@ -77,23 +79,21 @@ export async function checkRoomAvailability(
   const room = await (tx as any).room.findUnique({ where: { id: roomId } });
   if (!room) throw Object.assign(new Error('Kamar tidak ditemukan'), { statusCode: 404 });
 
-  // Build status exclusion from enum constants (enum-safe)
-  const statusList = INACTIVE_STATUSES.map(s => `'${s}'`).join(', ');
-
   // Single raw query: count active reservations PER DATE using generate_series
-  const conflicts = await (tx as any).$queryRawUnsafe(`
+  const statusValues = Prisma.join(INACTIVE_STATUSES);
+  const conflicts = await (tx as any).$queryRaw<Array<{ d: Date; cnt: bigint }>>`
     SELECT gs.d::date AS d, COUNT(DISTINCT r.id) AS cnt
-    FROM generate_series($1::date, ($2::date - interval '1 day')::date, interval '1 day') AS gs(d)
+    FROM generate_series(${checkIn}::date, (${checkOut}::date - interval '1 day')::date, interval '1 day') AS gs(d)
     LEFT JOIN reservations r
-      ON r."roomId" = $3
-      AND r.status::text NOT IN (${statusList})
+      ON r."roomId" = ${roomId}
+      AND r.status::text NOT IN (${statusValues})
       AND NOT (r.status::text = 'pending' AND r."expiresAt" < NOW())
       AND r."checkInDate"::date <= gs.d
       AND r."checkOutDate"::date > gs.d
     GROUP BY gs.d
-    HAVING COUNT(DISTINCT r.id) >= $4
+    HAVING COUNT(DISTINCT r.id) >= ${room.stock}
     ORDER BY gs.d
-  `, checkIn, checkOut, roomId, room.stock);
+  `;
 
   const fullyBookedDates = conflicts.map((r: any) => {
     const d = r.d instanceof Date ? r.d : new Date(r.d);

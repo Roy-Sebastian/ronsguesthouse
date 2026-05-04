@@ -16,3 +16,4 @@ export * from './gallery.repository';
 export * from './message.repository';
 export * from './review.repository';
 export * from './dashboard.repository';
+export * from './penalty.repository';

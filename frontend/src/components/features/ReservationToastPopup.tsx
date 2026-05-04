@@ -1,0 +1,118 @@
+'use client';
+
+import { useNotifications } from '@/providers/NotificationProvider';
+import { BedDouble, CalendarDays, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+
+function ToastItem({
+  toast,
+  onDismiss,
+}: {
+  toast: { id: string; guestName: string; roomNumber: string; bookingCode: string; source: string; checkInDate: string };
+  onDismiss: (id: string) => void;
+}) {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    // Trigger enter animation
+    const t = setTimeout(() => setVisible(true), 10);
+    return () => clearTimeout(t);
+  }, []);
+
+  const handleDismiss = () => {
+    setVisible(false);
+    setTimeout(() => onDismiss(toast.id), 300);
+  };
+
+  const formattedDate = toast.checkInDate
+    ? new Date(toast.checkInDate).toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    })
+    : '-';
+
+  return (
+    <div
+      className={`
+        w-80 bg-white border border-gray-200 rounded-2xl shadow-2xl overflow-hidden
+        transition-all duration-300 ease-out
+        ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
+      `}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 pt-3 pb-2 bg-gradient-to-r from-green-50 to-emerald-50 border-b border-green-100">
+        <div className="flex items-center gap-2">
+
+          <span className="text-sm font-bold text-green-800 tracking-wide">
+            Reservasi Baru
+          </span>
+          <span
+            className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${toast.source === 'Online'
+                ? 'bg-blue-100 text-blue-700'
+                : 'bg-gray-100 text-gray-600'
+              }`}
+          >
+            {toast.source}
+          </span>
+        </div>
+        <button
+          onClick={handleDismiss}
+          className="text-gray-400 hover:text-gray-700 transition-colors p-0.5 rounded-full hover:bg-gray-100"
+        >
+          <X size={14} />
+        </button>
+      </div>
+
+      {/* Body */}
+      <div className="px-4 py-3 space-y-1.5">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider w-16 shrink-0">
+            Tamu
+          </span>
+          <span className="text-sm font-semibold text-gray-900 truncate">
+            {toast.guestName}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <BedDouble size={12} className="text-gray-400 shrink-0 ml-0.5" />
+          <span className="text-xs text-gray-500 w-[3.25rem] shrink-0">Kamar</span>
+          <span className="text-sm font-medium text-gray-800">
+            {toast.roomNumber}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <CalendarDays size={12} className="text-gray-400 shrink-0 ml-0.5" />
+          <span className="text-xs text-gray-500 w-[3.25rem] shrink-0">Check-in</span>
+          <span className="text-sm text-gray-700">{formattedDate}</span>
+        </div>
+        <div className="pt-1">
+          <span className="text-[10px] font-mono text-gray-400">
+            #{toast.bookingCode.slice(0, 12)}
+          </span>
+        </div>
+      </div>
+
+      {/* Progress bar auto-dismiss */}
+      <div className="h-1 bg-gray-100 relative overflow-hidden">
+        <div className="absolute inset-0 bg-green-400 origin-left animate-[shrink_8s_linear_forwards]" />
+      </div>
+    </div>
+  );
+}
+
+export default function ReservationToastPopup() {
+  const { toasts, dismissToast } = useNotifications();
+
+  if (toasts.length === 0) return null;
+
+  return (
+    <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 items-end pointer-events-none">
+      {toasts.map((toast) => (
+        <div key={toast.id} className="pointer-events-auto">
+          <ToastItem toast={toast} onDismiss={dismissToast} />
+        </div>
+      ))}
+    </div>
+  );
+}

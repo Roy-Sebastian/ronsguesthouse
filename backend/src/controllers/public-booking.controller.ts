@@ -60,15 +60,13 @@ export const publicBook = async (req: Request, res: Response) => {
     const checkOutDate = new Date(checkOut);
 
     // 1. Find or create guest securely without ID Number
+    // Match by email only (primary identifier). Matching by phone OR email previously
+    // caused data corruption when two different guests shared a phone number — the
+    // second booking would overwrite the first guest's email/name.
     const normalizedEmail = String(guestEmail).trim().toLowerCase();
-    
-    let guest = await prisma.guest.findFirst({ 
-      where: { 
-        OR: [
-          { email: normalizedEmail },
-          { phone: guestPhone }
-        ]
-      } 
+
+    let guest = await prisma.guest.findFirst({
+      where: { email: normalizedEmail },
     });
 
     if (!guest) {
@@ -82,16 +80,15 @@ export const publicBook = async (req: Request, res: Response) => {
         },
       });
     } else {
-      // Sync latest guest form data to their profile in case they used a new email or phone number
-      const shouldUpdate = guest.email !== normalizedEmail || guest.phone !== guestPhone || guest.fullName !== guestName;
+      // Same email = same guest — sync latest name/phone from form
+      const shouldUpdate = guest.phone !== guestPhone || guest.fullName !== guestName;
       if (shouldUpdate) {
         guest = await prisma.guest.update({
           where: { id: guest.id },
           data: {
             fullName: guestName,
             phone: guestPhone,
-            email: normalizedEmail, 
-          }
+          },
         });
       }
     }
@@ -239,25 +236,21 @@ export const publicBook = async (req: Request, res: Response) => {
 
 /**
  * POST /api/public/check-booking
- * Guest access endpoint to retrieve their booking
+ * Public endpoint — guest dapat lookup booking hanya dengan kode booking.
+ * Brute-force diproteksi guestAccessRateLimiter; respons sudah di-mask.
  */
 export const checkBookingAccess = async (req: Request, res: Response) => {
   try {
-    const { email, bookingCode } = req.body;
-    
-    if (!email || !bookingCode) {
-      return res.status(400).json({ error: 'Email dan Kode Booking wajib diisi' });
+    const { bookingCode } = req.body;
+
+    if (!bookingCode) {
+      return res.status(400).json({ error: 'Kode Booking wajib diisi' });
     }
 
-    // Input normalization
-    const normalizedEmail = String(email).trim().toLowerCase();
     const normalizedCode = String(bookingCode).trim().toUpperCase();
 
     const reservation = await prisma.reservation.findFirst({
-      where: {
-        bookingCode: normalizedCode,
-        guest: { email: normalizedEmail } // Strictly couple code with owner email
-      },
+      where: { bookingCode: normalizedCode },
       include: {
         guest: { select: { fullName: true, email: true, phone: true } },
         room: { select: { roomType: true, roomNumber: true, imageUrl: true } },
@@ -268,10 +261,10 @@ export const checkBookingAccess = async (req: Request, res: Response) => {
     // Audit Logging
     const ip = req.ip || req.connection?.remoteAddress || 'Unknown';
     const userAgent = req.get('user-agent') || 'Unknown';
-    
+
     if (!reservation) {
       logger.warn('Failed booking access attempt', { bookingCode: normalizedCode, ip, userAgent });
-      return res.status(404).json({ error: 'Tamu atau Booking tidak ditemukan' });
+      return res.status(404).json({ error: 'Booking tidak ditemukan' });
     }
 
     logger.info('Successful booking access', { bookingCode: normalizedCode, ip, userAgent });

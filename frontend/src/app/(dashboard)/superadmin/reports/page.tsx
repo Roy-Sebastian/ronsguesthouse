@@ -1,4 +1,5 @@
 ﻿'use client';
+import { apiFetch } from '@/lib/apiFetch';
 
 import {
   BarElement,
@@ -47,7 +48,7 @@ export default function SuperadminReportsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/dashboard/stats')
+    apiFetch('/dashboard/stats')
       .then((r) => r.json())
       .then((d) => {
         setData(d);
@@ -60,7 +61,7 @@ export default function SuperadminReportsPage() {
 
   const fetchIncomesForExport = async (): Promise<IncomeTransaction[]> => {
     try {
-      const res = await fetch('/api/incomes'); 
+      const res = await apiFetch('/incomes'); 
       if (!res.ok) throw new Error('API request failed');
       const json = await res.json();
       const records = Array.isArray(json) ? json : json.data || [];
@@ -101,17 +102,71 @@ export default function SuperadminReportsPage() {
 
   const handleExportPDF = async () => {
     const incomes = await fetchIncomesForExport();
-    const doc = new jsPDF();
+    const doc = new jsPDF({ orientation: 'portrait', format: 'a4' });
+    const W = doc.internal.pageSize.getWidth();
+    const H = doc.internal.pageSize.getHeight();
 
-    doc.setFontSize(16);
-    doc.text('Laporan Pendapatan Hotel', 14, 20);
-
-    doc.setFontSize(11);
     const today = new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
-    doc.text(`Periode: ${data?.monthlyIncome?.[0]?.month || '-'} s/d ${data?.monthlyIncome?.[data.monthlyIncome.length - 1]?.month || '-'}`, 14, 30);
-    doc.text(`Dicetak pada: ${today}`, 14, 36);
+    const totalPendapatan = incomes.reduce((sum, item) => sum + item.amount, 0);
 
-    const tableColumn = ['Tanggal', 'Deskripsi', 'Metode Pembayaran', 'Jumlah'];
+    // -- Header band ---------------------------------------------
+    doc.setFillColor('#0f172a');
+    doc.rect(0, 0, W, 50, 'F');
+    doc.setFillColor('#C4922A');
+    doc.rect(0, 47, W, 3, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.setTextColor('#FFFFFF');
+    doc.text("RON'S GUEST HOUSE", 14, 20);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor('#94a3b8');
+    doc.text('LAPORAN KEUANGAN', 14, 29);
+
+    doc.setFontSize(8);
+    doc.setTextColor('#64748b');
+    doc.text(`Dicetak: ${today}`, W - 14, 29, { align: 'right' });
+
+    // -- Stats cards ----------------------------------------------
+    const statsY = 58;
+    const cardW = (W - 28 - 8) / 3;
+    const cardH = 26;
+
+    const stats = [
+      { label: 'TOTAL PENDAPATAN', value: formatRp(data?.totalIncome || 0), accent: '#16a34a' },
+      { label: 'TOTAL PENGELUARAN', value: formatRp(data?.totalExpense || 0), accent: '#dc2626' },
+      { label: 'LABA BERSIH', value: formatRp(data?.netProfit || 0), accent: '#C4922A' },
+    ];
+
+    stats.forEach((stat, i) => {
+      const x = 14 + i * (cardW + 4);
+      doc.setFillColor('#F8F6F2');
+      doc.rect(x, statsY, cardW, cardH, 'F');
+      doc.setFillColor(stat.accent);
+      doc.rect(x, statsY, 3, cardH, 'F');
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6.5);
+      doc.setTextColor('#6b7280');
+      doc.text(stat.label, x + 7, statsY + 8);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor('#1f2937');
+      doc.text(stat.value, x + 7, statsY + 19);
+    });
+
+    // -- Section title --------------------------------------------
+    const sectionY = statsY + cardH + 10;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor('#374151');
+    doc.text('RINCIAN TRANSAKSI PENDAPATAN', 14, sectionY);
+    doc.setDrawColor('#C4922A');
+    doc.setLineWidth(0.5);
+    doc.line(14, sectionY + 2, 66, sectionY + 2);
+
+    // -- Data table -----------------------------------------------
     const tableRows = incomes.map((item) => [
       new Date(item.date).toLocaleDateString('id-ID'),
       item.description,
@@ -119,22 +174,57 @@ export default function SuperadminReportsPage() {
       formatRp(item.amount),
     ]);
 
-    const totalPendapatan = incomes.reduce((sum, item) => sum + item.amount, 0);
-
     autoTable(doc, {
-      startY: 45,
-      head: [tableColumn],
+      startY: sectionY + 6,
+      head: [['Tanggal', 'Deskripsi', 'Metode', 'Jumlah']],
       body: tableRows,
-      theme: 'grid',
-      styles: { fontSize: 10 },
-      headStyles: { fillColor: '#0f172a' },
+      theme: 'plain',
+      styles: {
+        fontSize: 8,
+        cellPadding: { top: 3.5, bottom: 3.5, left: 5, right: 5 },
+        textColor: [55, 65, 81] as [number, number, number],
+        lineColor: [235, 232, 225] as [number, number, number],
+        lineWidth: 0.3,
+      },
+      headStyles: {
+        fillColor: [15, 23, 42] as [number, number, number],
+        textColor: [255, 255, 255] as [number, number, number],
+        fontStyle: 'bold',
+        fontSize: 7.5,
+        cellPadding: { top: 5, bottom: 5, left: 5, right: 5 },
+      },
+      alternateRowStyles: { fillColor: [248, 246, 242] as [number, number, number] },
+      columnStyles: {
+        0: { cellWidth: 27 },
+        1: { cellWidth: 'auto' },
+        2: { cellWidth: 28 },
+        3: { cellWidth: 38, halign: 'right', fontStyle: 'bold' },
+      },
+      margin: { left: 14, right: 14 },
     });
 
-    const finalY = (doc as any).lastAutoTable.finalY || 45;
-    doc.setFontSize(12);
-    doc.text(`Total Pendapatan: ${formatRp(totalPendapatan)}`, 14, finalY + 10);
+    // -- Total row ------------------------------------------------
+    const finalY = (doc as any).lastAutoTable.finalY || sectionY + 30;
+    doc.setFillColor('#0f172a');
+    doc.rect(14, finalY, W - 28, 11, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor('#ffffff');
+    doc.text('TOTAL PENDAPATAN', 19, finalY + 7.5);
+    doc.text(formatRp(totalPendapatan), W - 19, finalY + 7.5, { align: 'right' });
 
-    doc.save('Laporan_Pendapatan.pdf');
+    // -- Footer ---------------------------------------------------
+    const footerY = H - 12;
+    doc.setDrawColor('#C4922A');
+    doc.setLineWidth(0.4);
+    doc.line(14, footerY - 4, W - 14, footerY - 4);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor('#9ca3af');
+    doc.text("Ron's Guest House  �  Laporan Keuangan Resmi", 14, footerY);
+    doc.text(today, W - 14, footerY, { align: 'right' });
+
+    doc.save('Laporan_Keuangan_RonsGuestHouse.pdf');
   };
 
   const months = Array.from(
@@ -237,7 +327,7 @@ export default function SuperadminReportsPage() {
           </button>
           <button 
             onClick={handleExportPDF}
-            className="btn btn-secondary btn-md"
+            className="btn btn-primary btn-md"
           >
             <FileText size={16} /> Export PDF
           </button>
@@ -330,7 +420,6 @@ export default function SuperadminReportsPage() {
                     sortBy={sortBy}
                     sortOrder={sortOrder}
                     onSort={handleSort}
-                    className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
                   />
                   <SortableHeader
                     label="Jenis"
@@ -338,7 +427,6 @@ export default function SuperadminReportsPage() {
                     sortBy={sortBy}
                     sortOrder={sortOrder}
                     onSort={handleSort}
-                    className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
                   />
                   <SortableHeader
                     label="Keterangan"
@@ -346,7 +434,6 @@ export default function SuperadminReportsPage() {
                     sortBy={sortBy}
                     sortOrder={sortOrder}
                     onSort={handleSort}
-                    className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
                   />
                   <SortableHeader
                     label="Jumlah"
@@ -354,7 +441,6 @@ export default function SuperadminReportsPage() {
                     sortBy={sortBy}
                     sortOrder={sortOrder}
                     onSort={handleSort}
-                    className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
                   />
                 </tr>
               </thead>
@@ -375,23 +461,23 @@ export default function SuperadminReportsPage() {
                   sortedTransactions.map((tx: any, idx: number) => (
                     <tr
                       key={idx}
-                      className="hover:bg-gray-50/50 transition-colors"
+                      className="hover:bg-red-50/20 transition-colors"
                     >
-                      <td className="px-6 py-4 border-b border-gray-50 text-xs text-gray-500">
+                      <td className="px-6 py-4 border-b border-gray-100 text-xs text-gray-500">
                         {new Date(tx.date).toLocaleDateString('id-ID')}
                       </td>
-                      <td className="px-6 py-4 border-b border-gray-50">
+                      <td className="px-6 py-4 border-b border-gray-100">
                         <span
                           className={`px-2 py-1 text-[0.65rem] font-bold uppercase tracking-wider rounded-md ${tx.type === 'INCOME' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}
                         >
                           {tx.type === 'INCOME' ? 'Pendapatan' : 'Pengeluaran'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 border-b border-gray-50 text-sm text-gray-700">
+                      <td className="px-6 py-4 border-b border-gray-100 text-sm text-gray-700">
                         {tx.description}
                       </td>
                       <td
-                        className={`px-6 py-4 border-b border-gray-50 font-bold text-sm ${tx.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}`}
+                        className={`px-6 py-4 border-b border-gray-100 font-bold text-sm ${tx.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}`}
                       >
                         {tx.type === 'INCOME' ? '+' : '-'}
                         {formatRp(Number(tx.amount))}

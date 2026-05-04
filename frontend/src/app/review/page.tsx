@@ -3,6 +3,7 @@
 import PublicFooter from '@/components/layout/PublicFooter';
 import PublicNavbar from '@/components/layout/PublicNavbar';
 import ScrollReveal from '@/components/ui/ScrollReveal';
+import { apiFetch } from '@/lib/apiFetch';
 import { CheckCircle, Send, Star } from 'lucide-react';
 import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -27,16 +28,16 @@ function ReviewFormContent() {
     setSubmitting(true);
     setError('');
     try {
-      const res = await fetch('/api/public/reviews', {
+      const res = await apiFetch('/public/reviews', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Gagal mengirim ulasan');
+      if (!res.ok) throw new Error(data.error || 'Failed to submit review');
       setSuccess(true);
     } catch (err: any) {
-      setError(err.message || 'Terjadi kesalahan');
+      setError(err.message || 'An error occurred');
     } finally {
       setSubmitting(false);
     }
@@ -50,10 +51,10 @@ function ReviewFormContent() {
       <section className="bg-white text-gray-900 pt-32 pb-20 px-4 border-b border-gray-100">
         <ScrollReveal>
           <div className="max-w-7xl mx-auto text-center">
-            <h1 className="text-4xl md:text-5xl font-serif mb-4">Tulis Ulasan</h1>
+            <h1 className="text-4xl md:text-5xl font-serif mb-4">Write a Review</h1>
             <div className="w-16 h-0.5 bg-red-800 mx-auto mb-6" />
             <p className="text-gray-600 font-light max-w-2xl mx-auto">
-              Bagikan pengalaman menginap Anda. Masukan Anda sangat berharga untuk peningkatan pelayanan kami.
+              Share your stay experience. Your feedback is invaluable in helping us improve our service.
             </p>
           </div>
         </ScrollReveal>
@@ -66,9 +67,9 @@ function ReviewFormContent() {
               <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
                 <CheckCircle className="w-10 h-10" />
               </div>
-              <h2 className="text-3xl font-serif mb-4 text-gray-900">Terima Kasih!</h2>
+              <h2 className="text-3xl font-serif mb-4 text-gray-900">Thank You!</h2>
               <p className="text-gray-500 font-light max-w-md mx-auto mb-6">
-                Ulasan Anda berhasil dikirim dan akan ditinjau oleh tim kami terlebih dahulu sebelum ditampilkan di halaman utama.
+                Your review has been submitted and will be reviewed by our team before being published on the main page.
               </p>
               <button
                 onClick={() => {
@@ -77,7 +78,7 @@ function ReviewFormContent() {
                 }}
                 className="inline-block bg-black hover:bg-gray-800 text-white px-8 py-4 text-sm font-bold uppercase tracking-widest transition-colors"
               >
-                Tulis Ulasan Lainnya
+                Submit Another Review
               </button>
             </div>
           </ScrollReveal>
@@ -85,7 +86,7 @@ function ReviewFormContent() {
           <ScrollReveal>
             <div className="bg-white border border-gray-100 shadow-sm p-8 md:p-12">
               <h3 className="text-2xl font-serif mb-8 text-gray-900 border-b border-gray-100 pb-4">
-                Formulir Ulasan
+                Review Form
               </h3>
 
               {error && (
@@ -99,7 +100,7 @@ function ReviewFormContent() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-xs uppercase tracking-widest text-gray-500 mb-2 font-bold">
-                      Kode Booking *
+                      Booking Code *
                     </label>
                     <input
                       type="text"
@@ -128,7 +129,7 @@ function ReviewFormContent() {
                 {/* Star Rating */}
                 <div>
                   <label className="block text-xs uppercase tracking-widest text-gray-500 mb-4 font-bold text-center">
-                    Rating Anda *
+                    Your Rating *
                   </label>
                   <div className="flex flex-col items-center gap-4">
                     <div className="flex gap-3 justify-center">
@@ -153,7 +154,7 @@ function ReviewFormContent() {
                     </div>
                     <span className="font-medium text-sm py-1.5 px-4 rounded-full bg-gray-100 text-gray-700">
                       {
-                        ['', 'Sangat Buruk 😞', 'Kurang Memuaskan 😕', 'Cukup Baik 😐', 'Memuaskan 🙂', 'Luar Biasa! 😍'][form.rating]
+                        ['', 'Very Bad 😞', 'Below Average 😕', 'Average 😐', 'Good 🙂', 'Excellent! 😍'][form.rating]
                       }
                     </span>
                   </div>
@@ -162,7 +163,7 @@ function ReviewFormContent() {
                 {/* Comment */}
                 <div>
                   <label className="block text-xs uppercase tracking-widest text-gray-500 mb-2 font-bold">
-                    Ceritakan Pengalaman Anda *
+                    Share Your Experience *
                   </label>
                   <textarea
                     required
@@ -170,7 +171,7 @@ function ReviewFormContent() {
                     value={form.comment}
                     onChange={(e) => setForm({ ...form, comment: e.target.value })}
                     className="w-full border-b border-gray-300 py-2 bg-transparent focus:outline-none focus:border-red-800 transition-colors font-light text-gray-900 placeholder-gray-300 resize-none"
-                    placeholder="Apa yang Anda suka? Kebersihan, fasilitas, staf, lokasi..."
+                    placeholder="What did you enjoy? Cleanliness, facilities, staff, location..."
                   />
                 </div>
 
@@ -179,7 +180,7 @@ function ReviewFormContent() {
                   disabled={submitting}
                   className="inline-flex items-center justify-center px-8 py-4 bg-red-800 hover:bg-black text-white text-xs font-bold uppercase tracking-[0.2em] transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {submitting ? 'Mengirim...' : 'Kirim Ulasan'} <Send className="w-4 h-4 ml-2" />
+                  {submitting ? 'Submitting...' : 'Submit Review'} <Send className="w-4 h-4 ml-2" />
                 </button>
               </form>
             </div>

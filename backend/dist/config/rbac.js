@@ -36,6 +36,7 @@ exports.PERMISSION_GROUPS = [
             { key: 'reservation.create', label: 'Buat Reservasi' },
             { key: 'reservation.edit', label: 'Edit Reservasi' },
             { key: 'reservation.cancel', label: 'Batalkan Reservasi' },
+            { key: 'reservation.delete', label: 'Hapus Reservasi' },
         ],
     },
     {
@@ -54,6 +55,15 @@ exports.PERMISSION_GROUPS = [
             { key: 'transaction.create', label: 'Buat Transaksi' },
             { key: 'transaction.edit', label: 'Edit Transaksi' },
             { key: 'transaction.delete', label: 'Hapus Transaksi' },
+        ],
+    },
+    {
+        group: 'Denda',
+        permissions: [
+            { key: 'penalty.view', label: 'Lihat Denda' },
+            { key: 'penalty.create', label: 'Tambah Denda' },
+            { key: 'penalty.edit', label: 'Edit Denda' },
+            { key: 'penalty.delete', label: 'Hapus Denda' },
         ],
     },
     {
@@ -106,6 +116,7 @@ exports.PERMISSION_GROUPS = [
 exports.ALL_PERMISSION_KEYS = exports.PERMISSION_GROUPS.flatMap((group) => group.permissions.map((permission) => permission.key));
 exports.DEFAULT_ROLE_MATRIX = {
     superadmin: Object.fromEntries(exports.ALL_PERMISSION_KEYS.map((key) => [key, true])),
+    guest: Object.fromEntries(exports.ALL_PERMISSION_KEYS.map((key) => [key, false])),
     admin: {
         'dashboard.view': true,
         'user.view': true,
@@ -120,6 +131,7 @@ exports.DEFAULT_ROLE_MATRIX = {
         'reservation.create': true,
         'reservation.edit': true,
         'reservation.cancel': true,
+        'reservation.delete': true,
         'stay.view': true,
         'stay.create': true,
         'stay.edit': true,
@@ -128,6 +140,10 @@ exports.DEFAULT_ROLE_MATRIX = {
         'transaction.create': true,
         'transaction.edit': true,
         'transaction.delete': false,
+        'penalty.view': true,
+        'penalty.create': true,
+        'penalty.edit': true,
+        'penalty.delete': true,
         'room.view': true,
         'room.create': true,
         'room.edit': true,
@@ -169,6 +185,7 @@ exports.DEFAULT_ROLE_MATRIX = {
         'reservation.create': true,
         'reservation.edit': true,
         'reservation.cancel': true,
+        'reservation.delete': true,
         'stay.view': true,
         'stay.create': true,
         'stay.edit': true,
@@ -177,7 +194,11 @@ exports.DEFAULT_ROLE_MATRIX = {
         'transaction.create': true,
         'transaction.edit': true,
         'transaction.delete': false,
-        'room.view': true,
+        'penalty.view': true,
+        'penalty.create': true,
+        'penalty.edit': false,
+        'penalty.delete': false,
+        'room.view': false,
         'room.create': false,
         'room.edit': false,
         'room.delete': false,
@@ -199,12 +220,11 @@ exports.DEFAULT_ROLE_MATRIX = {
         'message.edit': true,
         'message.delete': false,
         'addon.view': true,
-        'addon.manage': true,
+        'addon.manage': false,
         'audit.view': false,
         'role.manage': false,
         'settings.manage': false,
     },
-    guest: Object.fromEntries(exports.ALL_PERMISSION_KEYS.map((key) => [key, false])),
 };
 const ROLES_FILE = path_1.default.join(process.cwd(), 'data', 'roles.json');
 const ensureRoleRecord = (roleValue, fallback, forceAllTrue = false) => {
@@ -224,19 +244,24 @@ const normalizeRoleMatrix = (input) => {
     const matrixInput = (input && typeof input === 'object' ? input : {});
     return {
         superadmin: ensureRoleRecord(matrixInput.superadmin, exports.DEFAULT_ROLE_MATRIX.superadmin, true),
+        guest: ensureRoleRecord(matrixInput.guest, exports.DEFAULT_ROLE_MATRIX.guest),
         admin: ensureRoleRecord(matrixInput.admin, exports.DEFAULT_ROLE_MATRIX.admin),
         receptionist: ensureRoleRecord(matrixInput.receptionist, exports.DEFAULT_ROLE_MATRIX.receptionist),
-        guest: ensureRoleRecord(matrixInput.guest, exports.DEFAULT_ROLE_MATRIX.guest),
     };
 };
 exports.normalizeRoleMatrix = normalizeRoleMatrix;
+let _matrixCache = null;
 const loadRoleMatrix = () => {
+    if (_matrixCache)
+        return _matrixCache;
     try {
         if (!fs_1.default.existsSync(ROLES_FILE)) {
-            return exports.DEFAULT_ROLE_MATRIX;
+            _matrixCache = exports.DEFAULT_ROLE_MATRIX;
+            return _matrixCache;
         }
         const raw = fs_1.default.readFileSync(ROLES_FILE, 'utf-8');
-        return (0, exports.normalizeRoleMatrix)(JSON.parse(raw));
+        _matrixCache = (0, exports.normalizeRoleMatrix)(JSON.parse(raw));
+        return _matrixCache;
     }
     catch {
         return exports.DEFAULT_ROLE_MATRIX;
@@ -249,13 +274,14 @@ const saveRoleMatrix = (matrix) => {
         fs_1.default.mkdirSync(dir, { recursive: true });
     }
     fs_1.default.writeFileSync(ROLES_FILE, JSON.stringify(matrix, null, 2));
+    _matrixCache = matrix;
 };
 exports.saveRoleMatrix = saveRoleMatrix;
 const getRolePermissions = (role) => {
     const matrix = (0, exports.loadRoleMatrix)();
-    const roleKey = role === 'superadmin' || role === 'admin' || role === 'receptionist' || role === 'guest'
-        ? role
-        : 'guest';
-    return Object.keys(matrix[roleKey]).filter((key) => matrix[roleKey][key]);
+    if (role && role in matrix) {
+        return Object.keys(matrix[role]).filter((key) => matrix[role][key]);
+    }
+    return [];
 };
 exports.getRolePermissions = getRolePermissions;

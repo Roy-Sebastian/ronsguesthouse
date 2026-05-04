@@ -6,9 +6,15 @@ exports.createAuditLog = createAuditLog;
 exports.updateAuditLog = updateAuditLog;
 exports.deleteAuditLog = deleteAuditLog;
 const repositories_1 = require("../repositories");
-const WITH_USER = { user: { select: { id: true, name: true, email: true } } };
-async function getAllAuditLogs() {
-    return repositories_1.auditLogRepository.findAll({ orderBy: { createdAt: 'desc' }, include: WITH_USER });
+const prisma_1 = require("../config/prisma");
+const WITH_USER = { user: { select: { id: true, name: true, email: true, role: true } } };
+async function getAllAuditLogs(page = 1, limit = 50) {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+        repositories_1.auditLogRepository.findAll({ orderBy: { createdAt: 'desc' }, include: WITH_USER, skip, take: limit }),
+        prisma_1.prisma.auditLog.count(),
+    ]);
+    return { data, total, page, totalPages: Math.ceil(total / limit) };
 }
 async function getAuditLogById(id) {
     return repositories_1.auditLogRepository.findById(id, { include: WITH_USER });

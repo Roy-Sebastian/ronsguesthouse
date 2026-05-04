@@ -8,7 +8,9 @@ export const initSocket = (server: HttpServer) => {
   io = new SocketIOServer(server, {
     path: '/api/socket.io',
     cors: {
-      origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+      origin: (process.env.FRONTEND_URL || 'http://localhost:3000')
+        .split(',')
+        .map((s) => s.trim()),
       methods: ['GET', 'POST'],
       credentials: true,
     },

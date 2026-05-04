@@ -1,4 +1,5 @@
 ﻿'use client';
+import { apiFetch } from '@/lib/apiFetch';
 
 
 import { defaultRoleMatrix, permissionsGroups } from '@/lib/rbac';
@@ -38,7 +39,7 @@ export default function SuperadminRolesPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/roles')
+    apiFetch('/roles')
       .then(res => res.json())
       .then(data => {
         if (data && Object.keys(data).length > 0) {
@@ -84,7 +85,7 @@ export default function SuperadminRolesPage() {
         setMatrix(defaultMatrix);
         setSaving(true);
         try {
-          const res = await fetch('/api/roles', {
+          const res = await apiFetch('/roles', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(defaultMatrix)
@@ -103,7 +104,7 @@ export default function SuperadminRolesPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const res = await fetch('/api/roles', {
+      const res = await apiFetch('/roles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(matrix)
@@ -221,7 +222,7 @@ export default function SuperadminRolesPage() {
                 {permissions.map(({ key, label }) => (
                   <tr
                     key={key}
-                    className="hover:bg-gray-50/60 transition-colors border-b border-gray-50 last:border-0"
+                    className="hover:bg-red-50/20 transition-colors border-b border-gray-100 last:border-0"
                   >
                     <td className="px-6 py-3.5 text-gray-600 pl-10">{label}</td>
                     {roles.map((r) => (

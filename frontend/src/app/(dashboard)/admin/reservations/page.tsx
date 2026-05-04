@@ -1,4 +1,5 @@
-'use client';
+﻿'use client';
+import { apiFetch } from '@/lib/apiFetch';
 
 import { TableActions } from '@/components/ui/TableActions';
 import { STATUS_BADGE, STATUS_LABEL } from '@/lib/constants';
@@ -27,6 +28,12 @@ export default function SuperadminReservationsPage() {
   const [dateStart, setDateStart] = useState('');
   const [dateEnd, setDateEnd] = useState('');
   const [error, setError] = useState('');
+  const [editId, setEditId] = useState<string | null>(null);
+  const [originalStatus, setOriginalStatus] = useState<string>('');
+  const [viewReservation, setViewReservation] = useState<any | null>(null);
+  const [paymentStatus, setPaymentStatus] = useState<'unpaid' | 'paid' | 'partial'>('unpaid');
+  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [paymentAmount, setPaymentAmount] = useState('');
   const [form, setForm] = useState({
     guestId: '',
     roomId: '',
@@ -35,18 +42,25 @@ export default function SuperadminReservationsPage() {
     numGuests: 1,
     specialRequests: '',
     totalPrice: 0,
+    status: '',
   });
+
+  const ALLOWED_TRANSITIONS: Record<string, string[]> = {
+    pending:    ['pending', 'confirmed', 'cancelled', 'no_show'],
+    confirmed:  ['confirmed', 'checked_in', 'cancelled', 'no_show'],
+    checked_in: ['checked_in', 'checked_out'],
+  };
 
   const fetchAll = async () => {
     setLoading(true);
     const [res, g, r] = await Promise.all([
-      fetch('/api/reservations')
+      apiFetch('/reservations')
         .then((x) => x.json())
         .catch(() => []),
-      fetch('/api/guests')
+      apiFetch('/guests')
         .then((x) => x.json())
         .catch(() => []),
-      fetch('/api/rooms')
+      apiFetch('/rooms')
         .then((x) => x.json())
         .catch(() => []),
     ]);
@@ -78,32 +92,69 @@ export default function SuperadminReservationsPage() {
     calcPrice();
   }, [form.roomId, form.checkInDate, form.checkOutDate]);
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const resetForm = () => {
+    setEditId(null);
+    setForm({ guestId: '', roomId: '', checkInDate: '', checkOutDate: '', numGuests: 1, specialRequests: '', totalPrice: 0, status: '' });
+    setPaymentStatus('unpaid');
+    setPaymentMethod('cash');
+    setPaymentAmount('');
+    setError('');
+  };
+
+  const openCreate = () => { resetForm(); setShowModal(true); };
+
+  const openEdit = (r: any) => {
+    setEditId(r.id);
+    setOriginalStatus(r.status || 'pending');
+    setForm({
+      guestId: r.guestId || r.guest?.id || '',
+      roomId: r.roomId || r.room?.id || '',
+      checkInDate: r.checkInDate?.slice(0, 10) || '',
+      checkOutDate: r.checkOutDate?.slice(0, 10) || '',
+      numGuests: r.numGuests || 1,
+      specialRequests: r.specialRequests || '',
+      totalPrice: Number(r.totalPrice) || 0,
+      status: r.status || 'pending',
+    });
+    setError('');
+    setShowModal(true);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     setError('');
     try {
-      const res = await fetch('/api/reservations', {
-        method: 'POST',
+      const url = editId ? `/api/reservations/${editId}` : '/api/reservations';
+      const method = editId ? 'PATCH' : 'POST';
+      const { status, ...createForm } = form;
+      const body = editId
+        ? { numGuests: form.numGuests, specialRequests: form.specialRequests, status: form.status }
+        : { ...createForm, channel: 'internal' };
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, channel: 'internal' }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
         const d = await res.json();
-        setError(d.error || 'Gagal membuat reservasi');
+        setError(d.error || 'Gagal menyimpan reservasi');
         setSaving(false);
         return;
       }
+      if (!editId && paymentStatus !== 'unpaid') {
+        const resData = await res.json();
+        const txAmount = paymentStatus === 'paid' ? form.totalPrice : Number(paymentAmount);
+        if (txAmount > 0) {
+          await apiFetch('/transactions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reservationId: resData.id, amount: txAmount, paymentMethod, paymentStatus: 'paid' }),
+          });
+        }
+      }
       setShowModal(false);
-      setForm({
-        guestId: '',
-        roomId: '',
-        checkInDate: '',
-        checkOutDate: '',
-        numGuests: 1,
-        specialRequests: '',
-        totalPrice: 0,
-      });
+      resetForm();
       fetchAll();
     } catch {
       setError('Terjadi kesalahan');
@@ -111,25 +162,20 @@ export default function SuperadminReservationsPage() {
     setSaving(false);
   };
 
-  const handleStatus = async (id: string, status: string) => {
-    await fetch(`/api/reservations/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
-    });
-    fetchAll();
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Hapus reservasi ini secara permanen? Tindakan ini tidak bisa dibatalkan.')) return;
+    try {
+      const res = await apiFetch(`/reservations/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.error || 'Gagal menghapus reservasi');
+      }
+      fetchAll();
+    } catch (e: any) {
+      alert(e.message);
+    }
   };
-
-  
-  const fmtDate = (d: string) =>
-    d
-      ? new Date(d).toLocaleDateString('id-ID', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-        })
-      : '-';
-
   const filtered = reservations.filter((r) => {
     let dateMatch = true;
     if (dateStart || dateEnd) {
@@ -166,10 +212,10 @@ export default function SuperadminReservationsPage() {
           </p>
         </div>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={openCreate}
           className="btn btn-primary btn-md"
         >
-          <Plus size={16} /> <span className="hidden sm:inline">Buat Reservasi</span></button>
+          <Plus size={16} /> <span>Buat Reservasi</span></button>
       </div>
 
       {/* Summary cards */}
@@ -309,7 +355,7 @@ export default function SuperadminReservationsPage() {
               sortedData.map((r) => (
                 <tr
                   key={r.id}
-                  className="hover:bg-gray-50/60 transition-colors border-b border-gray-50 last:border-0"
+                  className="hover:bg-red-50/20 transition-colors border-b border-gray-100 last:border-0"
                 >
                   <td className="px-5 py-4">
                     <div className="font-semibold text-dark text-sm">
@@ -345,8 +391,10 @@ export default function SuperadminReservationsPage() {
                     <TableActions
                         viewPermission="reservation.view"
                         editPermission="reservation.edit"
-                        onView={() => alert('Detail reservasi segera hadir')}
-                        onEdit={() => alert('Edit reservasi segera hadir')}
+                        onView={() => setViewReservation(r)}
+                        onEdit={() => openEdit(r)}
+                        deletePermission="reservation.delete"
+                        onDelete={() => handleDelete(r.id)}
                     />
                   </td>
                 </tr>
@@ -356,16 +404,16 @@ export default function SuperadminReservationsPage() {
         </table>
       </div>
 
-      {/* Create Modal */}
+      {/* Create / Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-8">
             <div className="flex items-center justify-between mb-6">
               <h2 className="page-title">
-                Buat Reservasi
+                {editId ? 'Edit Reservasi' : 'Buat Reservasi'}
               </h2>
               <button
-                onClick={() => setShowModal(false)}
+                onClick={() => { setShowModal(false); resetForm(); }}
                 className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
               >
                 <X size={16} />
@@ -376,18 +424,19 @@ export default function SuperadminReservationsPage() {
                 {error}
               </div>
             )}
-            <form onSubmit={handleCreate} className="space-y-4">
+            <form onSubmit={handleSave} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
                   Tamu
                 </label>
                 <select
                   required
+                  disabled={!!editId}
                   value={form.guestId}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, guestId: e.target.value }))
                   }
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-gray-50"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-gray-50 disabled:opacity-60"
                 >
                   <option value="">Pilih tamu...</option>
                   {guests.map((g) => (
@@ -403,11 +452,12 @@ export default function SuperadminReservationsPage() {
                 </label>
                 <select
                   required
+                  disabled={!!editId}
                   value={form.roomId}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, roomId: e.target.value }))
                   }
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-gray-50"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-gray-50 disabled:opacity-60"
                 >
                   <option value="">Pilih kamar...</option>
                   {rooms.map((r) => (
@@ -425,11 +475,12 @@ export default function SuperadminReservationsPage() {
                   <input
                     type="date"
                     required
+                    disabled={!!editId}
                     value={form.checkInDate}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, checkInDate: e.target.value }))
                     }
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-gray-50"
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-gray-50 disabled:opacity-60"
                   />
                 </div>
                 <div>
@@ -439,15 +490,43 @@ export default function SuperadminReservationsPage() {
                   <input
                     type="date"
                     required
+                    disabled={!!editId}
                     value={form.checkOutDate}
                     min={form.checkInDate || undefined}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, checkOutDate: e.target.value }))
                     }
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-gray-50"
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-gray-50 disabled:opacity-60"
                   />
                 </div>
               </div>
+              {editId && (() => {
+                const opts = ALLOWED_TRANSITIONS[originalStatus] ?? [];
+                const isTerminal = opts.length === 0;
+                return (
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                      Status
+                    </label>
+                    <select
+                      disabled={isTerminal}
+                      value={form.status}
+                      onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-gray-50 disabled:opacity-60"
+                    >
+                      {isTerminal
+                        ? <option value={form.status}>{STATUS_LABEL[form.status] || form.status}</option>
+                        : opts.map((s) => (
+                          <option key={s} value={s}>{STATUS_LABEL[s] || s}</option>
+                        ))
+                      }
+                    </select>
+                    {isTerminal && (
+                      <p className="mt-1 text-xs text-gray-400">Status ini tidak dapat diubah lagi.</p>
+                    )}
+                  </div>
+                );
+              })()}
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
                   Jumlah Tamu
@@ -465,6 +544,70 @@ export default function SuperadminReservationsPage() {
                   className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-gray-50"
                 />
               </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                  Permintaan Khusus
+                </label>
+                <textarea
+                  rows={2}
+                  value={form.specialRequests}
+                  onChange={(e) => setForm((f) => ({ ...f, specialRequests: e.target.value }))}
+                  placeholder="Opsional..."
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-gray-50 resize-none"
+                />
+              </div>
+              {!editId && (
+                <div className="border-t border-gray-100 pt-4 space-y-3">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                      Status Pembayaran
+                    </label>
+                    <select
+                      value={paymentStatus}
+                      onChange={(e) => setPaymentStatus(e.target.value as 'unpaid' | 'paid' | 'partial')}
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-gray-50"
+                    >
+                      <option value="unpaid">Belum Bayar</option>
+                      <option value="paid">Lunas</option>
+                      <option value="partial">Sebagian</option>
+                    </select>
+                  </div>
+                  {paymentStatus !== 'unpaid' && (
+                    <>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                          Metode Pembayaran
+                        </label>
+                        <select
+                          value={paymentMethod}
+                          onChange={(e) => setPaymentMethod(e.target.value)}
+                          className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-gray-50"
+                        >
+                          <option value="cash">Tunai (Cash)</option>
+                          <option value="transfer">Transfer Bank</option>
+                          <option value="credit_card">Kartu Kredit</option>
+                          <option value="qris">QRIS</option>
+                        </select>
+                      </div>
+                      {paymentStatus === 'partial' && (
+                        <div>
+                          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                            Jumlah Dibayar
+                          </label>
+                          <input
+                            type="number"
+                            min={1}
+                            value={paymentAmount}
+                            onChange={(e) => setPaymentAmount(e.target.value)}
+                            placeholder="Masukkan jumlah..."
+                            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-gray-50"
+                          />
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
               {form.totalPrice > 0 && (
                 <div className="bg-primary/5 border border-primary/15 rounded-xl px-4 py-3 text-sm font-semibold text-dark">
                   Estimasi Total: {formatRp(form.totalPrice)}
@@ -473,7 +616,7 @@ export default function SuperadminReservationsPage() {
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={() => { setShowModal(false); resetForm(); }}
                   className="flex-1 py-2.5 border border-gray-200 text-gray-600 font-semibold text-sm rounded-xl hover:bg-gray-50 transition-colors"
                 >
                   Batal
@@ -483,10 +626,53 @@ export default function SuperadminReservationsPage() {
                   disabled={saving}
                   className="btn btn-primary btn-md"
                 >
-                  {saving ? 'Menyimpan...' : 'Buat Reservasi'}
+                  {saving ? 'Menyimpan...' : editId ? 'Simpan Perubahan' : 'Buat Reservasi'}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Detail Modal */}
+      {viewReservation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="page-title">Detail Reservasi</h2>
+              <button
+                onClick={() => setViewReservation(null)}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <dl className="space-y-3 text-sm">
+              {[
+                ['Kode Booking', viewReservation.bookingCode || '-'],
+                ['Tamu', viewReservation.guest?.fullName || '-'],
+                ['Email', viewReservation.guest?.email || '-'],
+                ['Telepon', viewReservation.guest?.phone || '-'],
+                ['Kamar', viewReservation.room ? `Kamar ${viewReservation.room.roomNumber} – ${viewReservation.room.roomType}` : '-'],
+                ['Check-In', fmtDate(viewReservation.checkInDate)],
+                ['Check-Out', fmtDate(viewReservation.checkOutDate)],
+                ['Jumlah Tamu', viewReservation.numGuests],
+                ['Total', formatRp(viewReservation.totalPrice)],
+                ['Status', viewReservation.status],
+                ['Permintaan Khusus', viewReservation.specialRequests || '-'],
+              ].map(([label, value]) => (
+                <div key={String(label)} className="flex justify-between gap-4 border-b border-gray-100 pb-2 last:border-0">
+                  <dt className="text-gray-400 shrink-0">{label}</dt>
+                  <dd className="font-medium text-gray-800 text-right">{String(value)}</dd>
+                </div>
+              ))}
+            </dl>
+            <button
+              onClick={() => setViewReservation(null)}
+              className="mt-6 w-full py-2.5 border border-gray-200 text-gray-600 font-semibold text-sm rounded-xl hover:bg-gray-50 transition-colors"
+            >
+              Tutup
+            </button>
           </div>
         </div>
       )}

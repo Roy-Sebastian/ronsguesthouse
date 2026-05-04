@@ -8,7 +8,7 @@ exports.deleteStay = deleteStay;
 const db_repository_1 = require("../repositories/db.repository");
 const reservation_repository_1 = require("../repositories/reservation.repository");
 const stay_repository_1 = require("../repositories/stay.repository");
-async function getAllStays(page = 1, limit = 10, search, status) {
+async function getAllStays(page = 1, limit = 10, search, status, dateStart, dateEnd) {
     const skip = (page - 1) * limit;
     let whereClause = {};
     if (status === 'checked_out') {
@@ -16,6 +16,12 @@ async function getAllStays(page = 1, limit = 10, search, status) {
     }
     else if (status === 'checked_in') {
         whereClause.checkOutAt = null;
+    }
+    if (dateStart || dateEnd) {
+        whereClause.checkInAt = {
+            ...(dateStart ? { gte: new Date(dateStart + 'T00:00:00') } : {}),
+            ...(dateEnd ? { lte: new Date(dateEnd + 'T23:59:59') } : {}),
+        };
     }
     if (search) {
         whereClause.OR = [
@@ -32,6 +38,7 @@ async function getAllStays(page = 1, limit = 10, search, status) {
                         guest: true,
                         room: true,
                         bookingAddons: { include: { addOn: true } },
+                        penalties: true,
                     },
                 },
             },

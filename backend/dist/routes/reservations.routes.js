@@ -43,7 +43,7 @@ router.get('/:id', auth_middleware_1.requireAuth, (0, auth_middleware_1.requireP
 router.post('/', auth_middleware_1.requireAuth, (0, auth_middleware_1.requirePermission)('reservation.create'), controller.create);
 router.patch('/:id', auth_middleware_1.requireAuth, (0, auth_middleware_1.requirePermission)('reservation.edit'), controller.update);
 router.put('/:id', auth_middleware_1.requireAuth, (0, auth_middleware_1.requirePermission)('reservation.edit'), controller.update);
-router.delete('/:id', auth_middleware_1.requireAuth, (0, auth_middleware_1.requirePermission)(['reservation.cancel', 'reservation.edit']), controller.remove);
+router.delete('/:id', auth_middleware_1.requireAuth, (0, auth_middleware_1.requirePermission)('reservation.delete'), controller.remove);
 router.post('/:id/addons', auth_middleware_1.requireAuth, (0, auth_middleware_1.requirePermission)(['addon.manage', 'reservation.edit']), controller.addAddOn);
 router.delete('/:id/addons/:addonId', auth_middleware_1.requireAuth, (0, auth_middleware_1.requirePermission)(['addon.manage', 'reservation.edit']), controller.removeAddOn);
 exports.default = router;

@@ -72,12 +72,12 @@ export default function ReceptionistDashboard() {
             ) : (
               <div className="divide-y divide-gray-50">
                 {todayCheckIns.map(r => (
-                  <div key={r.id} className="p-4 hover:bg-gray-50/50 transition-colors flex items-center justify-between">
+                  <div key={r.id} className="p-4 hover:bg-red-50/20 transition-colors flex items-center justify-between">
                     <div>
                       <div className="font-semibold text-gray-800">{r.guest?.fullName}</div>
                       <div className="text-sm text-gray-500 flex items-center gap-2 mt-1">
                         <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs shrink-0">Kmr {r.room?.roomNumber}</span>
-                        <span>•</span>
+                        <span>�</span>
                         <span>{r.numGuests} Tamu</span>
                       </div>
                     </div>
@@ -112,12 +112,12 @@ export default function ReceptionistDashboard() {
             ) : (
               <div className="divide-y divide-gray-50">
                 {todayCheckOuts.map(s => (
-                  <div key={s.id} className="p-4 hover:bg-gray-50/50 transition-colors flex items-center justify-between">
+                  <div key={s.id} className="p-4 hover:bg-red-50/20 transition-colors flex items-center justify-between">
                     <div>
                       <div className="font-semibold text-gray-800">{s.reservation?.guest?.fullName}</div>
                       <div className="text-sm text-gray-500 flex items-center gap-2 mt-1">
                          <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs shrink-0">Kmr {s.reservation?.room?.roomNumber}</span>
-                         <span>•</span>
+                         <span>�</span>
                          <span className="text-green-600 font-medium">Menginap</span>
                       </div>
                     </div>

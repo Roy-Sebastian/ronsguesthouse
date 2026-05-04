@@ -1,4 +1,5 @@
 ﻿'use client';
+import { apiFetch } from '@/lib/apiFetch';
 
 import {
   BarElement,
@@ -47,7 +48,7 @@ export default function ReceptionistReportsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/dashboard/stats')
+    apiFetch('/dashboard/stats')
       .then((r) => r.json())
       .then((d) => {
         setData(d);
@@ -60,7 +61,7 @@ export default function ReceptionistReportsPage() {
 
   const fetchIncomesForExport = async (): Promise<IncomeTransaction[]> => {
     try {
-      const res = await fetch('/api/incomes'); 
+      const res = await apiFetch('/incomes'); 
       if (!res.ok) throw new Error('API request failed');
       const json = await res.json();
       const records = Array.isArray(json) ? json : json.data || [];
@@ -237,7 +238,7 @@ export default function ReceptionistReportsPage() {
           </button>
           <button 
             onClick={handleExportPDF}
-            className="btn btn-secondary btn-md"
+            className="btn btn-primary btn-md"
           >
             <FileText size={16} /> Export PDF
           </button>
@@ -330,7 +331,6 @@ export default function ReceptionistReportsPage() {
                     sortBy={sortBy}
                     sortOrder={sortOrder}
                     onSort={handleSort}
-                    className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
                   />
                   <SortableHeader
                     label="Jenis"
@@ -338,7 +338,6 @@ export default function ReceptionistReportsPage() {
                     sortBy={sortBy}
                     sortOrder={sortOrder}
                     onSort={handleSort}
-                    className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
                   />
                   <SortableHeader
                     label="Keterangan"
@@ -346,7 +345,6 @@ export default function ReceptionistReportsPage() {
                     sortBy={sortBy}
                     sortOrder={sortOrder}
                     onSort={handleSort}
-                    className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
                   />
                   <SortableHeader
                     label="Jumlah"
@@ -354,7 +352,6 @@ export default function ReceptionistReportsPage() {
                     sortBy={sortBy}
                     sortOrder={sortOrder}
                     onSort={handleSort}
-                    className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
                   />
                 </tr>
               </thead>
@@ -375,23 +372,23 @@ export default function ReceptionistReportsPage() {
                   sortedTransactions.map((tx: any, idx: number) => (
                     <tr
                       key={idx}
-                      className="hover:bg-gray-50/50 transition-colors"
+                      className="hover:bg-red-50/20 transition-colors"
                     >
-                      <td className="px-6 py-4 border-b border-gray-50 text-xs text-gray-500">
+                      <td className="px-6 py-4 border-b border-gray-100 text-xs text-gray-500">
                         {new Date(tx.date).toLocaleDateString('id-ID')}
                       </td>
-                      <td className="px-6 py-4 border-b border-gray-50">
+                      <td className="px-6 py-4 border-b border-gray-100">
                         <span
                           className={`px-2 py-1 text-[0.65rem] font-bold uppercase tracking-wider rounded-md ${tx.type === 'INCOME' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}
                         >
                           {tx.type === 'INCOME' ? 'Pendapatan' : 'Pengeluaran'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 border-b border-gray-50 text-sm text-gray-700">
+                      <td className="px-6 py-4 border-b border-gray-100 text-sm text-gray-700">
                         {tx.description}
                       </td>
                       <td
-                        className={`px-6 py-4 border-b border-gray-50 font-bold text-sm ${tx.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}`}
+                        className={`px-6 py-4 border-b border-gray-100 font-bold text-sm ${tx.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}`}
                       >
                         {tx.type === 'INCOME' ? '+' : '-'}
                         {formatRp(Number(tx.amount))}

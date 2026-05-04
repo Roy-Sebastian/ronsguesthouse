@@ -32,7 +32,20 @@ export async function createTransaction(
   body: any,
   userId?: string | null,
 ) {
-  const payload = { ...body };
+  const { referenceId, ...rest } = body;
+  const payload: any = { ...rest };
+  if (referenceId) {
+    payload.notes = payload.notes
+      ? `${payload.notes}\nRef: ${referenceId}`
+      : `Ref: ${referenceId}`;
+  }
+  if (!payload.reservationId) {
+    throw Object.assign(new Error('reservationId wajib diisi'), { statusCode: 400 });
+  }
+  const amountNum = Number(payload.amount);
+  if (!Number.isFinite(amountNum) || amountNum <= 0) {
+    throw Object.assign(new Error('Jumlah pembayaran harus lebih dari 0'), { statusCode: 400 });
+  }
   if (payload.paymentStatus === 'paid' && !payload.paymentDate) {
     payload.paymentDate = new Date();
   }

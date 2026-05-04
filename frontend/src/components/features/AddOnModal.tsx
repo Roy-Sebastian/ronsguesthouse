@@ -1,5 +1,6 @@
 'use client';
 
+import { apiFetch } from '@/lib/apiFetch';
 import { DollarSign, PackagePlus, Plus, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -22,7 +23,7 @@ export default function AddOnModal({ reservationId, onClose, onSuccess }: AddOnM
   });
 
   useEffect(() => {
-    fetch('/api/addons/available')
+    apiFetch('/addons/available')
       .then((r) => r.json())
       .then((d) => {
         setAddons(Array.isArray(d) ? d : []);
@@ -40,7 +41,7 @@ export default function AddOnModal({ reservationId, onClose, onSuccess }: AddOnM
     setError('');
 
     try {
-      const res = await fetch(`/api/reservations/${reservationId}/addons`, {
+      const res = await apiFetch(`/reservations/${reservationId}/addons`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),

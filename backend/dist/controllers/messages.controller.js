@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.remove = exports.update = exports.create = exports.getById = exports.getAll = void 0;
+exports.submitPublic = exports.remove = exports.update = exports.create = exports.getById = exports.getAll = void 0;
 const MessagesService = __importStar(require("../services/messages.service"));
 const getAll = async (req, res) => {
     try {
@@ -86,3 +86,14 @@ const remove = async (req, res) => {
     }
 };
 exports.remove = remove;
+const submitPublic = async (req, res) => {
+    try {
+        const data = await MessagesService.submitPublicMessage(req.body);
+        res.status(201).json({ success: true, id: data.id });
+    }
+    catch (error) {
+        const statusCode = error.statusCode || 500;
+        res.status(statusCode).json({ error: error.message || 'Gagal mengirim pesan' });
+    }
+};
+exports.submitPublic = submitPublic;

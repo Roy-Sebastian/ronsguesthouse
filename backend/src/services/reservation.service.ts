@@ -178,6 +178,12 @@ export async function updateReservation(id: string, body: any) {
 }
 
 export async function deleteReservation(id: string) {
+  await prisma.stay.deleteMany({ where: { reservationId: id } });
+  const txRecord = await prisma.transaction.findUnique({ where: { reservationId: id } });
+  if (txRecord) {
+    await prisma.income.deleteMany({ where: { transactionId: txRecord.id } });
+    await prisma.transaction.delete({ where: { id: txRecord.id } });
+  }
   const data = await reservationRepository.delete(id);
 
   try {
@@ -250,7 +256,9 @@ export async function addReservationAddOn({
       });
     }
 
-    await reservationRepository.update(reservationId, { data: { totalPrice: { increment: Math.floor(totalPrice) }, specialRequests: notes } }, tx);
+    // Append the formatted add-on log line to existing specialRequests (never overwrite)
+    const updatedSpecialRequests = appendLine((reservation as any).specialRequests ?? undefined, logLine);
+    await reservationRepository.update(reservationId, { data: { totalPrice: { increment: Math.floor(totalPrice) }, specialRequests: updatedSpecialRequests } }, tx);
 
     const trans = await tx.transaction.findUnique({ where: { reservationId } });
     if (trans) {

@@ -29,8 +29,9 @@ const transaction_repository_1 = require("../repositories/transaction.repository
  * should review each case before releasing funds.
  */
 // ─── Midtrans Snap Client ──────────────────────────────────────────
+const IS_PRODUCTION = process.env.MIDTRANS_IS_PRODUCTION === 'true';
 const snap = new midtrans_client_1.default.Snap({
-    isProduction: false,
+    isProduction: IS_PRODUCTION,
     serverKey: process.env.MIDTRANS_SERVER_KEY || '',
 });
 async function createSnapToken(input) {
@@ -56,7 +57,8 @@ async function createSnapToken(input) {
 async function chargeMidtrans(amount) {
     const orderId = `RONS-${Date.now()}-${Math.floor(Math.random() * 100)}`;
     const authString = Buffer.from(`${process.env.MIDTRANS_SERVER_KEY}:`).toString('base64');
-    const midtransRes = await fetch('https://app.sandbox.midtrans.com/snap/v1/transactions', {
+    const midtransHost = IS_PRODUCTION ? 'app.midtrans.com' : 'app.sandbox.midtrans.com';
+    const midtransRes = await fetch(`https://${midtransHost}/snap/v1/transactions`, {
         method: 'POST',
         headers: {
             Accept: 'application/json',
@@ -74,7 +76,7 @@ async function chargeMidtrans(amount) {
 }
 // ─── Midtrans Core Client for Status API ────────────────────────────
 const coreApi = new midtrans_client_1.default.CoreApi({
-    isProduction: false,
+    isProduction: IS_PRODUCTION,
     serverKey: process.env.MIDTRANS_SERVER_KEY || '',
 });
 async function checkTransactionStatus(orderId) {
@@ -88,7 +90,11 @@ async function processMidtransNotification(body) {
         .createHash('sha512')
         .update(`${order_id}${status_code}${gross_amount}${serverKey}`)
         .digest('hex');
-    if (hash !== signature_key) {
+    const hashBuf = Buffer.from(hash);
+    const sigBuf = Buffer.from(signature_key);
+    const signatureValid = hashBuf.length === sigBuf.length &&
+        crypto_1.default.timingSafeEqual(hashBuf, sigBuf);
+    if (!signatureValid) {
         logger_1.logger.warn('Invalid Midtrans webhook signature', { orderId: order_id });
         throw Object.assign(new Error('Invalid signature'), { statusCode: 400 });
     }
@@ -144,25 +150,35 @@ async function processMidtransNotification(body) {
             });
             return;
         }
-        // Mark as paid
+        // Determine actual payment method from Midtrans
+        let pMethod = 'transfer';
+        if (body.payment_type) {
+            if (body.payment_type === 'credit_card')
+                pMethod = 'credit_card';
+            else if (body.payment_type === 'qris' || body.payment_type === 'gopay' || body.payment_type === 'shopeepay')
+                pMethod = 'qris';
+        }
+        // Mark as paid and update payment method
         await transaction_repository_1.transactionRepository.update(transaction.id, {
-            data: { paymentStatus: 'paid', paymentDate: new Date() },
+            data: { paymentStatus: 'paid', paymentDate: new Date(), paymentMethod: pMethod },
         });
-        // Dashboard Integration: Create Income record
-        await prisma_1.prisma.income.create({
-            data: {
+        // Dashboard Integration: Upsert Income record (idempotent for duplicate webhooks)
+        await prisma_1.prisma.income.upsert({
+            where: { transactionId: transaction.id },
+            create: {
                 transactionId: transaction.id,
                 amount: transaction.amount,
                 description: `Online Payment (Midtrans) - Booking ID: ${reservation.id.slice(-6).toUpperCase()}`,
                 incomeDate: new Date(),
                 sourceType: 'RESERVATION',
                 referenceId: reservation.id,
-                paymentMethod: transaction.paymentMethod || 'transfer',
+                paymentMethod: pMethod,
                 status: 'paid',
                 guestNameSnapshot: reservation.guest?.fullName,
                 roomNumberSnapshot: reservation.room?.roomNumber,
                 type: 'income',
             },
+            update: {},
         });
         // Confirm the reservation
         await prisma_1.prisma.reservation.update({

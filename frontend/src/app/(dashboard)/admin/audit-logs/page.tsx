@@ -1,4 +1,5 @@
-'use client';
+﻿'use client';
+import { apiFetch } from '@/lib/apiFetch';
 
 
 import { Activity, Search } from 'lucide-react';
@@ -8,35 +9,51 @@ import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
 
+const PAGE_SIZE = 50;
+
 export default function AuditLogsPage() {
   const [logs, setLogs] = useState<any[]>([]);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [dateStart, setDateStart] = useState('');
   const [dateEnd, setDateEnd] = useState('');
 
-  useEffect(() => {
-    fetch('/api/audit-logs')
+  const fetchLogs = (p: number) => {
+    setLoading(true);
+    apiFetch(`/audit-logs?page=${p}&limit=${PAGE_SIZE}`)
       .then((r) => r.json())
-      .then((data) => {
-        setLogs(Array.isArray(data) ? data : []);
+      .then((res) => {
+        setLogs(Array.isArray(res.data) ? res.data : []);
+        setTotal(res.total ?? 0);
+        setTotalPages(res.totalPages ?? 1);
         setLoading(false);
-      });
+      })
+      .catch(() => setLoading(false));
+  };
 
-    // Real-time events
+  useEffect(() => {
+    fetchLogs(page);
+
+    // Real-time: prepend incoming events only on page 1
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
     const socket = io(backendUrl, { path: '/api/socket.io' });
     socket.on('new_audit_log', (newLog) => {
-      setLogs((prev) => {
-        if (prev.find((l) => l.id === newLog.id)) return prev;
-        return [newLog, ...prev];
-      });
+      if (page === 1) {
+        setLogs((prev) => {
+          if (prev.find((l) => l.id === newLog.id)) return prev;
+          return [newLog, ...prev].slice(0, PAGE_SIZE);
+        });
+        setTotal((t) => t + 1);
+      }
     });
 
     return () => {
       socket.disconnect();
     };
-  }, []);
+  }, [page]);
 
   const filtered = logs.filter((l) => {
     let dateMatch = true;
@@ -102,7 +119,6 @@ export default function AuditLogsPage() {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
               <SortableHeader
                 label="Pengguna"
@@ -110,7 +126,6 @@ export default function AuditLogsPage() {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
               <SortableHeader
                 label="Aksi"
@@ -118,7 +133,6 @@ export default function AuditLogsPage() {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
               <SortableHeader
                 label="Entitas"
@@ -126,7 +140,6 @@ export default function AuditLogsPage() {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
               <SortableHeader
                 label="ID Entitas"
@@ -134,7 +147,6 @@ export default function AuditLogsPage() {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
             </tr>
           </thead>
@@ -158,12 +170,12 @@ export default function AuditLogsPage() {
               sortedData.map((log) => (
                 <tr
                   key={log.id}
-                  className="hover:bg-gray-50/50 transition-colors"
+                  className="hover:bg-red-50/20 transition-colors"
                 >
-                  <td className="px-6 py-4 border-b border-gray-50 text-xs text-gray-500">
+                  <td className="px-6 py-4 border-b border-gray-100 text-xs text-gray-500">
                     {new Date(log.createdAt).toLocaleString('id-ID')}
                   </td>
-                  <td className="px-6 py-4 border-b border-gray-50">
+                  <td className="px-6 py-4 border-b border-gray-100">
                     <div className="font-medium text-gray-800 text-sm">
                       {log.user?.name || 'System'}
                     </div>
@@ -181,15 +193,15 @@ export default function AuditLogsPage() {
                       </span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 border-b border-gray-50">
+                  <td className="px-6 py-4 border-b border-gray-100">
                     <span className="px-2.5 py-1 bg-gray-100 text-gray-700 border border-gray-200 text-xs font-medium rounded-md font-mono">
                       {log.action}
                     </span>
                   </td>
-                  <td className="px-6 py-4 border-b border-gray-50 text-sm text-gray-700">
+                  <td className="px-6 py-4 border-b border-gray-100 text-sm text-gray-700">
                     {log.entity}
                   </td>
-                  <td className="px-6 py-4 border-b border-gray-50 text-xs text-gray-400 font-mono">
+                  <td className="px-6 py-4 border-b border-gray-100 text-xs text-gray-400 font-mono">
                     {log.entityId?.slice(0, 8) || '-'}
                   </td>
                 </tr>
@@ -198,6 +210,31 @@ export default function AuditLogsPage() {
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
+          <span>{total} log total</span>
+          <div className="flex items-center gap-2">
+            <button
+              className="px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => p - 1)}
+            >
+              Sebelumnya
+            </button>
+            <span className="px-2">
+              Hal {page} / {totalPages}
+            </span>
+            <button
+              className="px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Berikutnya
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

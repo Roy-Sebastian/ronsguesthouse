@@ -1,4 +1,5 @@
-'use client';
+﻿'use client';
+import { apiFetch } from '@/lib/apiFetch';
 
 import { AlertCircle, CreditCard, Plus, Search, X } from 'lucide-react';
 import { formatRp } from '@/lib/formatters';
@@ -22,7 +23,8 @@ export default function ReceptionistTransactionsPage() {
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [dateStart, setDateStart] = useState('');
+  const today = new Date().toISOString().slice(0, 10);
+  const [dateStart, setDateStart] = useState(today);
   const [dateEnd, setDateEnd] = useState('');
   const [form, setForm] = useState({
     reservationId: '',
@@ -34,10 +36,10 @@ export default function ReceptionistTransactionsPage() {
   const fetchData = async () => {
     setLoading(true);
     const [tx, rev] = await Promise.all([
-      fetch('/api/transactions')
+      apiFetch('/transactions')
         .then((r) => r.json())
         .catch(() => []),
-      fetch('/api/reservations')
+      apiFetch('/reservations')
         .then((r) => r.json())
         .catch(() => []),
     ]);
@@ -55,7 +57,7 @@ export default function ReceptionistTransactionsPage() {
     setSaving(true);
     try {
       const payload = { ...form, amount: Number(form.amount) };
-      const res = await fetch('/api/transactions', {
+      const res = await apiFetch('/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -126,7 +128,7 @@ export default function ReceptionistTransactionsPage() {
           </p>
         </div>
         <button
-          className="btn btn-secondary btn-md"
+          className="btn btn-primary btn-md"
           onClick={() => {
             setForm({
               reservationId: '',
@@ -137,24 +139,73 @@ export default function ReceptionistTransactionsPage() {
             setShowModal(true);
           }}
         >
-          <Plus size={16} /> <span className="hidden sm:inline">Catat Pembayaran</span></button>
+          <Plus size={16} /> <span>Catat Pembayaran</span></button>
       </div>
 
       {pendingReservations.length > 0 && (
-        <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
-          <AlertCircle size={20} className="text-red-500 shrink-0 mt-0.5" />
-          <div>
-            <h4 className="font-semibold text-red-800 text-sm mb-1">
-              Tagihan Belum Lunas
-            </h4>
-            <div className="text-sm text-red-700 flex flex-col gap-1">
-              {pendingReservations.map((r) => (
-                <div key={r.id}>
-                  {r.guest?.fullName} (Kamar {r.room?.roomNumber}) - Kurang:{' '}
-                  <strong>{formatRp(r.total - r.paid)}</strong>
-                </div>
-              ))}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-red-100 rounded-lg shrink-0">
+              <AlertCircle size={16} className="text-red-600" />
             </div>
+            <div className="min-w-0">
+              <h2 className="font-serif text-base font-bold text-gray-900">Tagihan Belum Lunas</h2>
+              <p className="text-xs text-gray-500">{pendingReservations.length} reservasi memerlukan pembayaran</p>
+            </div>
+            <span className="ml-auto shrink-0 px-3 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full">
+              {pendingReservations.length} Pending
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {pendingReservations.map((r) => (
+              <div
+                key={r.id}
+                className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm border-l-4 border-l-red-400 hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-start gap-2 mb-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold text-gray-900 text-sm truncate">{r.guest?.fullName}</div>
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">
+                        Kamar {r.room?.roomNumber}
+                      </span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        r.isPaidStr === 'Sebagian'
+                          ? 'bg-amber-100 text-amber-700'
+                          : 'bg-red-100 text-red-700'
+                      }`}>
+                        {r.isPaidStr}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 mt-1.5 text-[11px] text-gray-400">
+                      <span>CI: {r.checkInDate ? new Date(r.checkInDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '-'}</span>
+                      <span>→</span>
+                      <span>CO: {r.checkOutDate ? new Date(r.checkOutDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '-'}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-end justify-between gap-2">
+                  <div>
+                    <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Kurang Bayar</div>
+                    <div className="text-base font-bold text-red-600">{formatRp(r.total - r.paid)}</div>
+                  </div>
+                  <button
+                    className="px-3 py-1.5 bg-primary text-white text-xs font-semibold rounded-lg hover:opacity-90 transition-opacity shrink-0"
+                    onClick={() => {
+                      setForm({
+                        reservationId: r.id,
+                        amount: String(r.total - r.paid),
+                        paymentMethod: 'cash',
+                        referenceId: '',
+                      });
+                      setShowModal(true);
+                    }}
+                  >
+                    Bayar
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -188,7 +239,6 @@ export default function ReceptionistTransactionsPage() {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
               <SortableHeader
                 label="Waktu"
@@ -196,7 +246,6 @@ export default function ReceptionistTransactionsPage() {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
               <SortableHeader
                 label="Tamu"
@@ -204,7 +253,6 @@ export default function ReceptionistTransactionsPage() {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
               <SortableHeader
                 label="Kamar"
@@ -212,7 +260,6 @@ export default function ReceptionistTransactionsPage() {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
               <SortableHeader
                 label="Metode"
@@ -220,7 +267,6 @@ export default function ReceptionistTransactionsPage() {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
               <SortableHeader
                 label="Referensi"
@@ -228,7 +274,6 @@ export default function ReceptionistTransactionsPage() {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
               <SortableHeader
                 label="Jumlah"
@@ -236,7 +281,6 @@ export default function ReceptionistTransactionsPage() {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
             </tr>
           </thead>
@@ -252,7 +296,7 @@ export default function ReceptionistTransactionsPage() {
                 <td colSpan={7} className="py-20 text-center text-gray-400">
                   <CreditCard size={48} className="mx-auto mb-4 opacity-20" />
                   <h3 className="text-base font-medium">
-                    Belaum ada transaksi
+                    Belum ada transaksi
                   </h3>
                 </td>
               </tr>
@@ -260,32 +304,32 @@ export default function ReceptionistTransactionsPage() {
               sortedData.map((t) => (
                 <tr
                   key={t.id}
-                  className="hover:bg-gray-50/50 transition-colors"
+                  className="hover:bg-red-50/20 transition-colors"
                 >
-                  <td className="px-6 py-4 border-b border-gray-50 font-mono text-[0.7rem] text-gray-400">
+                  <td className="px-6 py-4 border-b border-gray-100 font-mono text-[0.7rem] text-gray-400">
                     {t.id.slice(0, 8)}
                   </td>
-                  <td className="px-6 py-4 border-b border-gray-50 text-xs text-gray-500">
+                  <td className="px-6 py-4 border-b border-gray-100 text-xs text-gray-500">
                     {new Date(t.paymentDate).toLocaleString('id-ID')}
                   </td>
-                  <td className="px-6 py-4 border-b border-gray-50">
+                  <td className="px-6 py-4 border-b border-gray-100">
                     <strong className="font-medium text-gray-800 text-sm">
                       {t.reservation?.guest?.fullName}
                     </strong>
                   </td>
-                  <td className="px-6 py-4 border-b border-gray-50 text-sm text-gray-600">
+                  <td className="px-6 py-4 border-b border-gray-100 text-sm text-gray-600">
                     Kamar {t.reservation?.room?.roomNumber}
                   </td>
-                  <td className="px-6 py-4 border-b border-gray-50">
+                  <td className="px-6 py-4 border-b border-gray-100">
                     <span className="px-2.5 py-1 bg-gray-100 text-gray-700 text-[0.65rem] font-bold rounded-full uppercase tracking-wider">
                       {methodOptions.find((mo) => mo.id === t.paymentMethod)
                         ?.label || t.paymentMethod}
                     </span>
                   </td>
-                  <td className="px-6 py-4 border-b border-gray-50 text-xs text-gray-500 font-mono">
+                  <td className="px-6 py-4 border-b border-gray-100 text-xs text-gray-500 font-mono">
                     {t.referenceId || '-'}
                   </td>
-                  <td className="px-6 py-4 border-b border-gray-50 font-bold text-primary">
+                  <td className="px-6 py-4 border-b border-gray-100 font-bold text-primary">
                     {formatRp(Number(t.amount))}
                   </td>
                 </tr>
@@ -400,7 +444,7 @@ export default function ReceptionistTransactionsPage() {
                 </button>
                 <button
                   type="submit"
-                  className="btn btn-secondary btn-md"
+                  className="btn btn-primary btn-md"
                   disabled={saving}
                 >
                   {saving ? 'Memproses...' : 'Simpan Pembayaran'}

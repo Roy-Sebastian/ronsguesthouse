@@ -8,6 +8,7 @@ exports.deleteGuest = deleteGuest;
 const socket_1 = require("../config/socket");
 const db_repository_1 = require("../repositories/db.repository");
 const guest_repository_1 = require("../repositories/guest.repository");
+const income_repository_1 = require("../repositories/income.repository");
 const reservation_repository_1 = require("../repositories/reservation.repository");
 const stay_repository_1 = require("../repositories/stay.repository");
 const transaction_repository_1 = require("../repositories/transaction.repository");
@@ -74,15 +75,34 @@ async function createGuest(input) {
             let mappedPaymentMethod = 'cash';
             if (paymentMethod === 'transfer' || paymentMethod === 'aplikasi')
                 mappedPaymentMethod = 'transfer';
-            await transaction_repository_1.transactionRepository.create({
+            const txAmount = amount ? Number(amount) : 0;
+            const createdTx = await transaction_repository_1.transactionRepository.create({
                 data: {
                     reservationId: resv.id,
-                    amount: amount ? Number(amount) : 0,
+                    amount: txAmount,
                     paymentMethod: mappedPaymentMethod,
                     notes: deposit ? `Deposit: ${deposit}` : '',
                     paymentStatus: 'paid',
+                    paymentDate: new Date(),
                 },
             }, tx);
+            // Walk-in guests pay at check-in: create income record immediately
+            if (txAmount > 0) {
+                await income_repository_1.incomeRepository.create({
+                    data: {
+                        transactionId: createdTx.id,
+                        amount: txAmount,
+                        description: 'Pembayaran Reservasi / Kamar (Walk-in/Manual)',
+                        incomeDate: new Date(),
+                        sourceType: 'RESERVATION',
+                        referenceId: resv.id,
+                        paymentMethod: mappedPaymentMethod,
+                        status: 'paid',
+                        guestNameSnapshot: fullName,
+                        type: 'income',
+                    },
+                }, tx);
+            }
             try {
                 const io = (0, socket_1.getIO)();
                 if (io) {

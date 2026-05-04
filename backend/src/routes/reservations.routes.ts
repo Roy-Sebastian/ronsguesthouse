@@ -19,7 +19,7 @@ router.put('/:id', requireAuth, requirePermission('reservation.edit'), controlle
 router.delete(
 	'/:id',
 	requireAuth,
-	requirePermission(['reservation.cancel', 'reservation.edit']),
+	requirePermission('reservation.delete'),
 	controller.remove,
 );
 

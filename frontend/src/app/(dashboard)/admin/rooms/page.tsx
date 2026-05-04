@@ -1,4 +1,5 @@
 ﻿'use client';
+import { apiFetch } from '@/lib/apiFetch';
 
 import { TableActions } from '@/components/ui/TableActions';
 import { formatRp } from '@/lib/formatters';
@@ -38,10 +39,10 @@ export default function AdminRoomsPage() {
   const fetchData = async () => {
     setLoading(true);
     const [r, a] = await Promise.all([
-      fetch('/api/rooms')
+      apiFetch('/rooms')
         .then((res) => res.json())
         .catch(() => []),
-      fetch('/api/amenities')
+      apiFetch('/amenities')
         .then((res) => res.json())
         .catch(() => []),
     ]);
@@ -117,13 +118,13 @@ export default function AdminRoomsPage() {
       pricePerNight: Number(form.pricePerNight),
     };
     if (editRoom) {
-      await fetch(`/api/rooms/${editRoom.id}`, {
+      await apiFetch(`/rooms/${editRoom.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
     } else {
-      await fetch('/api/rooms', {
+      await apiFetch('/rooms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -136,7 +137,7 @@ export default function AdminRoomsPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Hapus kamar ini?')) return;
-    await fetch(`/api/rooms/${id}`, { method: 'DELETE' });
+    await apiFetch(`/rooms/${id}`, { method: 'DELETE' });
     fetchData();
   };
 
@@ -168,10 +169,10 @@ export default function AdminRoomsPage() {
           </p>
         </div>
         <button
-          className="btn btn-secondary btn-md"
+          className="btn btn-primary btn-md"
           onClick={openCreate}
         >
-          <Plus size={16} /> <span className="hidden sm:inline">Tambah Kamar</span></button>
+          <Plus size={16} /> <span>Tambah Kamar</span></button>
       </div>
 
       <div className="search-bar flex-1">
@@ -335,7 +336,7 @@ export default function AdminRoomsPage() {
                       }
                     >
                       <option value="standard">Standard</option>
-                      <option value="deluxe">Deluxe</option>
+                      <option value="city_view">City View</option>
                       <option value="suite">Suite</option>
                       <option value="family">Family</option>
                     </select>
@@ -480,7 +481,7 @@ export default function AdminRoomsPage() {
               <button
                 type="submit"
                 form="roomForm"
-                className="btn btn-secondary btn-md"
+                className="btn btn-primary btn-md"
                 disabled={saving}
               >
                 {saving ? 'Menyimpan...' : 'Simpan Kamar'}

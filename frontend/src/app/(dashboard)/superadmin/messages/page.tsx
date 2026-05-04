@@ -1,4 +1,5 @@
-"use client";
+﻿"use client";
+import { apiFetch } from '@/lib/apiFetch';
 
 import { useEffect, useState } from "react";
 import { Mail, CheckCircle, Search, MailOpen, Phone } from "lucide-react";
@@ -24,7 +25,7 @@ export default function AdminMessagesPage() {
   const handleRead = async (msg: any) => {
     setSelected(msg);
     if (!msg.isRead) {
-      await fetch(`/api/messages/${msg.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ isRead: true }) });
+      await apiFetch(`/messages/${msg.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ isRead: true }) });
       setMessages(msgs => msgs.map(m => m.id === msg.id ? { ...m, isRead: true } : m));
     }
   };
@@ -124,7 +125,7 @@ export default function AdminMessagesPage() {
                 </div>
               </div>
               <div className="px-8 py-4 border-t border-gray-100 shrink-0 flex gap-3">
-                <a href={`mailto:${selected.email}`} className="btn btn-secondary btn-md">Balas via Email</a>
+                <a href={`mailto:${selected.email}`} className="btn btn-primary btn-md">Balas via Email</a>
                 {selected.phone && <a href={`https://wa.me/${selected.phone.replace(/^0/,"62")}`} target="_blank" rel="noreferrer" className="btn btn-success btn-md">Balas via WhatsApp</a>}
               </div>
             </>

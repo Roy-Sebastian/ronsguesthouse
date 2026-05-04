@@ -1,20 +1,69 @@
 ﻿'use client';
+import { apiFetch } from '@/lib/apiFetch';
 
 import { confirmAction } from '@/lib/dialog';
-import { Building2, Plus, Search, Trash2, X } from 'lucide-react';
+import {
+  AirVent, Bath, Bed, BookOpen, Building2, Bus, Car, Coffee,
+  Dumbbell, Flame, Lightbulb, Lock, type LucideIcon, Music, Package,
+  Pencil, Phone, Plug, Plus, Refrigerator, Search, Shield, Shirt, ShowerHead,
+  Snowflake, Sofa, Star, Sun, Trash2, Trees, Tv, Utensils, Waves,
+  Wind, Wifi, Wrench, X,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
+
+const ICON_OPTIONS: { value: string; label: string; icon: LucideIcon }[] = [
+  { value: 'Waves', label: 'Kolam Renang', icon: Waves },
+  { value: 'Car', label: 'Parkir', icon: Car },
+  { value: 'Dumbbell', label: 'Gym', icon: Dumbbell },
+  { value: 'Utensils', label: 'Restoran', icon: Utensils },
+  { value: 'Coffee', label: 'Kafe', icon: Coffee },
+  { value: 'Wifi', label: 'WiFi Umum', icon: Wifi },
+  { value: 'Building2', label: 'Gedung', icon: Building2 },
+  { value: 'Trees', label: 'Taman', icon: Trees },
+  { value: 'Sun', label: 'Outdoor', icon: Sun },
+  { value: 'Shield', label: 'Keamanan', icon: Shield },
+  { value: 'Bus', label: 'Shuttle', icon: Bus },
+  { value: 'Music', label: 'Hiburan', icon: Music },
+  { value: 'BookOpen', label: 'Bacaan', icon: BookOpen },
+  { value: 'Shirt', label: 'Laundry', icon: Shirt },
+  { value: 'Phone', label: 'Telepon', icon: Phone },
+  { value: 'Tv', label: 'TV Umum', icon: Tv },
+  { value: 'AirVent', label: 'AC Umum', icon: AirVent },
+  { value: 'Bath', label: 'Kamar Mandi', icon: Bath },
+  { value: 'ShowerHead', label: 'Shower', icon: ShowerHead },
+  { value: 'Refrigerator', label: 'Kulkas', icon: Refrigerator },
+  { value: 'Plug', label: 'Stop Kontak', icon: Plug },
+  { value: 'Lightbulb', label: 'Penerangan', icon: Lightbulb },
+  { value: 'Sofa', label: 'Ruang Santai', icon: Sofa },
+  { value: 'Bed', label: 'Tempat Tidur', icon: Bed },
+  { value: 'Lock', label: 'Keamanan Kamar', icon: Lock },
+  { value: 'Wind', label: 'Kipas Umum', icon: Wind },
+  { value: 'Flame', label: 'Pemanas', icon: Flame },
+  { value: 'Snowflake', label: 'Pendingin Ruang', icon: Snowflake },
+  { value: 'Package', label: 'Perlengkapan', icon: Package },
+  { value: 'Star', label: 'Unggulan', icon: Star },
+  { value: 'Wrench', label: 'Umum', icon: Wrench },
+];
+
+const ICON_MAP = Object.fromEntries(ICON_OPTIONS.map((o) => [o.value, o.icon]));
+
+function FacilityIcon({ name, size = 20 }: { name?: string | null; size?: number }) {
+  const Icon = (name && ICON_MAP[name] ? ICON_MAP[name] : Building2) as LucideIcon;
+  return <Icon size={size} />;
+}
 
 export default function AdminFacilitiesPage() {
   const [facilities, setFacilities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ name: '', description: '' });
+  const [editItem, setEditItem] = useState<any>(null);
+  const [form, setForm] = useState({ name: '', description: '', icon: '' });
   const [saving, setSaving] = useState(false);
 
   const fetchFacilities = async () => {
     setLoading(true);
-    const data = await fetch('/api/facilities')
+    const data = await apiFetch('/facilities')
       .then((r) => r.json())
       .catch(() => []);
     setFacilities(Array.isArray(data) ? data : []);
@@ -25,24 +74,49 @@ export default function AdminFacilitiesPage() {
     fetchFacilities();
   }, []);
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const openCreate = () => {
+    setEditItem(null);
+    setForm({ name: '', description: '', icon: '' });
+    setShowModal(true);
+  };
+
+  const openEdit = (f: any) => {
+    setEditItem(f);
+    setForm({ name: f.name, description: f.description || '', icon: f.icon || '' });
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setEditItem(null);
+    setForm({ name: '', description: '', icon: '' });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    await fetch('/api/facilities', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    });
+    if (editItem) {
+      await apiFetch(`/facilities/${editItem.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+    } else {
+      await apiFetch('/facilities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+    }
     setSaving(false);
-    setShowModal(false);
-    setForm({ name: '', description: '' });
+    closeModal();
     fetchFacilities();
   };
 
   const handleDelete = async (id: string) => {
     const ok = await confirmAction('Hapus fasilitas umum ini?');
     if (!ok) return;
-    await fetch(`/api/facilities?id=${id}`, { method: 'DELETE' });
+    await apiFetch(`/facilities/${id}`, { method: 'DELETE' });
     fetchFacilities();
   };
 
@@ -54,18 +128,15 @@ export default function AdminFacilitiesPage() {
     <>
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="page-title">
-            Fasilitas Umum
-          </h1>
-          <p className="page-subtitle">
-            Kelola data fasilitas umum penginapan (contoh: Kolam Renang, Parkir)
-          </p>
+          <h1 className="page-title">Fasilitas Umum</h1>
+          <p className="page-subtitle">Kelola data fasilitas umum penginapan (contoh: Kolam Renang, Parkir)</p>
         </div>
         <button
-          className="btn btn-secondary btn-md"
-          onClick={() => setShowModal(true)}
+          className="btn btn-primary btn-md"
+          onClick={openCreate}
         >
-          <Plus size={16} /> <span className="hidden sm:inline">Tambah Fasilitas</span></button>
+          <Plus size={16} /> <span>Tambah Fasilitas</span>
+        </button>
       </div>
 
       <div className="search-bar flex-1">
@@ -97,18 +168,24 @@ export default function AdminFacilitiesPage() {
               <div className="flex justify-between items-start mb-3">
                 <div>
                   <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-3">
-                    <Building2 size={20} />
+                    <FacilityIcon name={f.icon} size={20} />
                   </div>
-                  <h3 className="font-semibold text-gray-800 text-base">
-                    {f.name}
-                  </h3>
+                  <h3 className="font-semibold text-gray-800 text-base">{f.name}</h3>
                 </div>
-                <button
-                  className="p-1.5 text-red-300 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                  onClick={() => handleDelete(f.id)}
-                >
-                  <Trash2 size={16} />
-                </button>
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100">
+                  <button
+                    className="p-1.5 text-blue-300 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+                    onClick={() => openEdit(f)}
+                  >
+                    <Pencil size={16} />
+                  </button>
+                  <button
+                    className="p-1.5 text-red-300 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors"
+                    onClick={() => handleDelete(f.id)}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
               <p className="text-sm text-gray-500 mb-4 flex-1">
                 {f.description || 'Tidak ada deskripsi'}
@@ -124,27 +201,23 @@ export default function AdminFacilitiesPage() {
       {showModal && (
         <div
           className="fixed inset-0 bg-black/50 z-200 flex items-center justify-center p-4 backdrop-blur-sm"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setShowModal(false);
-          }}
+          onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
         >
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-slideUp">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-slideUp">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h2 className="font-serif text-xl font-bold text-dark">
-                Tambah Fasilitas
+                {editItem ? 'Edit Fasilitas' : 'Tambah Fasilitas'}
               </h2>
               <button
                 className="text-gray-400 hover:bg-gray-100 rounded-lg p-1 transition-colors"
-                onClick={() => setShowModal(false)}
+                onClick={closeModal}
               >
                 <X size={20} />
               </button>
             </div>
-            <form onSubmit={handleCreate} className="p-6 flex flex-col gap-4">
+            <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Nama Fasilitas*
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Nama Fasilitas*</label>
                 <input
                   className="form-input"
                   value={form.name}
@@ -154,33 +227,58 @@ export default function AdminFacilitiesPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Deskripsi
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Ikon</label>
+                <div className="grid grid-cols-8 gap-1.5 p-3 bg-gray-50 rounded-xl border border-gray-200 max-h-44 overflow-y-auto">
+                  {ICON_OPTIONS.map((opt) => {
+                    const Icon = opt.icon;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        title={opt.label}
+                        onClick={() => setForm({ ...form, icon: opt.value })}
+                        className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all ${
+                          form.icon === opt.value
+                            ? 'bg-primary text-white shadow-sm'
+                            : 'text-gray-400 hover:bg-white hover:text-gray-700 hover:shadow-sm'
+                        }`}
+                      >
+                        <Icon size={18} />
+                      </button>
+                    );
+                  })}
+                </div>
+                {form.icon && (
+                  <p className="text-xs text-gray-400 mt-1.5 flex items-center gap-1">
+                    <FacilityIcon name={form.icon} size={13} />
+                    {ICON_OPTIONS.find((o) => o.value === form.icon)?.label}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Deskripsi</label>
                 <textarea
                   className="form-input"
                   rows={3}
                   value={form.description}
-                  onChange={(e) =>
-                    setForm({ ...form, description: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
                   placeholder="Opsional"
                 />
               </div>
-              <div className="flex justify-end gap-3 mt-4">
+              <div className="flex justify-end gap-3 mt-2">
                 <button
                   type="button"
                   className="btn btn-outline btn-md"
-                  onClick={() => setShowModal(false)}
+                  onClick={closeModal}
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="btn btn-secondary btn-md"
+                  className="btn btn-primary btn-md"
                   disabled={saving}
                 >
-                  {saving ? 'Menyimpan...' : 'Simpan'}
+                  {saving ? 'Menyimpan...' : editItem ? 'Update' : 'Simpan'}
                 </button>
               </div>
             </form>

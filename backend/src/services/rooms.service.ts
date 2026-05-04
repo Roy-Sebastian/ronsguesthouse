@@ -11,7 +11,14 @@ export async function getRooms(status?: string, type?: string, checkIn?: string,
       roomAmenities: { include: { amenity: true } },
       _count: { select: { reservations: true } },
     },
-    orderBy: [{ floor: 'asc' }, { roomNumber: 'asc' }],
+    orderBy: [{ floor: 'asc' }],
+  });
+
+  rooms.sort((a, b) => {
+    const aNum = parseInt(a.roomNumber, 10);
+    const bNum = parseInt(b.roomNumber, 10);
+    if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
+    return a.roomNumber.localeCompare(b.roomNumber);
   });
 
   if (checkIn && checkOut) {
@@ -55,9 +62,15 @@ export interface CreateRoomInput {
 
 export async function createRoom(input: CreateRoomInput) {
   if (!input.roomNumber || !input.pricePerNight) {
-    throw Object.assign(new Error('Missing required fields'), { statusCode: 400 });
+    throw Object.assign(new Error('Nomor kamar dan harga wajib diisi'), { statusCode: 400 });
   }
-  
+  if (Number(input.pricePerNight) <= 0) {
+    throw Object.assign(new Error('Harga kamar harus lebih dari 0'), { statusCode: 400 });
+  }
+  if (input.capacity !== undefined && Number(input.capacity) <= 0) {
+    throw Object.assign(new Error('Kapasitas kamar harus lebih dari 0'), { statusCode: 400 });
+  }
+
   const { selectedAmenities, ...roomData } = input;
   
   return roomRepository.create({ 
@@ -88,6 +101,13 @@ export async function updateRoom(
     selectedAmenities?: string[];
   },
 ) {
+  if (fields.pricePerNight !== undefined && Number(fields.pricePerNight) <= 0) {
+    throw Object.assign(new Error('Harga kamar harus lebih dari 0'), { statusCode: 400 });
+  }
+  if (fields.capacity !== undefined && Number(fields.capacity) <= 0) {
+    throw Object.assign(new Error('Kapasitas kamar harus lebih dari 0'), { statusCode: 400 });
+  }
+
   const { selectedAmenities, ...roomData } = fields;
 
   if (selectedAmenities !== undefined) {

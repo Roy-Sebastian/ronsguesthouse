@@ -17,3 +17,4 @@ export * as RolesService from './roles.service';
 export * as RoomsService from './rooms.service';
 export * as StaysService from './stays.service';
 export * as UsersService from './users.service';
+export * as PenaltyService from './penalty.service';

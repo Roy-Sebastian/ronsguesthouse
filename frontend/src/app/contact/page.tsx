@@ -3,6 +3,7 @@
 import PublicFooter from '@/components/layout/PublicFooter';
 import PublicNavbar from '@/components/layout/PublicNavbar';
 import ScrollReveal from '@/components/ui/ScrollReveal';
+import { apiFetch } from '@/lib/apiFetch';
 import {
   CheckCircle,
   Mail,
@@ -30,12 +31,15 @@ export default function ContactPage() {
     setError('');
     setSuccess(false);
     try {
-      const res = await fetch('/api/messages', {
+      const res = await apiFetch('/public/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to send message');
+      }
       setSuccess(true);
       setForm({ name: '', email: '', phone: '', subject: '', message: '' });
       setTimeout(() => setSuccess(false), 5000);
@@ -65,7 +69,7 @@ export default function ContactPage() {
 
       {/* Main Content */}
       <section className="py-24 px-6 max-w-7xl mx-auto flex flex-col lg:flex-row gap-16 lg:gap-24">
-        
+
         {/* Contact Info */}
         <div className="lg:w-1/3">
           <ScrollReveal>
@@ -79,7 +83,7 @@ export default function ContactPage() {
                 <MapPin className="text-red-800 w-6 h-6 shrink-0 mt-1" />
                 <div>
                   <h4 className="text-sm font-bold uppercase tracking-widest text-gray-900 mb-1">Address</h4>
-                  <p className="text-gray-600 font-light">Jl. Cendrawasih No. 12, Gundaling I<br/>Kec. Berastagi, Kab. Karo, Sumatera Utara</p>
+                  <p className="text-gray-600 font-light">Jl. Perwira Gg. Kaliaga No.5, Gundaling I<br />Kec. Berastagi, Kabupaten Karo, Sumatera Utara 22156</p>
                 </div>
               </div>
 
@@ -87,7 +91,7 @@ export default function ContactPage() {
                 <Phone className="text-red-800 w-6 h-6 shrink-0 mt-1" />
                 <div>
                   <h4 className="text-sm font-bold uppercase tracking-widest text-gray-900 mb-1">Phone</h4>
-                  <p className="text-gray-600 font-light">+62 811 1234 5678</p>
+                  <p className="text-gray-600 font-light">+62 852-7158-2388</p>
                 </div>
               </div>
 
@@ -106,7 +110,7 @@ export default function ContactPage() {
         <div className="lg:w-2/3 bg-white p-8 md:p-12 shadow-[0_0_40px_rgba(0,0,0,0.03)] border border-gray-100 relative">
           <ScrollReveal>
             <h3 className="text-2xl font-serif mb-8">Send a Message</h3>
-            
+
             {success && (
               <div className="mb-8 bg-green-50 text-green-900 border border-green-200 p-4 flex items-center space-x-3">
                 <CheckCircle className="w-5 h-5 text-green-600" />

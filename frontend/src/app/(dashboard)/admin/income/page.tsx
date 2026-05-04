@@ -1,4 +1,5 @@
-'use client';
+﻿'use client';
+import { apiFetch } from '@/lib/apiFetch';
 
 
 import { confirmAction } from '@/lib/dialog';
@@ -33,7 +34,6 @@ import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 export default function AdminIncomePage() {
-  const [stats, setStats] = useState<any>(null);
   const [incomes, setIncomes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -51,15 +51,9 @@ export default function AdminIncomePage() {
 
   const fetchData = async () => {
     setLoading(true);
-    const [s, data] = await Promise.all([
-      fetch('/api/dashboard/stats')
-        .then((r) => r.json())
-        .catch(() => null),
-      fetch(`/api/incomes${search ? `?search=${search}` : ''}`)
-        .then((r) => r.json())
-        .catch(() => []),
-    ]);
-    setStats(s);
+    const data = await apiFetch(`/incomes${search ? `?search=${search}` : ''}`)
+      .then((r) => r.json())
+      .catch(() => []);
     setIncomes(Array.isArray(data) ? data : []);
     setLoading(false);
   };
@@ -99,13 +93,13 @@ export default function AdminIncomePage() {
       incomeDate: new Date(form.incomeDate).toISOString(),
     };
     if (editIncome) {
-      await fetch(`/api/incomes/${editIncome.id}`, {
+      await apiFetch(`/incomes/${editIncome.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
     } else {
-      await fetch('/api/incomes', {
+      await apiFetch('/incomes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -119,7 +113,7 @@ export default function AdminIncomePage() {
   const handleDelete = async (id: string) => {
     const ok = await confirmAction('Hapus catatan pendapatan ini?');
     if (!ok) return;
-    await fetch(`/api/incomes/${id}`, { method: 'DELETE' });
+    await apiFetch(`/incomes/${id}`, { method: 'DELETE' });
     fetchData();
   };
 
@@ -178,6 +172,13 @@ export default function AdminIncomePage() {
     (s, t) => s + Number(t.amount || 0),
     0,
   );
+
+  const totalIncomeAll = incomes.reduce((s, t) => s + Number(t.amount || 0), 0);
+  const monthlyIncomeCurrent = incomes.filter((t) => {
+    const d = new Date(t.incomeDate || t.createdAt);
+    const now = new Date();
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }).reduce((s, t) => s + Number(t.amount || 0), 0);
 
   const generateChartData = () => {
     const sorted = [...filteredByPeriod].sort(
@@ -248,10 +249,10 @@ export default function AdminIncomePage() {
         </div>
         <button
           onClick={openCreate}
-          className="btn btn-secondary btn-md shadow-sm"
+          className="btn btn-primary btn-md shadow-sm"
         >
           <Plus size={18} />{' '}
-          <span className="hidden sm:inline">Catat Pendapatan</span>
+          <span>Catat Pendapatan</span>
         </button>
       </div>
 
@@ -260,14 +261,14 @@ export default function AdminIncomePage() {
         {[
           {
             label: 'Total Pendapatan',
-            val: formatRp(stats?.totalIncome || 0),
+            val: formatRp(totalIncomeAll),
             icon: DollarSign,
             color: 'text-primary',
             bg: 'bg-primary/8',
           },
           {
             label: 'Bulan Ini',
-            val: formatRp(stats?.monthlyRevenue || 0),
+            val: formatRp(monthlyIncomeCurrent),
             icon: Calendar,
             color: 'text-blue-600',
             bg: 'bg-blue-50',
@@ -447,7 +448,7 @@ export default function AdminIncomePage() {
               sortedData.map((t, i) => (
                 <tr
                   key={t.id || i}
-                  className="hover:bg-gray-50/60 transition-colors border-b border-gray-50 last:border-0"
+                  className="hover:bg-red-50/20 transition-colors border-b border-gray-100 last:border-0"
                 >
                   <td className="px-4 py-3 text-sm text-gray-500">
                     {fmtDate(t.incomeDate || t.date || t.createdAt)}

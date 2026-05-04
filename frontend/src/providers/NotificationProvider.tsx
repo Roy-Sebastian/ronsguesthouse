@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { apiFetch } from '@/lib/apiFetch';
 import { io, Socket } from 'socket.io-client';
 
 export interface Notification {
@@ -18,21 +19,57 @@ export interface Notification {
   read: boolean;
 }
 
+export interface ReservationToast {
+  id: string;
+  guestName: string;
+  roomNumber: string;
+  bookingCode: string;
+  source: string;
+  checkInDate: string;
+}
+
 interface NotificationContextValue {
   notifications: Notification[];
   unreadCount: number;
   reservationBadge: number;
+  toasts: ReservationToast[];
   markAllRead: () => void;
   clearReservationBadge: () => void;
+  dismissToast: (id: string) => void;
 }
 
 const NotificationContext = createContext<NotificationContextValue>({
   notifications: [],
   unreadCount: 0,
   reservationBadge: 0,
+  toasts: [],
   markAllRead: () => {},
   clearReservationBadge: () => {},
+  dismissToast: () => {},
 });
+
+function playNotificationSound() {
+  try {
+    const ctx = new AudioContext();
+    const times = [0, 0.15, 0.3];
+    const freqs = [880, 1100, 1320];
+    times.forEach((t, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freqs[i], ctx.currentTime + t);
+      gain.gain.setValueAtTime(0, ctx.currentTime + t);
+      gain.gain.linearRampToValueAtTime(0.25, ctx.currentTime + t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.25);
+      osc.start(ctx.currentTime + t);
+      osc.stop(ctx.currentTime + t + 0.25);
+    });
+  } catch {
+    // AudioContext not available (e.g. SSR)
+  }
+}
 
 const STAFF_ROLES = ['admin', 'superadmin', 'receptionist'];
 
@@ -46,6 +83,7 @@ export function NotificationProvider({
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [reservationBadge, setReservationBadge] = useState(0);
+  const [toasts, setToasts] = useState<ReservationToast[]>([]);
   const socketRef = useRef<Socket | null>(null);
 
   const addNotification = useCallback((notif: Notification) => {
@@ -63,7 +101,7 @@ export function NotificationProvider({
   useEffect(() => {
     if (!STAFF_ROLES.includes(role)) return;
 
-    fetch('/api/reservations/utils/reminders')
+    apiFetch('/reservations/utils/reminders')
       .then((r) => (r.ok ? r.json() : []))
       .then((data: any[]) => {
         if (!Array.isArray(data) || data.length === 0) return;
@@ -91,14 +129,36 @@ export function NotificationProvider({
     socketRef.current = socket;
 
     socket.on('reservation_created', (data: any) => {
-      if (data?.source !== 'online') return;
+      const toastId = 'realtime_' + (data.id ?? Date.now());
+      const guestName = data.guest?.fullName || 'Tamu';
+      const roomNumber = data.room?.roomNumber || '-';
+      const source = data.source ?? 'internal';
+      const sourceLabel = source === 'online' ? 'Online' : 'Internal';
+
       addNotification({
-        id: 'realtime_' + (data.id ?? Date.now()),
+        id: toastId,
         type: 'new_booking',
-        message: `Pesanan online baru: ${data.guest?.fullName || 'Tamu'} memesan kamar ${data.room?.roomNumber || '-'}`,
+        message: `Reservasi baru [${sourceLabel}]: ${guestName} memesan kamar ${roomNumber}`,
         date: new Date(),
         read: false,
       });
+
+      const toast: ReservationToast = {
+        id: toastId,
+        guestName,
+        roomNumber,
+        bookingCode: data.bookingCode ?? '-',
+        source: sourceLabel,
+        checkInDate: data.checkInDate ?? '',
+      };
+      setToasts((prev) => [...prev, toast]);
+
+      playNotificationSound();
+
+      // Auto-dismiss after 8s
+      setTimeout(() => {
+        setToasts((prev) => prev.filter((t) => t.id !== toastId));
+      }, 8000);
     });
 
     return () => {
@@ -116,14 +176,20 @@ export function NotificationProvider({
     setReservationBadge(0);
   }, []);
 
+  const dismissToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
   return (
     <NotificationContext.Provider
       value={{
         notifications,
         unreadCount,
         reservationBadge,
+        toasts,
         markAllRead,
         clearReservationBadge,
+        dismissToast,
       }}
     >
       {children}

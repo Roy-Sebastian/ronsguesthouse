@@ -5,6 +5,7 @@ import { defaultRoleMatrix } from '@/lib/rbac';
 import { NotificationProvider, useNotifications } from '@/providers/NotificationProvider';
 import {
   Activity,
+  AlertTriangle,
   BedDouble,
   Building2,
   CalendarCheck,
@@ -32,6 +33,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useMemo, useState, useEffect } from 'react';
 import NotificationBell from '@/components/features/NotificationBell';
+import ReservationToastPopup from '@/components/features/ReservationToastPopup';
 
 interface NavItem {
   label: string;
@@ -55,6 +57,7 @@ const STAFF_NAV_SECTIONS = (role: string): { section: string; items: NavItem[] }
       { label: 'Reservasi', href: `/${role}/reservations`, icon: CalendarCheck, permission: 'reservation.view' },
       { label: 'Check-In/Out & Add-On', href: `/${role}/stays`, icon: LogIn, permission: 'stay.view' },
       { label: 'Transaksi Pembayaran', href: `/${role}/transactions`, icon: CreditCard, permission: 'transaction.view' },
+      { label: 'Denda', href: `/${role}/penalties`, icon: AlertTriangle, permission: 'penalty.view' },
       { label: 'Riwayat Tamu', href: `/${role}/history`, icon: History, permission: 'reservation.view' },
     ],
   },
@@ -98,22 +101,12 @@ const navByRole: Record<string, { section: string; items: NavItem[] }[]> = {
   superadmin: STAFF_NAV_SECTIONS('superadmin'),
   admin: STAFF_NAV_SECTIONS('admin'),
   receptionist: STAFF_NAV_SECTIONS('receptionist'),
-  guest: [
-    {
-      section: 'Akun Saya',
-      items: [
-        { label: 'Reservasi Saya', href: '/guest', icon: CalendarCheck },
-        { label: 'Tulis Ulasan', href: '/guest/reviews', icon: Star },
-      ],
-    },
-  ],
 };
 
 const roleBadge: Record<string, string> = {
   superadmin: 'Super Admin',
   admin: 'Admin',
   receptionist: 'Resepsionis',
-  guest: 'Tamu',
 };
 
 
@@ -365,6 +358,8 @@ export default function DashboardLayout({
         {/* Page */}
         <main className="flex-1 p-6 md:p-8">{children}</main>
       </div>
+
+      <ReservationToastPopup />
 
       {showLogoutConfirm && (
         <div className="fixed inset-0 bg-black/60 z-[999] flex items-center justify-center p-4 backdrop-blur-sm animate-fadeIn">

@@ -1,4 +1,5 @@
 ﻿'use client';
+import { apiFetch } from '@/lib/apiFetch';
 
 import {
   ArcElement,
@@ -49,7 +50,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
-    fetch('/api/dashboard/stats')
+    apiFetch('/dashboard/stats')
       .then((r) => r.json())
       .then((data) => setStats(data))
       .catch(() => {});
@@ -73,11 +74,11 @@ export default function AdminDashboard() {
 
   // Data for Bar Chart
   const barChartData = {
-    labels: lineLabels.length > 0 ? lineLabels : ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN'],
+    labels: lineLabels,
     datasets: [
       {
         label: 'Pendapatan',
-        data: incomeValues.length > 0 ? incomeValues : [20000000, 39000000, 11000000, 21000000, 26000000, 39000000],
+        data: incomeValues,
         backgroundColor: 'oklch(75% 0.183 55.934)',
         borderRadius: 4,
         barPercentage: 0.6,
@@ -85,7 +86,7 @@ export default function AdminDashboard() {
       },
       {
         label: 'Pengeluaran',
-        data: expenseValues.length > 0 ? expenseValues : [8000000, 10000000, 9000000, 31000000, 18000000, 13000000],
+        data: expenseValues,
         backgroundColor: '#ef4444',
         borderRadius: 4,
         barPercentage: 0.6,
@@ -136,11 +137,7 @@ export default function AdminDashboard() {
   };
 
   // Data for Doughnut Chart
-  const pieStats = stats?.incomeStatistics || [
-    { name: 'Standard', percentage: 53 },
-    { name: 'Deluxe', percentage: 31 },
-    { name: 'Suite', percentage: 16 }
-  ];
+  const pieStats = stats?.incomeStatistics || [];
   
   const pieColors = [
     'oklch(75% 0.183 55.934)', // Primary
@@ -270,20 +267,26 @@ export default function AdminDashboard() {
             <button className="text-gray-400 hover:text-gray-600"><MoreVertical size={16}/></button>
           </div>
           <div className="flex-1 relative flex items-center justify-center min-h-[160px]">
-            <div className="w-48 h-48 absolute">
-              <Doughnut data={pieChartData} options={pieChartOptions} />
-            </div>
-            {/* Center Text Overlays if any could go here */}
-          </div>
-          {/* Custom Pie Legend */}
-          <div className="flex justify-center gap-4 mt-6">
-            {pieStats.map((p: any, i: number) => (
-              <div key={p.name} className="flex flex-col items-center">
-                <span className="text-xl font-bold text-gray-800">{p.percentage}%</span>
-                <span className="text-[10px] text-gray-400">{p.name}</span>
+            {pieStats.length === 0 ? (
+              <div className="text-center text-gray-400 text-sm py-12">
+                Belum ada data pendapatan
               </div>
-            ))}
+            ) : (
+              <div className="w-48 h-48 absolute">
+                <Doughnut data={pieChartData} options={pieChartOptions} />
+              </div>
+            )}
           </div>
+          {pieStats.length > 0 && (
+            <div className="flex justify-center gap-4 mt-6">
+              {pieStats.map((p: any, i: number) => (
+                <div key={p.name} className="flex flex-col items-center">
+                  <span className="text-xl font-bold text-gray-800">{p.percentage}%</span>
+                  <span className="text-[10px] text-gray-400">{p.name}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -324,7 +327,7 @@ export default function AdminDashboard() {
                 stats.recentReservations.map((r: any, idx: number) => (
                   <tr
                     key={r.id}
-                    className="hover:bg-gray-50/50 transition-colors"
+                    className="hover:bg-red-50/20 transition-colors"
                   >
                     <td className="px-5 py-4 border-b border-gray-100 text-sm text-gray-500">
                       {idx + 1}.

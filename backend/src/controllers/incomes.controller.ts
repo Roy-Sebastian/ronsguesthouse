@@ -4,9 +4,11 @@ import * as IncomesService from '../services/incomes.service';
 
 export const getAll = async (req: Request, res: Response) => {
 	try {
-		const filter = String(req.query.filter || '');
-		const search = String(req.query.search || '').trim();
-		res.json(await IncomesService.getAllIncomes(filter, search));
+		const filter    = String(req.query.filter    || '');
+		const search    = String(req.query.search    || '').trim();
+		const dateStart = req.query.dateStart ? String(req.query.dateStart) : undefined;
+		const dateEnd   = req.query.dateEnd   ? String(req.query.dateEnd)   : undefined;
+		res.json(await IncomesService.getAllIncomes(filter, search, dateStart, dateEnd));
 	} catch (error: any) {
 		res.status(500).json({ error: error.message || 'Failed to fetch incomes' });
 	}

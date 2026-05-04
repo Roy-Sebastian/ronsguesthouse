@@ -37,7 +37,9 @@ exports.getStats = void 0;
 const DashboardService = __importStar(require("../services/dashboard.service"));
 const getStats = async (req, res) => {
     try {
-        const data = await DashboardService.getDashboardStats();
+        const dateStart = req.query.dateStart ? String(req.query.dateStart) : undefined;
+        const dateEnd = req.query.dateEnd ? String(req.query.dateEnd) : undefined;
+        const data = await DashboardService.getDashboardStats(dateStart, dateEnd);
         res.json(data);
     }
     catch (error) {

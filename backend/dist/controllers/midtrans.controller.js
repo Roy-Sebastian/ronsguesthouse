@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkPaymentStatus = exports.notification = exports.createSnapToken = exports.charge = void 0;
+exports.publicForceSync = exports.checkPaymentStatus = exports.notification = exports.createSnapToken = exports.charge = void 0;
 const client_1 = require("@prisma/client");
 const logger_1 = require("../config/logger");
 const reservation_repository_1 = require("../repositories/reservation.repository");
@@ -174,3 +174,23 @@ const checkPaymentStatus = async (req, res) => {
     }
 };
 exports.checkPaymentStatus = checkPaymentStatus;
+/**
+ * Public endpoint to force synchronisation of an order
+ * Useful for local development when Webhook is not reachable.
+ */
+const publicForceSync = async (req, res) => {
+    try {
+        const { order_id } = req.params;
+        if (!order_id)
+            return res.status(400).json({ error: 'order_id required' });
+        // 1. Fetch latest real data securely from Midtrans API
+        const response = await MidtransService.checkTransactionStatus(String(order_id));
+        // 2. Process it
+        await MidtransService.processMidtransNotification(response);
+        res.json({ success: true, message: 'Transaction synced correctly' });
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Failed to sync' });
+    }
+};
+exports.publicForceSync = publicForceSync;

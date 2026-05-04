@@ -1,8 +1,13 @@
 'use client';
+import { apiFetch } from '@/lib/apiFetch';
 
-import { Clock, LogIn, LogOut, Search, PackagePlus } from 'lucide-react';
+import { AlertTriangle, Clock, LogIn, LogOut, Search, PackagePlus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import AddOnModal from '@/components/features/AddOnModal';
+import PenaltyModal from '@/components/features/PenaltyModal';
+import StayDetailModal from '@/components/features/StayDetailModal';
+import CheckInConfirmModal from '@/components/features/CheckInConfirmModal';
+import CheckOutBillModal from '@/components/features/CheckOutBillModal';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
@@ -15,19 +20,25 @@ export default function ReceptionistStaysPage() {
   const [dateStart, setDateStart] = useState('');
   const [dateEnd, setDateEnd] = useState('');
   const [addonReservationId, setAddonReservationId] = useState<string | null>(null);
+  const [penaltyStay, setPenaltyStay] = useState<any | null>(null);
+  const [detailStay, setDetailStay] = useState<any | null>(null);
+  const [checkInReservation, setCheckInReservation] = useState<any | null>(null);
+  const [checkOutStay, setCheckOutStay] = useState<any | null>(null);
 
   const fetchStays = async () => {
     setLoading(true);
     const [stRes, resRes] = await Promise.all([
-      fetch('/api/stays')
+      apiFetch('/stays?limit=500')
         .then((r) => r.json())
+        .then((r) => (Array.isArray(r) ? r : Array.isArray(r?.data) ? r.data : []))
         .catch(() => []),
-      fetch('/api/reservations')
+      apiFetch('/reservations')
         .then((r) => r.json())
+        .then((r) => (Array.isArray(r) ? r : Array.isArray(r?.data) ? r.data : []))
         .catch(() => []),
     ]);
-    setStays(Array.isArray(stRes) ? stRes : []);
-    setReservations(Array.isArray(resRes) ? resRes : []);
+    setStays(stRes);
+    setReservations(resRes);
     setLoading(false);
   };
 
@@ -37,7 +48,7 @@ export default function ReceptionistStaysPage() {
 
   const handleCheckIn = async (reservationId: string) => {
     try {
-      const res = await fetch('/api/stays', {
+      const res = await apiFetch('/stays', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reservationId }),
@@ -53,9 +64,8 @@ export default function ReceptionistStaysPage() {
   };
 
   const handleCheckOut = async (stayId: string) => {
-    if (!confirm('Selesaikan masa menginap tamu (Check-Out)?')) return;
     try {
-      const res = await fetch(`/api/stays/${stayId}`, {
+      const res = await apiFetch(`/stays/${stayId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'checkout' }),
@@ -182,8 +192,8 @@ export default function ReceptionistStaysPage() {
                       </div>
                     </div>
                     <button
-                      className="btn btn-secondary btn-md"
-                      onClick={() => handleCheckIn(r.id)}
+                      className="btn btn-primary btn-md"
+                      onClick={() => setCheckInReservation(r)}
                     >
                       <LogIn size={14} /> Check In
                     </button>
@@ -248,8 +258,14 @@ export default function ReceptionistStaysPage() {
                         <PackagePlus size={14} /> + Layanan
                       </button>
                       <button
+                        className="px-3.5 py-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 text-xs font-semibold rounded-lg transition-colors inline-flex items-center justify-center gap-1.5 shrink-0"
+                        onClick={() => setPenaltyStay(s)}
+                      >
+                        <AlertTriangle size={14} /> + Denda
+                      </button>
+                      <button
                         className="btn btn-primary btn-md"
-                        onClick={() => handleCheckOut(s.id)}
+                        onClick={() => setCheckOutStay(s)}
                       >
                         <LogOut size={14} /> Selesai
                       </button>
@@ -275,7 +291,6 @@ export default function ReceptionistStaysPage() {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
               <SortableHeader
                 label="Kamar"
@@ -283,7 +298,6 @@ export default function ReceptionistStaysPage() {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
               <SortableHeader
                 label="Check-In"
@@ -291,7 +305,6 @@ export default function ReceptionistStaysPage() {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
               <SortableHeader
                 label="Check-Out"
@@ -299,7 +312,6 @@ export default function ReceptionistStaysPage() {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
             </tr>
           </thead>
@@ -320,20 +332,21 @@ export default function ReceptionistStaysPage() {
               sortedHistoryStays.map((s) => (
                 <tr
                   key={s.id}
-                  className="hover:bg-gray-50/50 transition-colors"
+                  className="hover:bg-red-50/20 transition-colors cursor-pointer"
+                  onClick={() => setDetailStay(s)}
                 >
-                  <td className="px-6 py-4 border-b border-gray-50">
+                  <td className="px-6 py-4 border-b border-gray-100">
                     <strong className="font-medium text-gray-800 text-sm">
                       {s.reservation?.guest?.fullName}
                     </strong>
                   </td>
-                  <td className="px-6 py-4 border-b border-gray-50 text-sm text-gray-600">
+                  <td className="px-6 py-4 border-b border-gray-100 text-sm text-gray-600">
                     Kamar {s.reservation?.room?.roomNumber}
                   </td>
-                  <td className="px-6 py-4 border-b border-gray-50 text-xs text-gray-500">
+                  <td className="px-6 py-4 border-b border-gray-100 text-xs text-gray-500">
                     {new Date(s.checkInAt).toLocaleString('id-ID')}
                   </td>
-                  <td className="px-6 py-4 border-b border-gray-50 text-xs text-gray-500">
+                  <td className="px-6 py-4 border-b border-gray-100 text-xs text-gray-500">
                     {s.checkOutAt
                       ? new Date(s.checkOutAt).toLocaleString('id-ID')
                       : '-'}
@@ -350,6 +363,38 @@ export default function ReceptionistStaysPage() {
           reservationId={addonReservationId}
           onClose={() => setAddonReservationId(null)}
           onSuccess={fetchStays}
+        />
+      )}
+
+      {penaltyStay && (
+        <PenaltyModal
+          reservationId={penaltyStay.reservationId}
+          guestName={penaltyStay.reservation?.guest?.fullName ?? '-'}
+          onClose={() => setPenaltyStay(null)}
+          onSuccess={fetchStays}
+        />
+      )}
+
+      {detailStay && (
+        <StayDetailModal
+          stay={detailStay}
+          onClose={() => setDetailStay(null)}
+        />
+      )}
+
+      {checkInReservation && (
+        <CheckInConfirmModal
+          reservation={checkInReservation}
+          onConfirm={handleCheckIn}
+          onClose={() => setCheckInReservation(null)}
+        />
+      )}
+
+      {checkOutStay && (
+        <CheckOutBillModal
+          stay={checkOutStay}
+          onConfirm={handleCheckOut}
+          onClose={() => setCheckOutStay(null)}
         />
       )}
     </>

@@ -37,7 +37,9 @@ exports.remove = exports.update = exports.create = exports.getById = exports.get
 const AuditLogsService = __importStar(require("../services/audit-logs.service"));
 const getAll = async (req, res) => {
     try {
-        res.json(await AuditLogsService.getAllAuditLogs());
+        const page = Math.max(1, parseInt(String(req.query.page || '1'), 10));
+        const limit = Math.min(200, Math.max(1, parseInt(String(req.query.limit || '50'), 10)));
+        res.json(await AuditLogsService.getAllAuditLogs(page, limit));
     }
     catch (error) {
         res.status(500).json({ error: error.message || 'Failed to fetch audit-logs' });

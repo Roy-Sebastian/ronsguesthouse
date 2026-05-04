@@ -1,4 +1,5 @@
-'use client';
+﻿'use client';
+import { apiFetch } from '@/lib/apiFetch';
 
 import { confirmAction } from '@/lib/dialog';
 import { formatRp } from '@/lib/formatters';
@@ -11,7 +12,7 @@ import {
   LinearScale,
   Tooltip,
 } from 'chart.js';
-import { DollarSign, Edit, Plus, Search, Trash2, X } from 'lucide-react';
+import { ArrowDownRight, Calendar, DollarSign, Edit, Plus, Search, Trash2, TrendingDown, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { useTableSort } from '@/hooks/useTableSort';
@@ -22,7 +23,6 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 export default function AdminExpensesPage() {
   const [expenses, setExpenses] = useState<any[]>([]);
-  const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [period, setPeriod] = useState('all');
@@ -40,16 +40,10 @@ export default function AdminExpensesPage() {
 
   const fetchExpenses = async () => {
     setLoading(true);
-    const [statsData, expensesData] = await Promise.all([
-      fetch('/api/dashboard/stats')
-        .then((r) => r.json())
-        .catch(() => null),
-      fetch(`/api/expenses${search ? `?search=${search}` : ''}`)
-        .then((r) => r.json())
-        .catch(() => []),
-    ]);
-    setStats(statsData);
-    setExpenses(Array.isArray(expensesData) ? expensesData : []);
+    const data = await apiFetch(`/expenses${search ? `?search=${search}` : ''}`)
+      .then((r) => r.json())
+      .catch(() => []);
+    setExpenses(Array.isArray(data) ? data : []);
     setLoading(false);
   };
 
@@ -89,13 +83,13 @@ export default function AdminExpensesPage() {
         : new Date().toISOString(),
     };
     if (editExpense) {
-      await fetch(`/api/expenses/${editExpense.id}`, {
+      await apiFetch(`/expenses/${editExpense.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
     } else {
-      await fetch('/api/expenses', {
+      await apiFetch('/expenses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -109,7 +103,7 @@ export default function AdminExpensesPage() {
   const handleDelete = async (id: string) => {
     const ok = await confirmAction('Hapus catatan pengeluaran ini?');
     if (!ok) return;
-    await fetch(`/api/expenses/${id}`, { method: 'DELETE' });
+    await apiFetch(`/expenses/${id}`, { method: 'DELETE' });
     fetchExpenses();
   };
 
@@ -206,6 +200,14 @@ export default function AdminExpensesPage() {
     };
   };
 
+  const totalExpense = filteredByPeriod.reduce((s, t) => s + Number(t.amount || 0), 0);
+
+  const monthlyExpense = expenses.filter((t) => {
+    const d = new Date(t.expenseDate || t.createdAt);
+    const now = new Date();
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }).reduce((s, t) => s + Number(t.amount || 0), 0);
+
   const chartData = generateChartData();
   const { sortedData, handleSort, sortBy, sortOrder } = useTableSort(filteredByPeriod);
 
@@ -222,13 +224,34 @@ export default function AdminExpensesPage() {
           </p>
         </div>
         <button
-          className="btn btn-secondary btn-md"
+          className="btn btn-primary btn-md"
           onClick={openCreate}
         >
           <Plus size={16} />{' '}
-          <span className="hidden sm:inline">Catat Pengeluaran</span>
+          <span>Catat Pengeluaran</span>
         </button>
       </div>
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        {[
+          { label: 'Total Pengeluaran', val: formatRp(totalExpense), icon: DollarSign, color: 'text-red-600', bg: 'bg-red-50' },
+          { label: 'Bulan Ini', val: formatRp(monthlyExpense), icon: Calendar, color: 'text-blue-600', bg: 'bg-blue-50' },
+          { label: 'Transaksi', val: filteredByPeriod.length, icon: ArrowDownRight, color: 'text-orange-600', bg: 'bg-orange-50' },
+          { label: 'Rata-rata / Transaksi', val: filteredByPeriod.length > 0 ? formatRp(totalExpense / filteredByPeriod.length) : 'Rp 0', icon: TrendingDown, color: 'text-violet-600', bg: 'bg-violet-50' },
+        ].map(({ label, val, icon: Icon, color, bg }) => (
+          <div key={label} className="bg-white rounded-2xl px-4 py-3 border border-gray-100 shadow-sm flex items-start gap-4">
+            <div className={`w-11 h-11 rounded-xl ${bg} flex items-center justify-center shrink-0`}>
+              <Icon size={20} className={color} />
+            </div>
+            <div>
+              <div className="text-sm text-gray-400 mb-1">{label}</div>
+              <div className="font-serif text-xl font-bold text-dark">{val}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* Filters */}
       <div className="flex flex-col xl:flex-row gap-4 mb-6 xl:items-center">
         <div className="search-bar flex-1 m-0">
@@ -316,7 +339,6 @@ export default function AdminExpensesPage() {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-4 py-3 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
               <SortableHeader
                 label="Kategori"
@@ -324,7 +346,6 @@ export default function AdminExpensesPage() {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-4 py-3 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
               <SortableHeader
                 label="Deskripsi"
@@ -332,7 +353,6 @@ export default function AdminExpensesPage() {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-4 py-3 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
               <SortableHeader
                 label="Jumlah"
@@ -340,7 +360,6 @@ export default function AdminExpensesPage() {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-4 py-3 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
               <SortableHeader
                 label="Dicatat Oleh"
@@ -348,9 +367,8 @@ export default function AdminExpensesPage() {
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
-                className="px-4 py-3 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
-              <th className="px-4 py-3 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100">
+              <th>
                 Aksi
               </th>
             </tr>
@@ -375,12 +393,12 @@ export default function AdminExpensesPage() {
               sortedData.map((ex) => (
                 <tr
                   key={ex.id}
-                  className="hover:bg-gray-50/50 transition-colors"
+                  className="hover:bg-red-50/20 transition-colors"
                 >
-                  <td className="px-4 py-3 border-b border-gray-50 text-sm text-gray-500">
+                  <td className="px-4 py-3 border-b border-gray-100 text-sm text-gray-500">
                     {new Date(ex.expenseDate).toLocaleDateString('id-ID')}
                   </td>
-                  <td className="px-4 py-3 border-b border-gray-50">
+                  <td className="px-4 py-3 border-b border-gray-100">
                     <span className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest rounded-md ${
                       ex.category === 'utilities' ? 'bg-blue-50 text-blue-600' :
                       ex.category === 'salary' ? 'bg-purple-50 text-purple-600' :
@@ -397,16 +415,16 @@ export default function AdminExpensesPage() {
                        'Lainnya'}
                     </span>
                   </td>
-                  <td className="px-4 py-3 border-b border-gray-50 text-sm text-gray-700">
+                  <td className="px-4 py-3 border-b border-gray-100 text-sm text-gray-700">
                     {ex.description || '-'}
                   </td>
-                  <td className="px-4 py-3 border-b border-gray-50 font-bold text-red-600">
-                    {formatRp(Number(ex.amount))}
+                  <td className="px-4 py-3 border-b border-gray-100 font-bold text-red-600">
+                    - {formatRp(Number(ex.amount))}
                   </td>
-                  <td className="px-4 py-3 border-b border-gray-50 text-xs text-gray-500">
+                  <td className="px-4 py-3 border-b border-gray-100 text-xs text-gray-500">
                     {ex.user?.name}
                   </td>
-                  <td className="px-4 py-3 border-b border-gray-50">
+                  <td className="px-4 py-3 border-b border-gray-100">
                     <div className="flex items-center gap-2">
                       <button
                         className="btn btn-ghost btn-icon text-gray-500 hover:text-gray-900 hover:bg-gray-100"
@@ -526,7 +544,7 @@ export default function AdminExpensesPage() {
                 </button>
                 <button
                   type="submit"
-                  className="btn btn-secondary btn-md"
+                  className="btn btn-primary btn-md"
                   disabled={saving}
                 >
                   {saving ? 'Menyimpan...' : 'Simpan Catatan'}

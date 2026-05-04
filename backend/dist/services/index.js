@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UsersService = exports.StaysService = exports.RoomsService = exports.RolesService = exports.ReviewsService = exports.MessagesService = exports.IncomesService = exports.GuestsService = exports.GalleryService = exports.FacilitiesService = exports.ExpensesService = exports.AuditLogsService = exports.AmenitiesService = exports.AddOnsService = exports.PricingService = exports.MidtransService = exports.DashboardService = exports.TransactionService = exports.ReservationService = void 0;
+exports.PenaltyService = exports.UsersService = exports.StaysService = exports.RoomsService = exports.RolesService = exports.ReviewsService = exports.MessagesService = exports.IncomesService = exports.GuestsService = exports.GalleryService = exports.FacilitiesService = exports.ExpensesService = exports.AuditLogsService = exports.AmenitiesService = exports.AddOnsService = exports.PricingService = exports.MidtransService = exports.DashboardService = exports.TransactionService = exports.ReservationService = void 0;
 exports.ReservationService = __importStar(require("./reservation.service"));
 exports.TransactionService = __importStar(require("./transaction.service"));
 exports.DashboardService = __importStar(require("./dashboard.service"));
@@ -53,3 +53,4 @@ exports.RolesService = __importStar(require("./roles.service"));
 exports.RoomsService = __importStar(require("./rooms.service"));
 exports.StaysService = __importStar(require("./stays.service"));
 exports.UsersService = __importStar(require("./users.service"));
+exports.PenaltyService = __importStar(require("./penalty.service"));

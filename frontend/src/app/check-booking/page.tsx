@@ -1,28 +1,30 @@
-﻿'use client';
+'use client';
 
 import PublicNavbar from '@/components/layout/PublicNavbar';
 import PublicFooter from '@/components/layout/PublicFooter';
 import ScrollReveal from '@/components/ui/ScrollReveal';
 import { BACKEND_URL } from '@/lib/constants';
 import { Search, Loader2, Star } from 'lucide-react';
-import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export default function CheckBookingPage() {
+function CheckBookingContent() {
   // ── Hooks ──────────────────────────────────────────────────────────────────
-  const [email, setEmail] = useState('');
-  const [bookingCode, setBookingCode] = useState('');
+  const searchParams = useSearchParams();
+  const initialCode = (searchParams.get('code') || '').toUpperCase();
+
+  const [bookingCode, setBookingCode] = useState(initialCode);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<any | null>(null);
 
   // ── Handlers & Helpers ─────────────────────────────────────────────────────
 
-  const handleCheck = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !bookingCode) return;
-    
+  const runCheck = useCallback(async (code: string) => {
+    if (!code) return;
+
     setLoading(true);
     setError(null);
     setResult(null);
@@ -31,11 +33,11 @@ export default function CheckBookingPage() {
       const res = await fetch(`${BACKEND_URL}/api/public/check-booking`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, bookingCode }),
+        body: JSON.stringify({ bookingCode: code }),
       });
 
       const data = await res.json();
-      
+
       if (!res.ok) {
         throw new Error(data.error || 'Failed to check booking');
       }
@@ -46,6 +48,15 @@ export default function CheckBookingPage() {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    if (initialCode) runCheck(initialCode);
+  }, [initialCode, runCheck]);
+
+  const handleCheck = (e: React.FormEvent) => {
+    e.preventDefault();
+    runCheck(bookingCode);
   };
 
   const getStatusBadge = (status: string) => {
@@ -77,7 +88,7 @@ export default function CheckBookingPage() {
             <h1 className="text-4xl md:text-5xl font-serif mb-4">Check Booking</h1>
             <div className="w-16 h-0.5 bg-red-800 mx-auto mb-6" />
             <p className="text-gray-600 font-light max-w-2xl mx-auto">
-              Enter your email and booking code to track your reservation status.
+              Enter your booking code to track your reservation status.
             </p>
           </div>
         </ScrollReveal>
@@ -87,29 +98,16 @@ export default function CheckBookingPage() {
         <div className="max-w-3xl mx-auto">
           <div className="bg-white p-8 md:p-10 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] ring-1 ring-neutral-200/50 mb-10">
             <form onSubmit={handleCheck} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold tracking-widest uppercase text-neutral-500">Email Address</label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="nama@email.com"
-                    required
-                    className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-red-800 focus:border-red-800 transition-all outline-none"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-bold tracking-widest uppercase text-neutral-500">Booking Code</label>
-                  <input
-                    type="text"
-                    value={bookingCode}
-                    onChange={(e) => setBookingCode(e.target.value.toUpperCase())}
-                    placeholder="RONS-XXXXXXXX"
-                    required
-                    className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-red-800 focus:border-red-800 transition-all outline-none uppercase"
-                  />
-                </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold tracking-widest uppercase text-neutral-500">Booking Code</label>
+                <input
+                  type="text"
+                  value={bookingCode}
+                  onChange={(e) => setBookingCode(e.target.value.toUpperCase())}
+                  placeholder="RONS-XXXXXXXX"
+                  required
+                  className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-red-800 focus:border-red-800 transition-all outline-none uppercase"
+                />
               </div>
 
               {error && (
@@ -120,7 +118,7 @@ export default function CheckBookingPage() {
 
               <button
                 type="submit"
-                disabled={loading || !email || !bookingCode}
+                disabled={loading || !bookingCode}
                 className="w-full flex items-center justify-center gap-2 px-8 py-3.5 bg-red-800 hover:bg-red-700 disabled:opacity-50 text-white rounded-xl font-medium tracking-wide transition-all shadow-lg shadow-red-900/20"
               >
                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
@@ -192,13 +190,13 @@ export default function CheckBookingPage() {
           {result && result.status === 'checked_out' && (
             <div className="mt-6 bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] ring-1 ring-neutral-200/50 p-6 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
               <Star className="w-8 h-8 text-yellow-500 mx-auto mb-3" />
-              <h3 className="text-lg font-bold text-neutral-900 mb-2">Bagaimana pengalaman Anda?</h3>
-              <p className="text-sm text-neutral-500 mb-4">Berikan ulasan untuk membantu kami meningkatkan pelayanan</p>
+              <h3 className="text-lg font-bold text-neutral-900 mb-2">How was your experience?</h3>
+              <p className="text-sm text-neutral-500 mb-4">Share your review to help us improve our service</p>
               <a
-                href={`/review?code=${encodeURIComponent(result.bookingCode)}&email=${encodeURIComponent(email)}`}
+                href={`/review?code=${encodeURIComponent(result.bookingCode)}`}
                 className="inline-flex items-center gap-2 px-6 py-3 bg-red-800 hover:bg-red-900 text-white rounded-xl font-medium tracking-wide transition-all shadow-lg shadow-red-900/20 text-sm"
               >
-                <Star className="w-4 h-4" /> Tulis Ulasan
+                <Star className="w-4 h-4" /> Write a Review
               </a>
             </div>
           )}
@@ -207,5 +205,13 @@ export default function CheckBookingPage() {
 
       <PublicFooter />
     </div>
+  );
+}
+
+export default function CheckBookingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <CheckBookingContent />
+    </Suspense>
   );
 }

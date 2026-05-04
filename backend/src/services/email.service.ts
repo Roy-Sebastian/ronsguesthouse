@@ -65,7 +65,7 @@ export const sendBookingConfirmation = async (data: BookingEmailData) => {
 
           <p>Anda dapat menggunakan <b>Kode Booking</b> dan alamat email Anda untuk melacak pesanan di tautan berikut:</p>
           <p style="margin: 20px 0;">
-            <a href="${process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3000'}/check-booking" style="background-color: #111827; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Cek Pesanan Saya</a>
+            <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/check-booking" style="background-color: #111827; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Cek Pesanan Saya</a>
           </p>
 
           <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;" />
@@ -112,7 +112,7 @@ export const sendBookingRecovery = async (email: string, reservations: any[]) =>
 
           <p>Anda dapat melacak pesanan Anda melalui tautan berikut:</p>
           <p style="margin: 20px 0;">
-            <a href="${process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3000'}/check-booking" style="background-color: #111827; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Cek Pesanan Saya</a>
+            <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/check-booking" style="background-color: #111827; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Cek Pesanan Saya</a>
           </p>
 
           <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;" />

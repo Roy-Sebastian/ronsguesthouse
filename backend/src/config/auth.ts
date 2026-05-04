@@ -14,7 +14,7 @@ export const auth = betterAuth({
   session: {
     cookieCache: {
       enabled: true,
-      maxAge: 5 * 60, // 5 minutes
+      maxAge: 24 * 60 * 60, // 24 hours
     },
   },
   user: {
@@ -29,7 +29,7 @@ export const auth = betterAuth({
         type: 'string',
         required: false,
         defaultValue: 'guest',
-        input: true,
+        input: false,
       },
       phone: {
         type: 'string',
@@ -44,15 +44,14 @@ export const auth = betterAuth({
       },
     },
   },
-  trustedOrigins: [
-    process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001',
-    process.env.FRONTEND_URL || 'http://localhost:3000',
-  ],
-  baseURL: process.env.BASE_URL || 'http://localhost:3001',
+  trustedOrigins: (process.env.FRONTEND_URL || 'http://localhost:3000')
+    .split(',')
+    .map((s) => s.trim()),
+  baseURL: process.env.BETTER_AUTH_URL || process.env.BASE_URL || 'http://localhost:3001',
   advanced: {
     crossSubDomainCookies: {
-      enabled: true,
-      domain: process.env.NODE_ENV === 'production' ? '.ronsguesthouse.com' : undefined,
+      enabled: !!process.env.COOKIE_DOMAIN,
+      domain: process.env.COOKIE_DOMAIN || undefined,
     },
   },
 });

@@ -2,7 +2,14 @@ import { dbRepository } from '../repositories/db.repository';
 import { reservationRepository } from '../repositories/reservation.repository';
 import { stayRepository } from '../repositories/stay.repository';
 
-export async function getAllStays(page: number = 1, limit: number = 10, search?: string, status?: string) {
+export async function getAllStays(
+  page: number = 1,
+  limit: number = 10,
+  search?: string,
+  status?: string,
+  dateStart?: string,
+  dateEnd?: string,
+) {
   const skip = (page - 1) * limit;
 
   let whereClause: any = {};
@@ -11,7 +18,14 @@ export async function getAllStays(page: number = 1, limit: number = 10, search?:
   } else if (status === 'checked_in') {
     whereClause.checkOutAt = null;
   }
-  
+
+  if (dateStart || dateEnd) {
+    whereClause.checkInAt = {
+      ...(dateStart ? { gte: new Date(dateStart + 'T00:00:00') } : {}),
+      ...(dateEnd ? { lte: new Date(dateEnd + 'T23:59:59') } : {}),
+    };
+  }
+
   if (search) {
     whereClause.OR = [
       { reservation: { guest: { fullName: { contains: search, mode: 'insensitive' } } } },
@@ -28,6 +42,7 @@ export async function getAllStays(page: number = 1, limit: number = 10, search?:
             guest: true,
             room: true,
             bookingAddons: { include: { addOn: true } },
+            penalties: true,
           },
         },
       },

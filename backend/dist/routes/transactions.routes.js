@@ -41,6 +41,7 @@ const rate_limit_middleware_1 = require("../middlewares/rate-limit.middleware");
 const router = (0, express_1.Router)();
 router.post('/midtrans/charge', auth_middleware_1.requireAuth, (0, auth_middleware_1.requirePermission)('transaction.create'), midtransController.charge);
 router.post('/midtrans/notification', midtransController.notification);
+router.get('/midtrans/sync/:order_id', rate_limit_middleware_1.publicRateLimiter, midtransController.publicForceSync);
 // POST /api/transactions/payment/snap-token — rate-limited, requires auth
 router.post('/payment/snap-token', rate_limit_middleware_1.publicRateLimiter, auth_middleware_1.requireAuth, midtransController.createSnapToken);
 // GET /api/transactions/payment/status/:order_id — requires auth

@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { apiFetch } from '@/lib/apiFetch';
 import { TableActions } from '@/components/ui/TableActions';
 import { confirmAction } from '@/lib/dialog';
 import { Plus, Search, Trash2, ShoppingBag, X } from 'lucide-react';
@@ -18,7 +19,7 @@ export default function SuperadminAddonsPage() {
 
   const fetchAddons = async () => {
     setLoading(true);
-    const data = await fetch('/api/addons/master').then((r) => r.json()).catch(() => []);
+    const data = await apiFetch('/addons/master').then((r) => r.json()).catch(() => []);
     setAddons(Array.isArray(data) ? data : []);
     setLoading(false);
   };
@@ -42,10 +43,10 @@ export default function SuperadminAddonsPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    const url = editId ? `/api/addons/master/${editId}` : '/api/addons/master';
+    const url = editId ? `/addons/master/${editId}` : '/addons/master';
     const method = editId ? 'PATCH' : 'POST';
-    
-    await fetch(url, {
+
+    await apiFetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...form, price: Number(form.price) }),
@@ -60,7 +61,7 @@ export default function SuperadminAddonsPage() {
   const handleDelete = async (id: string) => {
     const ok = await confirmAction('Hapus layanan ini?');
     if (!ok) return;
-    await fetch('/api/addons/master/' + id, { method: 'DELETE' });
+    await apiFetch('/addons/master/' + id, { method: 'DELETE' });
     fetchAddons();
   };
 
@@ -72,93 +73,89 @@ export default function SuperadminAddonsPage() {
 
   return (
     <>
-      <div className="p-8 max-w-6xl mx-auto space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="page-title flex items-center gap-2">
-              <ShoppingBag className="text-primary" />
-              Master Layanan / Add-On
-            </h1>
-            <p className="page-subtitle">
-              Kelola layanan tambahan tamu tanpa manajemen stok.
-            </p>
-          </div>
-          <button
-            onClick={openCreate}
-            className="btn btn-secondary btn-md"
-          >
-            <Plus size={18} /> Tambah Layanan
-          </button>
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="page-title flex items-center gap-2">
+            <ShoppingBag className="text-primary" />
+            Master Layanan / Add-On
+          </h1>
+          <p className="page-subtitle">
+            Kelola layanan tambahan tamu tanpa manajemen stok.
+          </p>
         </div>
+        <button
+          onClick={openCreate}
+          className="btn btn-primary btn-md"
+        >
+          <Plus size={18} /> Tambah Layanan
+        </button>
+      </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-4 border-b border-gray-100 flex items-center gap-4 bg-gray-50/50">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Cari layanan..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="form-input pl-9"
-              />
-            </div>
-          </div>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-gray-50/50 text-gray-500">
+      <div className="search-bar">
+        <Search size={18} className="text-gray-400 ml-2 shrink-0" />
+        <input
+          type="text"
+          placeholder="Cari layanan..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full text-sm outline-none bg-transparent placeholder-gray-400 text-gray-700"
+        />
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-gray-50/50 text-gray-500">
+              <tr>
+                <SortableHeader
+                  label="Nama Layanan"
+                  field="name"
+                  sortBy={sortBy}
+                  sortOrder={sortOrder}
+                  onSort={handleSort}
+                  className="px-6 py-4 font-medium"
+                />
+                <SortableHeader
+                  label="Harga"
+                  field="price"
+                  sortBy={sortBy}
+                  sortOrder={sortOrder}
+                  onSort={handleSort}
+                  className="px-6 py-4 font-medium"
+                />
+                <th className="px-6 py-4 font-medium text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {loading ? (
                 <tr>
-                  <SortableHeader
-                    label="Nama Layanan"
-                    field="name"
-                    sortBy={sortBy}
-                    sortOrder={sortOrder}
-                    onSort={handleSort}
-                    className="px-6 py-4 font-medium"
-                  />
-                  <SortableHeader
-                    label="Harga"
-                    field="price"
-                    sortBy={sortBy}
-                    sortOrder={sortOrder}
-                    onSort={handleSort}
-                    className="px-6 py-4 font-medium"
-                  />
-                  <th className="px-6 py-4 font-medium text-right">Aksi</th>
+                  <td colSpan={3} className="px-6 py-8 text-center text-gray-400">Memuat data...</td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {loading ? (
-                  <tr>
-                    <td colSpan={3} className="px-6 py-8 text-center text-gray-400">Memuat data...</td>
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="px-6 py-8 text-center text-gray-400">Belum ada data layanan</td>
+                </tr>
+              ) : (
+                sortedData.map((a) => (
+                  <tr key={a.id} className="hover:bg-red-50/20 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="font-medium text-gray-900">{a.name}</div>
+                      <div className="text-xs text-gray-500">{a.category}</div>
+                    </td>
+                    <td className="px-6 py-4">Rp {Number(a.price).toLocaleString('id-ID')}</td>
+                    <td className="px-6 py-4 text-right">
+                      <TableActions
+                        deletePermission="addon.manage"
+                        editPermission="addon.manage"
+                        onDelete={() => handleDelete(a.id)}
+                        onEdit={() => openEdit(a)}
+                      />
+                    </td>
                   </tr>
-                ) : filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan={3} className="px-6 py-8 text-center text-gray-400">Belum ada data layanan</td>
-                  </tr>
-                ) : (
-                  sortedData.map((a) => (
-                    <tr key={a.id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="font-medium text-gray-900">{a.name}</div>
-                        <div className="text-xs text-gray-500">{a.category}</div>
-                      </td>
-                      <td className="px-6 py-4">Rp {Number(a.price).toLocaleString('id-ID')}</td>
-                      <td className="px-6 py-4 text-right">
-                        <TableActions
-                            deletePermission="addon.manage"
-                            editPermission="addon.manage"
-                            onDelete={() => handleDelete(a.id)}
-                            onEdit={() => openEdit(a)}
-                        />
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -174,15 +171,15 @@ export default function SuperadminAddonsPage() {
             <form onSubmit={handleCreate} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nama Layanan</label>
-                <input required type="text" value={form.name} onChange={e=>setForm({...form, name: e.target.value})} className="form-input" placeholder="cth: Extra Bed" />
+                <input required type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="form-input" placeholder="cth: Extra Bed" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Harga</label>
-                <input required type="number" value={form.price} onChange={e=>setForm({...form, price: Number(e.target.value)})} className="form-input" placeholder="0" />
+                <input required type="number" value={form.price} onChange={e => setForm({ ...form, price: Number(e.target.value) })} className="form-input" placeholder="0" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
-                <select value={form.category} onChange={e=>setForm({...form, category: e.target.value})} className="form-input">
+                <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className="form-input">
                   <option value="general">Umum</option>
                   <option value="extra_bed">Extra Bed</option>
                   <option value="food">Makanan / Minuman</option>
@@ -192,7 +189,7 @@ export default function SuperadminAddonsPage() {
               </div>
               <div className="pt-4 flex justify-end gap-3">
                 <button type="button" onClick={() => setShowModal(false)} className="btn btn-ghost btn-md">Batal</button>
-                <button type="submit" disabled={saving} className="btn btn-secondary btn-md disabled:opacity-50">
+                <button type="submit" disabled={saving} className="btn btn-primary btn-md disabled:opacity-50">
                   {saving ? 'Menyimpan...' : 'Simpan'}
                 </button>
               </div>

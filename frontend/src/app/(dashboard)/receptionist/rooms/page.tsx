@@ -1,4 +1,5 @@
 ﻿'use client';
+import { apiFetch } from '@/lib/apiFetch';
 
 
 import { BedDouble, RefreshCw, Search } from 'lucide-react';
@@ -37,7 +38,7 @@ const statusConfig: Record<
 
 const roomTypeBg: Record<string, string> = {
   standard: 'from-sky-800 to-sky-950',
-  deluxe: 'from-violet-800 to-violet-950',
+  city_view: 'from-violet-800 to-violet-950',
   suite: 'from-amber-700 to-amber-950',
   family: 'from-emerald-800 to-emerald-950',
 };
@@ -50,7 +51,7 @@ export default function ReceptionistRoomsPage() {
 
   const fetchRooms = async () => {
     setLoading(true);
-    const data = await fetch('/api/rooms')
+    const data = await apiFetch('/rooms')
       .then((r) => r.json())
       .catch(() => []);
     setRooms(Array.isArray(data) ? data : []);

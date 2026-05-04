@@ -38,7 +38,10 @@ const ExpensesService = __importStar(require("../services/expenses.service"));
 const getAll = async (req, res) => {
     try {
         const filter = String(req.query.filter || '');
-        res.json(await ExpensesService.getAllExpenses(filter));
+        const search = req.query.search;
+        const dateStart = req.query.dateStart;
+        const dateEnd = req.query.dateEnd;
+        res.json(await ExpensesService.getAllExpenses(filter, search, dateStart, dateEnd));
     }
     catch (error) {
         res.status(500).json({ error: error.message || 'Failed to fetch expenses' });

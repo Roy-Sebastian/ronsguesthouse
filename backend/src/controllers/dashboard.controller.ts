@@ -4,7 +4,9 @@ import * as DashboardService from '../services/dashboard.service';
 
 export const getStats = async (req: Request, res: Response) => {
   try {
-    const data = await DashboardService.getDashboardStats();
+    const dateStart = req.query.dateStart ? String(req.query.dateStart) : undefined;
+    const dateEnd   = req.query.dateEnd   ? String(req.query.dateEnd)   : undefined;
+    const data = await DashboardService.getDashboardStats(dateStart, dateEnd);
     res.json(data);
   } catch (error) {
     console.error('Stats error:', error);

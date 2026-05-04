@@ -22,18 +22,18 @@ export function SortableHeader({
   return (
     <th
       onClick={() => onSort(field)}
-      className={`px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100 cursor-pointer hover:bg-gray-100 transition-colors select-none ${className}`}
+      className={`px-6 py-3.5 bg-gray-50 text-[11px] font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors select-none whitespace-nowrap ${className}`}
       title={`Urutkan berdasarkan ${label}`}
     >
       <div className="flex items-center gap-2 group">
         <span>{label}</span>
         <span className="text-gray-400 group-hover:text-gray-600 transition-colors">
           {isActive && sortOrder === 'asc' ? (
-            <ArrowUp size={14} className="text-primary" />
+            <ArrowUp size={13} className="text-primary" />
           ) : isActive && sortOrder === 'desc' ? (
-            <ArrowDown size={14} className="text-primary" />
+            <ArrowDown size={13} className="text-primary" />
           ) : (
-            <ArrowUpDown size={14} className="opacity-30 group-hover:opacity-100" />
+            <ArrowUpDown size={13} className="opacity-25 group-hover:opacity-80" />
           )}
         </span>
       </div>

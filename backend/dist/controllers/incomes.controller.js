@@ -39,7 +39,9 @@ const getAll = async (req, res) => {
     try {
         const filter = String(req.query.filter || '');
         const search = String(req.query.search || '').trim();
-        res.json(await IncomesService.getAllIncomes(filter, search));
+        const dateStart = req.query.dateStart ? String(req.query.dateStart) : undefined;
+        const dateEnd = req.query.dateEnd ? String(req.query.dateEnd) : undefined;
+        res.json(await IncomesService.getAllIncomes(filter, search, dateStart, dateEnd));
     }
     catch (error) {
         res.status(500).json({ error: error.message || 'Failed to fetch incomes' });

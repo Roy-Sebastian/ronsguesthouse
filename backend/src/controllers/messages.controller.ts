@@ -46,3 +46,13 @@ export const remove = async (req: Request, res: Response) => {
 		res.status(400).json({ error: error.message });
 	}
 };
+
+export const submitPublic = async (req: Request, res: Response) => {
+	try {
+		const data = await MessagesService.submitPublicMessage(req.body);
+		res.status(201).json({ success: true, id: data.id });
+	} catch (error: any) {
+		const statusCode = error.statusCode || 500;
+		res.status(statusCode).json({ error: error.message || 'Gagal mengirim pesan' });
+	}
+};

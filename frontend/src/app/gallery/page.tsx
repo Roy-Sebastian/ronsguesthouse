@@ -3,6 +3,7 @@
 import PublicFooter from '@/components/layout/PublicFooter';
 import PublicNavbar from '@/components/layout/PublicNavbar';
 import ScrollReveal from '@/components/ui/ScrollReveal';
+import { apiFetch } from '@/lib/apiFetch';
 import { BACKEND_URL, GALLERY_CATEGORY_MAP } from '@/lib/constants';
 import { X, ZoomIn } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -28,7 +29,7 @@ export default function GalleryPage() {
 
   // ── Data Fetching ──────────────────────────────────────────────────────────
   useEffect(() => {
-    fetch('/api/gallery')
+    apiFetch('/gallery?isActive=true')
       .then((r) => r.json())
       .then((d) => setItems(Array.isArray(d) ? d : []))
       .catch(() => {})

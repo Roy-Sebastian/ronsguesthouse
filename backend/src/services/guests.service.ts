@@ -1,6 +1,7 @@
 import { getIO } from '../config/socket';
 import { dbRepository } from '../repositories/db.repository';
 import { guestRepository } from '../repositories/guest.repository';
+import { incomeRepository } from '../repositories/income.repository';
 import { reservationRepository } from '../repositories/reservation.repository';
 import { stayRepository } from '../repositories/stay.repository';
 import { transactionRepository } from '../repositories/transaction.repository';
@@ -126,15 +127,36 @@ export async function createGuest(input: CreateGuestInput) {
       if (paymentMethod === 'transfer' || paymentMethod === 'aplikasi')
         mappedPaymentMethod = 'transfer';
 
-      await transactionRepository.create({
+      const txAmount = amount ? Number(amount) : 0;
+
+      const createdTx = await transactionRepository.create({
         data: {
           reservationId: resv.id,
-          amount: amount ? Number(amount) : 0,
+          amount: txAmount,
           paymentMethod: mappedPaymentMethod,
           notes: deposit ? `Deposit: ${deposit}` : '',
           paymentStatus: 'paid',
+          paymentDate: new Date(),
         },
       }, tx);
+
+      // Walk-in guests pay at check-in: create income record immediately
+      if (txAmount > 0) {
+        await incomeRepository.create({
+          data: {
+            transactionId: createdTx.id,
+            amount: txAmount,
+            description: 'Pembayaran Reservasi / Kamar (Walk-in/Manual)',
+            incomeDate: new Date(),
+            sourceType: 'RESERVATION',
+            referenceId: resv.id,
+            paymentMethod: mappedPaymentMethod,
+            status: 'paid',
+            guestNameSnapshot: fullName,
+            type: 'income',
+          },
+        }, tx);
+      }
 
       try {
         const io = getIO();

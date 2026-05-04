@@ -165,14 +165,14 @@ function SearchContent() {
 
       <div className="pt-32 pb-20 px-4 max-w-7xl mx-auto">
         <div className="mb-10">
-          <h1 className="text-3xl font-serif text-gray-900">Pilih ruangan yang paling sesuai untuk Anda</h1>
+          <h1 className="text-3xl font-serif text-gray-900">Find the Perfect Room for You</h1>
           {urlCheckIn && urlCheckOut && (
             <div className="flex items-center space-x-4 mt-4 text-sm text-gray-600 border-b border-gray-200 pb-4 flex-wrap gap-y-2">
-              <span className="flex items-center"><Calendar className="w-4 h-4 mr-2" /> {new Date(urlCheckIn).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</span>
+              <span className="flex items-center"><Calendar className="w-4 h-4 mr-2" /> {new Date(urlCheckIn).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</span>
               <span className="text-gray-300">|</span>
-              <span className="flex items-center"><Calendar className="w-4 h-4 mr-2" /> {new Date(urlCheckOut).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</span>
+              <span className="flex items-center"><Calendar className="w-4 h-4 mr-2" /> {new Date(urlCheckOut).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</span>
               <span className="text-gray-300">|</span>
-              <span className="font-medium text-gray-800">{nights} Malam</span>
+              <span className="font-medium text-gray-800">{nights} Nights</span>
             </div>
           )}
         </div>
@@ -207,15 +207,15 @@ function SearchContent() {
                 </div>
 
                 <div className="pt-4 border-t border-gray-100 flex justify-between items-center text-sm">
-                  <span className="text-gray-600">Durasi:</span>
-                  <span className="font-bold">{calculateNights(formCheckIn, formCheckOut)} Malam</span>
+                  <span className="text-gray-600">Duration:</span>
+                  <span className="font-bold">{calculateNights(formCheckIn, formCheckOut)} Nights</span>
                 </div>
 
-                <button 
+                <button
                   type="submit"
                   className="btn btn-secondary w-full uppercase tracking-wider py-3 rounded-none md:rounded-lg"
                 >
-                  Periksa ketersediaan
+                  Check Availability
                 </button>
               </form>
             </div>
@@ -229,7 +229,7 @@ function SearchContent() {
               </div>
             ) : groupedRooms.length === 0 ? (
               <div className="bg-white border border-gray-200 p-12 text-center text-gray-500">
-                Kamar tidak tersedia untuk tanggal yang dipilih. Silakan coba tanggal lain.
+                No rooms available for the selected dates. Please try different dates.
               </div>
             ) : (
               groupedRooms.map((group) => {
@@ -284,7 +284,7 @@ function SearchContent() {
                     
                     <div className="flex items-center text-xs text-gray-500 mb-3 space-x-4">
                        <span className="flex items-center"><BedDouble className="w-3.5 h-3.5 mr-1" /> Guest House</span>
-                      <span className="flex items-center"><Users className="w-3.5 h-3.5 mr-1" /> Tamu maks: {room.capacity}</span>
+                      <span className="flex items-center"><Users className="w-3.5 h-3.5 mr-1" /> Max Guests: {room.capacity}</span>
                     </div>
 
                     <div className="text-sm text-gray-600 mb-4 line-clamp-2">
@@ -300,41 +300,41 @@ function SearchContent() {
                     </div>
 
                     <Link href={`/rooms`} className="text-sm font-semibold text-red-700 hover:text-red-900 transition-colors mt-auto flex items-center">
-                      Lihat selengkapnya <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                      View Details <ChevronRight className="w-3.5 h-3.5 ml-1" />
                     </Link>
                   </div>
 
                   {/* Price Action Column */}
                   <div className="p-6 md:w-1/3 flex flex-col justify-center items-end bg-gray-50/50">
                     <div className="text-right mb-6">
-                      <span className="text-xs text-gray-500 block mb-1">Mulai dari</span>
+                      <span className="text-xs text-gray-500 block mb-1">From</span>
                       <span className="text-2xl font-bold text-gray-900 block mb-1">Rp {Number(room.pricePerNight).toLocaleString('id-ID')}</span>
-                      <span className="text-xs text-gray-500">/ malam</span>
+                      <span className="text-xs text-gray-500">/ night</span>
                     </div>
 
                     {group.isFullyBooked ? (
-                      <button 
+                      <button
                         disabled
                         className="btn w-full uppercase tracking-widest bg-gray-200 text-gray-500 rounded-none md:rounded-xl cursor-not-allowed"
                       >
-                        Tidak tersedia
+                        Unavailable
                       </button>
                     ) : (
                       <div className="w-full">
                         {group.availableCount <= 5 ? (
                           <div className="text-xs text-red-700 font-bold text-center mb-2">
-                            Tersisa {group.availableCount} kamar!
+                            Only {group.availableCount} rooms left!
                           </div>
                         ) : (
                           <div className="text-xs text-green-700 font-bold text-center mb-2">
-                            Tersedia
+                            Available
                           </div>
                         )}
                         <Link 
                           href={urlCheckIn && urlCheckOut ? `/book/${group.firstAvailableRoomId}?checkIn=${urlCheckIn}&checkOut=${urlCheckOut}` : `/book/${group.firstAvailableRoomId}`}
                           className="btn btn-primary w-full uppercase tracking-widest group rounded-none md:rounded-xl"
                         >
-                          Rincian & pesanan <ChevronRight className="w-4 h-4 ml-1 opacity-70 group-hover:opacity-100 transition-opacity" />
+                          Book Now <ChevronRight className="w-4 h-4 ml-1 opacity-70 group-hover:opacity-100 transition-opacity" />
                         </Link>
                       </div>
                     )}

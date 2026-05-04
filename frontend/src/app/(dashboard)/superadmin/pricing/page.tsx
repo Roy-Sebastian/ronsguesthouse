@@ -1,4 +1,5 @@
 ﻿'use client';
+import { apiFetch } from '@/lib/apiFetch';
 
 import { formatRp } from '@/lib/formatters';
 import {
@@ -95,7 +96,7 @@ export default function AdminPricingPage() {
   const fetchRooms = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/rooms');
+      const res = await apiFetch('/rooms');
       const data = await res.json();
       const roomList = Array.isArray(data) ? data : [];
       setRooms(roomList);
@@ -191,7 +192,7 @@ export default function AdminPricingPage() {
         date,
         price: Number(bulkPrice),
       }));
-      await fetch('/api/pricing/bulk', {
+      await apiFetch('/pricing/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ roomId: selectedRoomId, entries }),
@@ -209,7 +210,7 @@ export default function AdminPricingPage() {
   const deleteOverride = async (id: string) => {
     if (!confirm('Hapus override harga ini? Harga akan kembali ke harga dasar.')) return;
     try {
-      await fetch(`/api/pricing/${id}`, { method: 'DELETE' });
+      await apiFetch(`/pricing/${id}`, { method: 'DELETE' });
       await fetchPrices();
     } catch {
       alert('Gagal menghapus harga');
@@ -228,7 +229,7 @@ export default function AdminPricingPage() {
     setSaving(true);
     try {
       await Promise.all(
-        toDelete.map((o) => fetch(`/api/pricing/${o!.id}`, { method: 'DELETE' })),
+        toDelete.map((o) => apiFetch(`/pricing/${o!.id}`, { method: 'DELETE' })),
       );
       await fetchPrices();
       setSelectedDates(new Set());
@@ -477,7 +478,7 @@ export default function AdminPricingPage() {
                         const oprice = Number(o.price);
                         const diff = oprice - basePrice;
                         return (
-                          <tr key={o.id} className="hover:bg-gray-50/50 transition-colors">
+                          <tr key={o.id} className="hover:bg-red-50/20 transition-colors">
                             <td className="px-6 py-3 font-medium">
                               {new Date(o.date).toLocaleDateString('id-ID', {
                                 weekday: 'short',
@@ -582,7 +583,7 @@ export default function AdminPricingPage() {
               <button
                 onClick={applyBulkPrice}
                 disabled={saving || !bulkPrice}
-                className="btn btn-secondary btn-md disabled:opacity-50"
+                className="btn btn-primary btn-md disabled:opacity-50"
               >
                 {saving ? (
                   <Loader2 size={16} className="animate-spin" />

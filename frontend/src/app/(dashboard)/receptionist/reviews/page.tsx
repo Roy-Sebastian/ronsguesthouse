@@ -1,4 +1,5 @@
-"use client";
+﻿"use client";
+import { apiFetch } from '@/lib/apiFetch';
 
 import { useEffect, useState } from "react";
 import { Star, CheckCircle, XCircle, Trash2, Clock } from "lucide-react";
@@ -25,13 +26,13 @@ export default function AdminReviewsPage() {
 
   const updateStatus = async (id: string, status: string) => {
     if (!confirm(`Tandai ulasan sebagai ${status}?`)) return;
-    await fetch(`/api/reviews/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) });
+    await apiFetch(`/reviews/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) });
     fetchReviews();
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Hapus ulasan ini permanen?")) return;
-    await fetch(`/api/reviews/${id}`, { method: "DELETE" });
+    await apiFetch(`/reviews/${id}`, { method: "DELETE" });
     fetchReviews();
   };
 

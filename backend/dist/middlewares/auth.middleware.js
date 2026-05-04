@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.requirePermission = exports.requireRole = exports.requireAuth = void 0;
+exports.requirePermission = exports.requireAuth = void 0;
 const auth_1 = require("../config/auth");
 const rbac_1 = require("../config/rbac");
 const normalizeHeaders = (headers) => {
@@ -35,16 +35,6 @@ const requireAuth = async (req, res, next) => {
     }
 };
 exports.requireAuth = requireAuth;
-const requireRole = (roles) => {
-    return (req, res, next) => {
-        const userRole = req.user?.role;
-        if (!roles.includes(userRole)) {
-            return res.status(403).json({ error: 'Forbidden' });
-        }
-        next();
-    };
-};
-exports.requireRole = requireRole;
 const getEffectivePermissionSet = (req) => {
     const rolePermissions = (0, rbac_1.getRolePermissions)(req.user?.role);
     const userPermissions = Array.isArray(req.user?.permissions)

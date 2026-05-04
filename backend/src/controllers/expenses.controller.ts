@@ -5,7 +5,10 @@ import * as ExpensesService from '../services/expenses.service';
 export const getAll = async (req: Request, res: Response) => {
 	try {
 		const filter = String(req.query.filter || '');
-		res.json(await ExpensesService.getAllExpenses(filter));
+		const search = req.query.search as string | undefined;
+		const dateStart = req.query.dateStart as string | undefined;
+		const dateEnd = req.query.dateEnd as string | undefined;
+		res.json(await ExpensesService.getAllExpenses(filter, search, dateStart, dateEnd));
 	} catch (error: any) {
 		res.status(500).json({ error: error.message || 'Failed to fetch expenses' });
 	}

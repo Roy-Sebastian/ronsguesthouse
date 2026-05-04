@@ -1,8 +1,8 @@
 import "dotenv/config";
-import { RoleType, RoomType, RoomStatus } from "@prisma/client";
+import { RoleType } from "@prisma/client";
 import process from "process";
-import { auth } from "../src/config/auth";
-import { prisma } from "../src/config/prisma";
+import { auth } from "../dist/config/auth";
+import { prisma } from "../dist/config/prisma";
 
 async function main() {
   console.log("🌱 Seeding database...");
@@ -51,30 +51,6 @@ async function main() {
 
   console.log("✅ Users created");
 
-  // Create amenities
-  const amenities = await Promise.all([
-    prisma.amenity.upsert({ where: { name: "AC" }, update: {}, create: { name: "AC", icon: "AirVent" } }),
-    prisma.amenity.upsert({ where: { name: "WiFi" }, update: {}, create: { name: "WiFi", icon: "Wifi" } }),
-    prisma.amenity.upsert({ where: { name: "TV" }, update: {}, create: { name: "TV", icon: "Tv" } }),
-    prisma.amenity.upsert({ where: { name: "Kamar Mandi Dalam" }, update: {}, create: { name: "Kamar Mandi Dalam", icon: "Bath" } }),
-    prisma.amenity.upsert({ where: { name: "Kulkas" }, update: {}, create: { name: "Kulkas", icon: "Package" } }),
-    prisma.amenity.upsert({ where: { name: "Water Heater" }, update: {}, create: { name: "Water Heater", icon: "Flame" } }),
-  ]);
-
-  console.log("✅ Amenities created");
-
-  // Create facilities
-  await Promise.all([
-    prisma.facility.create({ data: { name: "Parkir Gratis", description: "Area parkir luas tersedia gratis", icon: "Car" } }),
-    prisma.facility.create({ data: { name: "WiFi Gratis", description: "Koneksi internet WiFi di seluruh area", icon: "Wifi" } }),
-    prisma.facility.create({ data: { name: "Sarapan", description: "Sarapan pagi termasuk dalam paket tertentu", icon: "Coffee" } }),
-    prisma.facility.create({ data: { name: "Resepsionis 24 Jam", description: "Staf siap melayani 24 jam penuh", icon: "Clock" } }),
-    prisma.facility.create({ data: { name: "Taman", description: "Taman asri untuk bersantai", icon: "TreePine" } }),
-  ]);
-
-  console.log("✅ Facilities created");
-
-  // Gallery seeding removed as per user request to start fresh
   console.log("\n🎉 Seeding completed!");
   console.log("\n📋 Login credentials:");
   console.log("   SuperAdmin: superadmin@ronsguesthouse.com / Admin@12345");

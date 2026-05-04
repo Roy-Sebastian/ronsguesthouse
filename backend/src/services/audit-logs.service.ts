@@ -1,9 +1,15 @@
 ﻿import { auditLogRepository } from '../repositories';
+import { prisma } from '../config/prisma';
 
-const WITH_USER = { user: { select: { id: true, name: true, email: true } } } as const;
+const WITH_USER = { user: { select: { id: true, name: true, email: true, role: true } } } as const;
 
-export async function getAllAuditLogs() {
-  return auditLogRepository.findAll({ orderBy: { createdAt: 'desc' }, include: WITH_USER });
+export async function getAllAuditLogs(page = 1, limit = 50) {
+  const skip = (page - 1) * limit;
+  const [data, total] = await Promise.all([
+    auditLogRepository.findAll({ orderBy: { createdAt: 'desc' }, include: WITH_USER, skip, take: limit }),
+    prisma.auditLog.count(),
+  ]);
+  return { data, total, page, totalPages: Math.ceil(total / limit) };
 }
 
 export async function getAuditLogById(id: string) {

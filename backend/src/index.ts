@@ -17,13 +17,20 @@ const app = express();
 const httpServer = createServer(app);
 const port = process.env.PORT || 3001;
 
+// Trust Cloudflare proxy to get real client IPs
+app.set('trust proxy', true);
+
 // Initialize Socket.IO
 initSocket(httpServer);
 
-// CORS setup to allow the frontend
+// CORS setup to allow the frontend (supports comma-separated FRONTEND_URL for www + non-www)
+const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:3000')
+  .split(',')
+  .map((s) => s.trim());
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: allowedOrigins,
     credentials: true,
   }),
 );
@@ -51,6 +58,11 @@ app.use('/api', auditLogMiddleware);
 
 // API Routes
 app.use('/api', apiRoutes);
+
+// 404 handler
+app.use((_req, res) => {
+  res.status(404).json({ error: 'Not found' });
+});
 
 // Error handling
 app.use(globalErrorHandler);

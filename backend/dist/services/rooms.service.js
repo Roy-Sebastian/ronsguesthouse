@@ -17,7 +17,14 @@ async function getRooms(status, type, checkIn, checkOut) {
             roomAmenities: { include: { amenity: true } },
             _count: { select: { reservations: true } },
         },
-        orderBy: [{ floor: 'asc' }, { roomNumber: 'asc' }],
+        orderBy: [{ floor: 'asc' }],
+    });
+    rooms.sort((a, b) => {
+        const aNum = parseInt(a.roomNumber, 10);
+        const bNum = parseInt(b.roomNumber, 10);
+        if (!isNaN(aNum) && !isNaN(bNum))
+            return aNum - bNum;
+        return a.roomNumber.localeCompare(b.roomNumber);
     });
     if (checkIn && checkOut) {
         const inDate = new Date(checkIn);
@@ -46,7 +53,13 @@ async function getRoomById(id) {
 }
 async function createRoom(input) {
     if (!input.roomNumber || !input.pricePerNight) {
-        throw Object.assign(new Error('Missing required fields'), { statusCode: 400 });
+        throw Object.assign(new Error('Nomor kamar dan harga wajib diisi'), { statusCode: 400 });
+    }
+    if (Number(input.pricePerNight) <= 0) {
+        throw Object.assign(new Error('Harga kamar harus lebih dari 0'), { statusCode: 400 });
+    }
+    if (input.capacity !== undefined && Number(input.capacity) <= 0) {
+        throw Object.assign(new Error('Kapasitas kamar harus lebih dari 0'), { statusCode: 400 });
     }
     const { selectedAmenities, ...roomData } = input;
     return room_repository_1.roomRepository.create({
@@ -63,6 +76,12 @@ async function createRoom(input) {
     });
 }
 async function updateRoom(id, fields) {
+    if (fields.pricePerNight !== undefined && Number(fields.pricePerNight) <= 0) {
+        throw Object.assign(new Error('Harga kamar harus lebih dari 0'), { statusCode: 400 });
+    }
+    if (fields.capacity !== undefined && Number(fields.capacity) <= 0) {
+        throw Object.assign(new Error('Kapasitas kamar harus lebih dari 0'), { statusCode: 400 });
+    }
     const { selectedAmenities, ...roomData } = fields;
     if (selectedAmenities !== undefined) {
         return room_repository_1.roomRepository.update(id, {

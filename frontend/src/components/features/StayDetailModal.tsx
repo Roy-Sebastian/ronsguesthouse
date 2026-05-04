@@ -1,4 +1,23 @@
-import { X, Calendar, User, BedDouble, Receipt, Info } from 'lucide-react';
+import { X, Calendar, User, BedDouble, Receipt, Info, AlertTriangle } from 'lucide-react';
+
+const PENALTY_TYPE_LABEL: Record<string, string> = {
+  late_checkout: 'Telat Checkout',
+  room_damage:   'Kerusakan Kamar',
+  missing_items: 'Barang Hilang',
+  other:         'Lainnya',
+};
+
+const PENALTY_STATUS_BADGE: Record<string, string> = {
+  pending: 'bg-amber-50 text-amber-700 border-amber-200',
+  paid:    'bg-green-50 text-green-700 border-green-200',
+  waived:  'bg-gray-50 text-gray-500 border-gray-200',
+};
+
+const PENALTY_STATUS_LABEL: Record<string, string> = {
+  pending: 'Belum Lunas',
+  paid:    'Lunas',
+  waived:  'Dimaafkan',
+};
 
 interface StayDetailModalProps {
   stay: any;
@@ -9,11 +28,13 @@ export default function StayDetailModal({ stay, onClose }: StayDetailModalProps)
   if (!stay) return null;
 
   const res = stay.reservation;
-  const addons = res?.bookingAddons || [];
-  
-  const roomTotal = Number(res?.totalPrice || 0);
-  const addOnsTotal = addons.reduce((sum: number, a: any) => sum + Number(a.totalPrice || 0), 0);
-  const grandTotal = roomTotal + addOnsTotal;
+  const addons   = res?.bookingAddons || [];
+  const penalties = res?.penalties || [];
+
+  const roomTotal    = Number(res?.totalPrice || 0);
+  const addOnsTotal  = addons.reduce((sum: number, a: any) => sum + Number(a.totalPrice || 0), 0);
+  const penaltyTotal = penalties.reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
+  const grandTotal   = roomTotal + addOnsTotal + penaltyTotal;
 
   const fmtRp = (v: number) =>
     new Intl.NumberFormat('id-ID', {
@@ -120,6 +141,34 @@ export default function StayDetailModal({ stay, onClose }: StayDetailModalProps)
                 )}
               </div>
               
+              <div className="px-4 py-3 border-t border-gray-100">
+                <div className="text-xs font-bold text-gray-500 mb-2 flex items-center gap-1.5">
+                  <AlertTriangle size={13} className="text-red-400" /> DENDA
+                </div>
+                {penalties.length === 0 ? (
+                  <div className="text-sm flex items-center gap-2 text-gray-400 italic">
+                    <Info size={14} /> Tidak ada denda
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {penalties.map((p: any) => (
+                      <div key={p.id} className="flex justify-between items-start text-sm gap-2">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-gray-600">{PENALTY_TYPE_LABEL[p.type] ?? p.type}</span>
+                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${PENALTY_STATUS_BADGE[p.status] ?? ''}`}>
+                              {PENALTY_STATUS_LABEL[p.status] ?? p.status}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-400 truncate">{p.description}</p>
+                        </div>
+                        <span className="text-red-600 font-semibold shrink-0">{fmtRp(Number(p.amount))}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className="px-4 py-4 bg-gray-900 border-t border-gray-100 flex justify-between items-center">
                 <span className="font-bold text-white uppercase text-sm tracking-widest">Grand Total</span>
                 <span className="font-bold text-white text-lg">{fmtRp(grandTotal)}</span>

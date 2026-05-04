@@ -25,6 +25,7 @@ exports.getRoomPrices = getRoomPrices;
 exports.upsertRoomPrice = upsertRoomPrice;
 exports.bulkUpsertRoomPrices = bulkUpsertRoomPrices;
 exports.deleteRoomPrice = deleteRoomPrice;
+const client_1 = require("@prisma/client");
 const logger_1 = require("../config/logger");
 const prisma_1 = require("../config/prisma");
 const reservation_constants_1 = require("../constants/reservation.constants");
@@ -61,22 +62,21 @@ async function checkRoomAvailability(roomId, checkIn, checkOut, tx = prisma_1.pr
     const room = await tx.room.findUnique({ where: { id: roomId } });
     if (!room)
         throw Object.assign(new Error('Kamar tidak ditemukan'), { statusCode: 404 });
-    // Build status exclusion from enum constants (enum-safe)
-    const statusList = reservation_constants_1.INACTIVE_STATUSES.map(s => `'${s}'`).join(', ');
     // Single raw query: count active reservations PER DATE using generate_series
-    const conflicts = await tx.$queryRawUnsafe(`
+    const statusValues = client_1.Prisma.join(reservation_constants_1.INACTIVE_STATUSES);
+    const conflicts = await tx.$queryRaw `
     SELECT gs.d::date AS d, COUNT(DISTINCT r.id) AS cnt
-    FROM generate_series($1::date, ($2::date - interval '1 day')::date, interval '1 day') AS gs(d)
+    FROM generate_series(${checkIn}::date, (${checkOut}::date - interval '1 day')::date, interval '1 day') AS gs(d)
     LEFT JOIN reservations r
-      ON r."roomId" = $3
-      AND r.status::text NOT IN (${statusList})
+      ON r."roomId" = ${roomId}
+      AND r.status::text NOT IN (${statusValues})
       AND NOT (r.status::text = 'pending' AND r."expiresAt" < NOW())
       AND r."checkInDate"::date <= gs.d
       AND r."checkOutDate"::date > gs.d
     GROUP BY gs.d
-    HAVING COUNT(DISTINCT r.id) >= $4
+    HAVING COUNT(DISTINCT r.id) >= ${room.stock}
     ORDER BY gs.d
-  `, checkIn, checkOut, roomId, room.stock);
+  `;
     const fullyBookedDates = conflicts.map((r) => {
         const d = r.d instanceof Date ? r.d : new Date(r.d);
         return d.toISOString().slice(0, 10);

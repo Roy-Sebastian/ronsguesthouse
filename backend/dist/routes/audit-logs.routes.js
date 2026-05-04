@@ -39,8 +39,4 @@ const auth_middleware_1 = require("../middlewares/auth.middleware");
 const router = (0, express_1.Router)();
 router.get('/', auth_middleware_1.requireAuth, (0, auth_middleware_1.requirePermission)('audit.view'), controller.getAll);
 router.get('/:id', auth_middleware_1.requireAuth, (0, auth_middleware_1.requirePermission)('audit.view'), controller.getById);
-router.post('/', auth_middleware_1.requireAuth, (0, auth_middleware_1.requirePermission)('audit.view'), controller.create);
-router.patch('/:id', auth_middleware_1.requireAuth, (0, auth_middleware_1.requirePermission)('audit.view'), controller.update);
-router.put('/:id', auth_middleware_1.requireAuth, (0, auth_middleware_1.requirePermission)('audit.view'), controller.update);
-router.delete('/:id', auth_middleware_1.requireAuth, (0, auth_middleware_1.requirePermission)('audit.view'), controller.remove);
 exports.default = router;

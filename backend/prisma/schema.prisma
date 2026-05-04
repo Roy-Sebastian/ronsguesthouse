@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  
 }
 
 // =================== ENUMS ===================
@@ -43,7 +42,7 @@ enum RoomStatus {
 
 enum RoomType {
   standard
-  deluxe
+  city_view
   suite
   family
 }
@@ -88,6 +87,19 @@ enum ReviewStatus {
   rejected
 }
 
+enum PenaltyType {
+  late_checkout
+  room_damage
+  missing_items
+  other
+}
+
+enum PenaltyStatus {
+  pending
+  paid
+  waived
+}
+
 // =================== BETTER AUTH TABLES ===================
 
 model User {
@@ -113,6 +125,7 @@ model User {
   expenses     Expense[]
   incomes      Income[]
   auditLogs    AuditLog[]
+  penalties    Penalty[]     @relation("PenaltyCreatedBy")
 
   @@map("users")
 }
@@ -288,6 +301,7 @@ model Reservation {
   transaction   Transaction?
   bookingAddons BookingAddOn[]
   review        Review?
+  penalties     Penalty[]
 
   @@index([roomId, checkInDate, checkOutDate])
   @@index([status, expiresAt])
@@ -474,4 +488,26 @@ model BookingAddOn {
   addOn       AddOn       @relation(fields: [addOnId], references: [id])
 
   @@map("booking_add_ons")
+}
+
+// =================== PENALTIES / DENDA ===================
+
+model Penalty {
+  id              String        @id @default(cuid())
+  reservationId   String
+  type            PenaltyType   @default(other)
+  amount          Decimal       @db.Decimal(12, 2)
+  description     String
+  notes           String?
+  status          PenaltyStatus @default(pending)
+  createdByUserId String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  createdBy   User?       @relation("PenaltyCreatedBy", fields: [createdByUserId], references: [id])
+
+  @@index([reservationId])
+  @@index([status])
+  @@map("penalties")
 }

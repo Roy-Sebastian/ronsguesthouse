@@ -30,15 +30,24 @@ const auditLogMiddleware = async (req, res, next) => {
         }
         res.on('finish', async () => {
             if (res.statusCode >= 200 && res.statusCode < 400 && user?.id) {
-                let pathParts = (req.baseUrl || req.path).split('/').filter(Boolean);
-                let entity = pathParts[pathParts.length - 1] || 'system';
-                if (entity === 'api')
-                    entity = pathParts[pathParts.length - 1] || 'system';
+                const fullPath = (req.baseUrl + req.path).replace(/\/+/g, '/');
+                const pathParts = fullPath.split('/').filter((p) => p && p !== 'api');
+                // entity = first meaningful segment (e.g. 'audit-logs', 'users'), skip UUIDs/numbers
+                const entity = pathParts.find((p) => !/^[0-9a-f-]{8,}$|^\d+$/.test(p)) || 'system';
                 let action = 'CREATE';
                 if (req.method === 'PUT' || req.method === 'PATCH')
                     action = 'UPDATE';
                 if (req.method === 'DELETE')
                     action = 'DELETE';
+                const SENSITIVE_FIELDS = ['password', 'token', 'secret', 'creditCard', 'cvv'];
+                const sanitizeBody = (body) => {
+                    if (!body || typeof body !== 'object')
+                        return body;
+                    const clean = { ...body };
+                    for (const field of SENSITIVE_FIELDS)
+                        delete clean[field];
+                    return clean;
+                };
                 try {
                     const entityIdStr = req.params?.id || req.body?.id || null;
                     const log = await audit_log_repository_1.auditLogRepository.create({
@@ -47,7 +56,7 @@ const auditLogMiddleware = async (req, res, next) => {
                             action: action,
                             entity: entity,
                             entityId: entityIdStr ? String(entityIdStr) : null,
-                            newValues: req.body ? JSON.parse(JSON.stringify(req.body)) : null,
+                            newValues: req.body ? sanitizeBody(JSON.parse(JSON.stringify(req.body))) : null,
                             ipAddress: req.ip || req.socket?.remoteAddress || null,
                             userAgent: req.headers['user-agent'] || null,
                         },

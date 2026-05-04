@@ -2,8 +2,13 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getDashboardStats = getDashboardStats;
 const dashboard_repository_1 = require("../repositories/dashboard.repository");
-async function getDashboardStats() {
+async function getDashboardStats(dateStart, dateEnd) {
     const now = new Date();
+    // Resolve the period used for income/expense totals and charts
+    // If caller supplies a range, use it; otherwise default to all-time for the
+    // financial summary and last 6+ months for the chart.
+    const filterStart = dateStart ? new Date(dateStart + 'T00:00:00') : undefined;
+    const filterEnd = dateEnd ? new Date(dateEnd + 'T23:59:59') : undefined;
     // Dates for current month
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
@@ -48,13 +53,28 @@ async function getDashboardStats() {
     // A bit complex to get exact historical occupancy rate without historical daily logs. So we'll assign 0% change or estimate it.
     const occupancyRateChange = 0;
     // Incomes and Expenses for Graph and Stats
+    // When a period filter is active, limit queries to that window.
+    const incomeWhere = filterStart || filterEnd
+        ? {
+            ...(filterStart ? { incomeDate: { gte: filterStart, ...(filterEnd ? { lte: filterEnd } : {}) } } : {}),
+            ...(filterEnd && !filterStart ? { incomeDate: { lte: filterEnd } } : {}),
+        }
+        : undefined;
+    const expenseWhere = filterStart || filterEnd
+        ? {
+            ...(filterStart ? { expenseDate: { gte: filterStart, ...(filterEnd ? { lte: filterEnd } : {}) } } : {}),
+            ...(filterEnd && !filterStart ? { expenseDate: { lte: filterEnd } } : {}),
+        }
+        : undefined;
     const [incomes, expenses] = await Promise.all([
         dashboard_repository_1.dashboardRepository.getIncomes({
+            where: incomeWhere,
             select: { amount: true, incomeDate: true, description: true, sourceType: true },
             orderBy: { incomeDate: 'asc' },
         }),
         dashboard_repository_1.dashboardRepository.getExpenses({
-            select: { amount: true, expenseDate: true },
+            where: expenseWhere,
+            select: { amount: true, expenseDate: true, description: true, category: true },
             orderBy: { expenseDate: 'asc' },
         }),
     ]);
@@ -122,10 +142,27 @@ async function getDashboardStats() {
         name,
         percentage: totalCalculatedIncome > 0 ? Math.round((amount / totalCalculatedIncome) * 100) : 0,
     })).sort((a, b) => b.percentage - a.percentage);
-    // If no data, use some dummy data for visual matching
-    if (incomeStatistics.length === 0) {
-        incomeStatistics.push({ name: 'Sistem Reservasi', percentage: 70 }, { name: 'Sewa Ruangan Eksternal', percentage: 20 }, { name: 'Lainnya (Manual)', percentage: 10 });
-    }
+    // All-time totals for reports page
+    const totalIncome = totalCalculatedIncome;
+    const totalExpense = expenses.reduce((s, r) => s + Number(r.amount), 0);
+    const netProfit = totalIncome - totalExpense;
+    // Recent combined transactions for reports page
+    const recentTransactions = [
+        ...incomes.map((inc) => ({
+            date: inc.incomeDate,
+            type: 'INCOME',
+            description: inc.description || 'Pendapatan',
+            amount: Number(inc.amount),
+        })),
+        ...expenses.map((exp) => ({
+            date: exp.expenseDate,
+            type: 'EXPENSE',
+            description: exp.description || exp.category || 'Pengeluaran',
+            amount: Number(exp.amount),
+        })),
+    ]
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 10);
     // Table Data (Recent Reservations)
     const recentReservations = await dashboard_repository_1.dashboardRepository.getReservations({
         orderBy: { createdAt: 'desc' },
@@ -157,5 +194,11 @@ async function getDashboardStats() {
         totalGuestsChange,
         incomeStatistics,
         recentReservations,
+        // Financial summary for reports
+        totalIncome,
+        totalExpense,
+        netProfit,
+        monthlyRevenue: totalIncomeCurrent,
+        recentTransactions,
     };
 }

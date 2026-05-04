@@ -1,4 +1,5 @@
 ﻿'use client';
+import { apiFetch } from '@/lib/apiFetch';
 
 import { Image as ImageIcon, Trash2, Upload, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -16,7 +17,7 @@ export default function AdminGalleryPage() {
 
   const fetchGallery = async () => {
     setLoading(true);
-    const data = await fetch('/api/gallery?all=true')
+    const data = await apiFetch('/gallery?all=true')
       .then((r) => r.json())
       .catch(() => []);
     setItems(Array.isArray(data) ? data : []);
@@ -46,7 +47,7 @@ export default function AdminGalleryPage() {
     formData.append('category', category);
 
     try {
-      const res = await fetch('/api/gallery', {
+      const res = await apiFetch('/gallery', {
         method: 'POST',
         body: formData,
       });
@@ -64,10 +65,10 @@ export default function AdminGalleryPage() {
     }
   };
 
-  const handleDelete = async (id: string, url: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('Hapus foto ini?')) return;
     try {
-      await fetch(`/api/gallery?id=${id}&url=${encodeURIComponent(url)}`, {
+      await apiFetch(`/gallery/${id}`, {
         method: 'DELETE',
       });
       fetchGallery();
@@ -78,7 +79,7 @@ export default function AdminGalleryPage() {
 
   const handleToggleActive = async (id: string, currentState: boolean) => {
     try {
-      const res = await fetch(`/api/gallery/${id}`, {
+      const res = await apiFetch(`/gallery/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isActive: !currentState }),
@@ -105,7 +106,7 @@ export default function AdminGalleryPage() {
           </p>
         </div>
         <button
-          className="btn btn-secondary btn-md"
+          className="btn btn-primary btn-md"
           onClick={() => setShowModal(true)}
         >
           <Upload size={16} /> Upload Foto
@@ -146,7 +147,7 @@ export default function AdminGalleryPage() {
                     <ImageIcon size={18} />
                   </button>
                   <button
-                    onClick={() => handleDelete(item.id, item.imageUrl)}
+                    onClick={() => handleDelete(item.id)}
                     className="w-10 h-10 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center transition-colors shadow-lg"
                     title="Hapus"
                   >
@@ -292,7 +293,7 @@ export default function AdminGalleryPage() {
                 </button>
                 <button
                   type="submit"
-                  className="btn btn-secondary btn-md"
+                  className="btn btn-primary btn-md"
                   disabled={saving || !file}
                 >
                   {saving ? 'Mengunggah...' : 'Upload'}

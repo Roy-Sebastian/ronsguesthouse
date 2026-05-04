@@ -4,9 +4,9 @@ import PublicFooter from '@/components/layout/PublicFooter';
 import PublicNavbar from '@/components/layout/PublicNavbar';
 import ScrollReveal from '@/components/ui/ScrollReveal';
 import {
-  BedDouble,
   ChevronRight,
   MapPin,
+  Search,
   Star,
   Users,
   Wifi,
@@ -14,10 +14,14 @@ import {
   Car,
   Shield,
   Clock,
+  AirVent, Bath, Bed, BookOpen, Building2, Bus, Dumbbell, Flame,
+  Lightbulb, Lock, type LucideIcon, Music, Package, Phone, Plug,
+  Refrigerator, ShowerHead, Shirt, Snowflake, Sofa, Sun, Trees, Tv,
+  Utensils, Waves, Wind, Wrench,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import { BACKEND_URL, FALLBACK_HERO_IMAGE } from '@/lib/constants';
 
@@ -31,8 +35,20 @@ interface Room {
   pricePerNight: number;
   description: string;
   status: string;
-  roomAmenities: { amenity: { name: string } }[];
+  roomAmenities: { amenity: { name: string; icon?: string | null } }[];
   imageUrl?: string;
+}
+
+const AMENITY_ICON_MAP: Record<string, LucideIcon> = {
+  Wifi, Tv, AirVent, Bath, ShowerHead, Coffee, Refrigerator, Phone, Plug,
+  Lightbulb, Sofa, Bed, Lock, Wind, Shirt, Flame, Snowflake, Waves, Car,
+  Dumbbell, Utensils, Building2, Trees, Sun, Shield, Bus, Music, BookOpen,
+  Package, Star, Wrench,
+};
+
+function AmenityIcon({ icon, size = 14 }: { icon?: string | null; size?: number }) {
+  const Icon = (icon && AMENITY_ICON_MAP[icon] ? AMENITY_ICON_MAP[icon] : Wrench) as LucideIcon;
+  return <Icon size={size} />;
 }
 
 interface Facility {
@@ -41,16 +57,6 @@ interface Facility {
   description: string;
   icon: string;
 }
-
-// ─── Constants ───────────────────────────────────────────────────────────────
-
-const FALLBACK_REVIEWS = [
-  { id: '1', rating: 5, comment: "Pengalaman menginap yang luar biasa! Pelayanan bersih dan nyaman.", guest: "Budi S.", room: "standard Room" },
-  { id: '2', rating: 5, comment: "Sangat direkomendasikan. Lokasi strategis dan staf ramah.", guest: "Siti A.", room: "deluxe Room" },
-  { id: '3', rating: 4, comment: "Fasilitas lengkap dan harga bersahabat. Recommended!", guest: "Agus P.", room: "family Room" },
-  { id: '4', rating: 5, comment: "Nyaman seperti di rumah sendiri. Dekat dengan pusat kota.", guest: "Rina W.", room: "standard Room" },
-  { id: '5', rating: 5, comment: "Kamar bersih dan wangi. Overall sangat memuaskan.", guest: "Dedi S.", room: "deluxe Room" },
-];
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -66,15 +72,29 @@ export default function Home() {
 
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
+  const [bookingCode, setBookingCode] = useState('');
+
+  const checkInRef = useRef<HTMLInputElement>(null);
+  const checkOutRef = useRef<HTMLInputElement>(null);
+
+  const openPicker = (ref: React.RefObject<HTMLInputElement | null>) => {
+    const el = ref.current;
+    if (!el) return;
+    if (typeof el.showPicker === 'function') {
+      try { el.showPicker(); return; } catch { /* fallback */ }
+    }
+    el.focus();
+    el.click();
+  };
 
   // ── Data Fetching & Socket ─────────────────────────────────────────────────
 
   const fetchRooms = useCallback(() => {
-    fetch('/api/rooms')
+    fetch(`${BACKEND_URL}/api/rooms`)
       .then((r) => r.json())
       .then((d) => {
         if (!Array.isArray(d)) return setRooms([]);
-        
+
         // Group rooms by roomType to show only 1 representing each type in Featured
         const groupedRooms = d.reduce((acc: any, room: Room) => {
           if (!acc[room.roomType]) {
@@ -82,9 +102,9 @@ export default function Home() {
           }
           return acc;
         }, {});
-        
+
         // Convert to array and slice
-        setRooms(Object.values(groupedRooms).slice(0, 3) as Room[]);
+        setRooms(Object.values(groupedRooms).slice(0, 4) as Room[]);
       })
       .catch(() => { });
   }, []);
@@ -92,7 +112,7 @@ export default function Home() {
   useEffect(() => {
     fetchRooms();
 
-    fetch('/api/gallery?category=hero&isActive=true')
+    fetch(`${BACKEND_URL}/api/gallery?category=hero&isActive=true`)
       .then((r) => r.json())
       .then((d) => {
         if (Array.isArray(d) && d.length > 0) {
@@ -101,12 +121,12 @@ export default function Home() {
       })
       .catch(() => { });
 
-    fetch('/api/facilities')
+    fetch(`${BACKEND_URL}/api/facilities`)
       .then((r) => r.json())
       .then((d) => setFacilities(Array.isArray(d) ? d : []))
       .catch(() => { });
 
-    fetch('/api/public/reviews')
+    fetch(`${BACKEND_URL}/api/public/reviews`)
       .then((r) => r.json())
       .then((d) => { if (Array.isArray(d) && d.length > 0) setReviews(d); })
       .catch(() => { });
@@ -144,6 +164,13 @@ export default function Home() {
     router.push('/search?' + query.toString());
   };
 
+  const handleCheckBooking = (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = bookingCode.trim().toUpperCase();
+    if (!code) return;
+    router.push(`/check-booking?code=${encodeURIComponent(code)}`);
+  };
+
   const getIcon = (name: string) => {
     const n = name.toLowerCase();
     if (n.includes('wifi')) return <Wifi className="w-8 h-8" />;
@@ -161,16 +188,46 @@ export default function Home() {
       <PublicNavbar />
 
       {/* HERO SECTION - MARRIOTT STYLE */}
-      <section className="relative w-full h-[85vh] min-h-150 flex flex-col justify-center items-center overflow-hidden bg-black">
+      <section className="relative w-full h-[85vh] min-h-[500px] flex flex-col justify-center items-center overflow-hidden bg-black">
         {/* Dark overlay for text readability */}
-        <div className="absolute inset-0 bg-black/40 z-20 pointer-events-none" />
+        <div className="absolute inset-0 bg-black/30 z-20 pointer-events-none" />
+
+        {/* Hero Central Content & Badge */}
+        <div className="absolute z-30 flex flex-col items-center pointer-events-none drop-shadow-xl text-center px-4">
+          <ScrollReveal>
+            <h1 className="text-4xl md:text-6xl font-serif text-white font-bold tracking-tight mb-2 drop-shadow-2xl">
+              Ron's Guest House
+            </h1>
+          </ScrollReveal>
+          <ScrollReveal delay={200}>
+            <p className="text-white/90 text-lg md:text-xl font-light tracking-wide mb-8 drop-shadow-md">
+              Classic elegance meets modern luxury
+            </p>
+          </ScrollReveal>
+
+          {/* Booking.com Badge */}
+          {/* <a
+            href="https://www.booking.com/hotel/id/rons-guest-house-berastagi.id.html?aid=318615&label=English_Indonesia_EN_ID_28546570705-G6blYurG1wv5nxy_NQuKzQS634117825086%3Apl%3Ata%3Ap1%3Ap2%3Aac%3Aap%3Aneg%3Afi%3Atidsa-209721654025%3Alp9121598%3Ali%3Adec%3Adm%3Aag28546570705%3Acmp340122265&sid=f5fc3dbbcbe7885739a87ec632ac344d&dest_id=-2673007&dest_type=city&dist=0&group_adults=2&group_children=0&hapos=1&hpos=1&no_rooms=1&req_adults=2&req_children=0&room1=A%2CA&sb_price_type=total&sr_order=popularity&srepoch=1775286493&srpvid=e26e322a608600cc&type=total&ucfs=1&"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="pointer-events-auto group inline-flex items-center gap-4 bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/20 rounded-2xl p-2 pr-6 transition-all duration-300 shadow-2xl hover:scale-105"
+          >
+            <div className="bg-[#003580] text-white font-bold text-2xl px-4 py-2 rounded-xl flex items-center justify-center shadow-inner">
+              9.5
+            </div>
+            <div className="flex flex-col text-left">
+              <span className="text-white font-bold text-sm tracking-widest uppercase">Exceptional</span>
+              <span className="text-white/70 text-xs font-medium">Verified by Booking.com</span>
+            </div>
+          </a> */}
+        </div>
 
         {/* Background Image Slider */}
         {heroImages.length > 0 ? (
           heroImages.map((image, index) => (
             <div
               key={image.id}
-              className={`absolute inset-0 w-full h-full bg-contain bg-no-repeat bg-center transition-opacity duration-1000 ease-in-out z-10 ${index === currentHeroIndex ? 'opacity-100' : 'opacity-0'}`}
+              className={`absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-1000 ease-in-out z-10 ${index === currentHeroIndex ? 'opacity-100' : 'opacity-0'}`}
               style={{
                 backgroundImage: `url('${BACKEND_URL}${image.imageUrl}')`,
               }}
@@ -184,68 +241,85 @@ export default function Home() {
             }}
           />
         )}
+
       </section>
 
       {/* FLOATING SEARCH BAR COMPONENT */}
       <div className="relative z-30 w-full px-4 md:px-0 -mt-16 md:-mt-12 mb-12">
-        <form
-          onSubmit={handleSearch}
-          className="max-w-5xl mx-auto bg-white/95 backdrop-blur-sm shadow-2xl flex flex-col md:flex-row md:items-stretch rounded-2xl md:rounded-full overflow-hidden border border-gray-100"
-        >
-          {/* Destination */}
-          <div className="flex-1 p-4 md:p-5 border-b md:border-b-0 md:border-r border-gray-200 hover:bg-gray-50 transition-colors cursor-text">
-            <label className="block text-[11px] font-bold tracking-widest uppercase text-gray-500 mb-1">
-              Destination
-            </label>
-            <div className="flex items-center text-gray-800 font-serif text-lg">
-              <MapPin className="w-5 h-5 mr-2 text-red-800" />
-              <input
-                type="text"
-                value="Ron's Guesthouse"
-                readOnly
-                className="bg-transparent outline-none w-full cursor-pointer"
-              />
-            </div>
-          </div>
-
-          {/* Dates */}
-          <div className="flex-1 p-4 md:p-5 border-b md:border-b-0 md:border-r border-gray-200 hover:bg-gray-50 transition-colors flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <label className="block text-[11px] font-bold tracking-widest uppercase text-gray-500 mb-1">
-                Check-in
-              </label>
-              <input
-                type="date"
-                required
-                value={checkIn}
-                onChange={(e) => setCheckIn(e.target.value)}
-                className="bg-transparent outline-none text-gray-800 font-serif text-lg w-full"
-              />
-            </div>
-            <div className="hidden sm:block w-px h-full bg-gray-200" />
-            <div className="flex-1">
-              <label className="block text-[11px] font-bold tracking-widest uppercase text-gray-500 mb-1 mt-4 sm:mt-0">
-                Check-out
-              </label>
-              <input
-                type="date"
-                required
-                value={checkOut}
-                onChange={(e) => setCheckOut(e.target.value)}
-                className="bg-transparent outline-none text-gray-800 font-serif text-lg w-full"
-              />
-            </div>
-          </div>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            className="btn btn-secondary w-full md:w-auto px-8 py-4 md:py-5 md:min-w-[200px] uppercase tracking-widest text-sm font-bold rounded-none md:rounded-r-full"
+        <ScrollReveal delay={400}>
+          <form
+            onSubmit={handleSearch}
+            className="max-w-5xl mx-auto bg-white/95 backdrop-blur-sm shadow-2xl flex flex-col md:flex-row md:items-stretch rounded-2xl md:rounded-full overflow-hidden border border-gray-100"
           >
-            Find Rooms
-          </button>
-        </form>
+            {/* Destination */}
+            <div className="flex-1 p-4 md:p-5 border-b md:border-b-0 md:border-r border-gray-200 hover:bg-gray-50 transition-colors cursor-text">
+              <label className="block text-[11px] font-bold tracking-widest uppercase text-gray-500 mb-1">
+                Destination
+              </label>
+              <div className="flex items-center text-gray-800 font-serif text-lg">
+                <MapPin className="w-5 h-5 mr-2 text-red-800" />
+                <input
+                  type="text"
+                  value="Ron's Guesthouse"
+                  readOnly
+                  className="bg-transparent outline-none w-full cursor-pointer"
+                />
+              </div>
+            </div>
+
+            {/* Dates */}
+            <div className="flex-1 border-b md:border-b-0 md:border-r border-gray-200 flex flex-col sm:flex-row">
+              <button
+                type="button"
+                onClick={() => openPicker(checkInRef)}
+                className="flex-1 text-left p-4 md:p-5 hover:bg-gray-50 transition-colors cursor-pointer focus:outline-none focus:bg-gray-50"
+              >
+                <span className="block text-[11px] font-bold tracking-widest uppercase text-gray-500 mb-1">
+                  Check-in
+                </span>
+                <input
+                  ref={checkInRef}
+                  type="date"
+                  required
+                  value={checkIn}
+                  onChange={(e) => setCheckIn(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="bg-transparent outline-none text-gray-800 font-serif text-lg w-full cursor-pointer"
+                />
+              </button>
+              <div className="hidden sm:block w-px bg-gray-200" />
+              <button
+                type="button"
+                onClick={() => openPicker(checkOutRef)}
+                className="flex-1 text-left p-4 md:p-5 hover:bg-gray-50 transition-colors cursor-pointer focus:outline-none focus:bg-gray-50"
+              >
+                <span className="block text-[11px] font-bold tracking-widest uppercase text-gray-500 mb-1">
+                  Check-out
+                </span>
+                <input
+                  ref={checkOutRef}
+                  type="date"
+                  required
+                  value={checkOut}
+                  onChange={(e) => setCheckOut(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="bg-transparent outline-none text-gray-800 font-serif text-lg w-full cursor-pointer"
+                />
+              </button>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              className="btn btn-secondary w-full md:w-auto px-8 py-4 md:py-5 md:min-w-[200px] uppercase tracking-widest text-sm font-bold rounded-none md:rounded-r-full"
+            >
+              Find Rooms
+            </button>
+          </form>
+        </ScrollReveal>
       </div>
+
+
 
       {/* FEATURED ROOMS SECTION */}
       <section className="py-20 px-4 max-w-7xl mx-auto bg-white">
@@ -255,7 +329,7 @@ export default function Home() {
           </div>
         </ScrollReveal>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {rooms.map((room) => (
             <ScrollReveal key={room.id}>
               <div className="group cursor-pointer">
@@ -267,33 +341,27 @@ export default function Home() {
                   />
                 </div>
 
-                <h3 className="text-2xl font-serif text-gray-900 mb-2 group-hover:text-red-800 transition-colors capitalize">
-                  {room.roomType} Room
+                <h3 className="text-xl font-serif text-gray-900 mb-2 group-hover:text-red-800 transition-colors">
+                  {room.roomType.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())} Room
                 </h3>
 
-                <div className="flex items-center text-sm text-gray-500 mb-3 space-x-4 font-light">
-                  <span className="flex items-center">
-                    <Users className="w-4 h-4 mr-1.5" /> {room.capacity} Guests
-                  </span>
-                  <span className="flex items-center">
-                    <BedDouble className="w-4 h-4 mr-1.5" /> {room.roomNumber}
-                  </span>
+                <div className="flex items-center text-sm text-gray-500 mb-3 font-light">
+                  <Users className="w-4 h-4 mr-1.5" /> {room.capacity} Guests
                 </div>
 
-                <div className="flex items-end justify-between mt-6">
-                  <div>
-                    <span className="text-xs uppercase tracking-widest text-gray-500">From</span>
-                    <div className="text-xl font-serif text-gray-900">
-                      Rp {Number(room.pricePerNight).toLocaleString('id-ID')} <span className="text-sm font-light text-gray-500">/night</span>
-                    </div>
+                {room.roomAmenities?.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {room.roomAmenities.slice(0, 4).map((ra: any) => (
+                      <span
+                        key={ra.amenity?.name}
+                        className="flex items-center gap-1 text-xs px-2 py-1 bg-zinc-100 text-zinc-600 rounded-md border border-zinc-200"
+                      >
+                        <AmenityIcon icon={ra.amenity?.icon} />
+                        {ra.amenity?.name}
+                      </span>
+                    ))}
                   </div>
-                  <Link
-                    href={`/rooms?type=${room.roomType}`}
-                    className="text-sm font-bold uppercase tracking-widest text-red-800 hover:text-black transition-colors flex items-center"
-                  >
-                    View Details <ChevronRight className="w-4 h-4 ml-1" />
-                  </Link>
-                </div>
+                )}
               </div>
             </ScrollReveal>
           ))}
@@ -345,9 +413,10 @@ export default function Home() {
       </section>
 
       {/* REVIEWS SECTION */}
-      <section className="pt-20 pb-32 px-4 bg-gray-50 text-gray-900 relative overflow-hidden">
-        <style dangerouslySetInnerHTML={{
-          __html: `
+      {reviews.length > 0 && (
+        <section className="pt-20 pb-32 px-4 bg-gray-50 text-gray-900 relative overflow-hidden">
+          <style dangerouslySetInnerHTML={{
+            __html: `
           @keyframes marquee {
             0% { transform: translateX(0); }
             100% { transform: translateX(-50%); }
@@ -360,43 +429,44 @@ export default function Home() {
           }
         `}} />
 
-        <ScrollReveal>
-          <div className="max-w-7xl mx-auto mb-12">
-            <h2 className="text-3xl md:text-4xl font-serif mb-4 inline-block border-t-4 border-red-800 pt-4 text-gray-900">What Our Guests Say</h2>
+          <ScrollReveal>
+            <div className="max-w-7xl mx-auto mb-12">
+              <h2 className="text-3xl md:text-4xl font-serif mb-4 inline-block border-t-4 border-red-800 pt-4 text-gray-900">What Our Guests Say</h2>
+            </div>
+          </ScrollReveal>
+
+          <div className="w-full relative overflow-hidden">
+            <div className="flex w-max animate-marquee space-x-6 pb-4 cursor-pointer">
+              {[...reviews, ...reviews].map((review, index) => (
+                <div key={index} className="w-[300px] md:w-[350px] p-6 bg-white border border-gray-200 hover:border-gray-300 shadow-sm rounded-lg flex flex-col h-full transition-all text-left flex-shrink-0 whitespace-normal">
+                  <div className="flex justify-start mb-6">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`w-4 h-4 mr-1 ${i < review.rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-500'}`}
+                      />
+                    ))}
+                  </div>
+
+                  <div className="w-16 h-16 rounded-full bg-gray-100 mb-4 shrink-0 flex items-center justify-center font-bold text-gray-400 text-xl">
+                    {review.guest?.charAt(0)}
+                  </div>
+
+                  <div className="mt-auto">
+                    <h4 className="text-sm font-bold text-gray-900 mb-1 truncate font-serif">
+                      {review.guest}
+                    </h4>
+                    <div className="text-xs text-red-800 font-bold uppercase tracking-widest mb-3">{review.room}</div>
+                    <p className="text-sm text-gray-600 font-medium leading-relaxed italic">
+                      "{review.comment}"
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        </ScrollReveal>
-
-        <div className="w-full relative overflow-hidden">
-          <div className="flex w-max animate-marquee space-x-6 pb-4 cursor-pointer">
-            {[...(reviews.length > 0 ? reviews : FALLBACK_REVIEWS), ...(reviews.length > 0 ? reviews : FALLBACK_REVIEWS)].map((review, index) => (
-              <div key={index} className="w-[300px] md:w-[350px] p-6 bg-white border border-gray-200 hover:border-gray-300 shadow-sm rounded-lg flex flex-col h-full transition-all text-left flex-shrink-0 whitespace-normal">
-                <div className="flex justify-start mb-6">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`w-4 h-4 mr-1 ${i < review.rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-500'}`}
-                    />
-                  ))}
-                </div>
-
-                <div className="w-16 h-16 rounded-full bg-gray-100 mb-4 shrink-0 flex items-center justify-center font-bold text-gray-400 text-xl">
-                  {review.guest?.charAt(0)}
-                </div>
-
-                <div className="mt-auto">
-                  <h4 className="text-sm font-bold text-gray-900 mb-1 truncate font-serif">
-                    {review.guest}
-                  </h4>
-                  <div className="text-xs text-red-800 font-bold uppercase tracking-widest mb-3">{review.room}</div>
-                  <p className="text-sm text-gray-600 font-medium leading-relaxed italic">
-                    "{review.comment}"
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* DISCOVER MORE SECTION */}
       <section className="py-20 px-4 max-w-7xl mx-auto bg-white border-t border-gray-100">

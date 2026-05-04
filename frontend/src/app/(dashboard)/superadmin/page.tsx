@@ -15,14 +15,15 @@ export default function SuperAdminDashboard() {
       fetch("/api/rooms").then(r => r.json()),
       fetch("/api/guests").then(r => r.json()),
       fetch("/api/reservations").then(r => r.json()),
-      fetch("/api/audit-logs").then(r => r.json()),
+      fetch("/api/audit-logs?page=1&limit=10").then(r => r.json()),
     ]).then(([rooms, guests, reservations, logs]) => {
       setStats({
         totalRooms: Array.isArray(rooms) ? rooms.length : 0,
         totalGuests: Array.isArray(guests) ? guests.length : 0,
         totalReservations: Array.isArray(reservations) ? reservations.length : 0,
       });
-      setAuditLogs(Array.isArray(logs) ? logs.slice(0, 10) : []);
+      const logsData = Array.isArray(logs?.data) ? logs.data : Array.isArray(logs) ? logs : [];
+      setAuditLogs(logsData.slice(0, 10));
     }).catch(() => {});
   }, []);
 
@@ -39,9 +40,9 @@ export default function SuperAdminDashboard() {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {[
-          { label: "Total Kamar", value: stats?.totalRooms ?? "—", icon: BedDouble, iconColor: "text-blue-600", bg: "bg-blue-50" },
-          { label: "Total Tamu", value: stats?.totalGuests ?? "—", icon: Users, iconColor: "text-amber-600", bg: "bg-amber-50" },
-          { label: "Total Reservasi", value: stats?.totalReservations ?? "—", icon: CalendarCheck, iconColor: "text-indigo-600", bg: "bg-indigo-50" },
+          { label: "Total Kamar", value: stats?.totalRooms ?? "�", icon: BedDouble, iconColor: "text-blue-600", bg: "bg-blue-50" },
+          { label: "Total Tamu", value: stats?.totalGuests ?? "�", icon: Users, iconColor: "text-amber-600", bg: "bg-amber-50" },
+          { label: "Total Reservasi", value: stats?.totalReservations ?? "�", icon: CalendarCheck, iconColor: "text-indigo-600", bg: "bg-indigo-50" },
           { label: "Status Sistem", value: "Aktif", icon: ShieldCheck, iconColor: "text-emerald-600", bg: "bg-emerald-50" },
         ].map(({ label, value, icon: Icon, iconColor, bg }) => (
           <div key={label} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-5">
@@ -91,24 +92,24 @@ export default function SuperAdminDashboard() {
             <table className="w-full text-left border-collapse whitespace-nowrap">
               <thead>
                 <tr>
-                  <th className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100">Pengguna</th>
-                  <th className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100">Aksi</th>
-                  <th className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100">Entitas</th>
-                  <th className="px-6 py-4 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100">Waktu</th>
+                  <th>Pengguna</th>
+                  <th>Aksi</th>
+                  <th>Entitas</th>
+                  <th>Waktu</th>
                 </tr>
               </thead>
               <tbody>
                 {auditLogs.map((log) => (
-                  <tr key={log.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-6 py-4 border-b border-gray-50">
+                  <tr key={log.id} className="hover:bg-red-50/20 transition-colors">
+                    <td className="px-6 py-4 border-b border-gray-100">
                       <div className="font-medium text-gray-800 text-sm">{log.user?.name}</div>
                       <div className="text-xs text-gray-500 mt-0.5">{log.user?.role}</div>
                     </td>
-                    <td className="px-6 py-4 border-b border-gray-50">
+                    <td className="px-6 py-4 border-b border-gray-100">
                       <span className="px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-full">{log.action}</span>
                     </td>
-                    <td className="px-6 py-4 border-b border-gray-50 text-sm text-gray-700">{log.entity}</td>
-                    <td className="px-6 py-4 border-b border-gray-50 text-xs text-gray-500">{new Date(log.createdAt).toLocaleString("id-ID")}</td>
+                    <td className="px-6 py-4 border-b border-gray-100 text-sm text-gray-700">{log.entity}</td>
+                    <td className="px-6 py-4 border-b border-gray-100 text-xs text-gray-500">{new Date(log.createdAt).toLocaleString("id-ID")}</td>
                   </tr>
                 ))}
               </tbody>

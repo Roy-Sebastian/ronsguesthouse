@@ -15,8 +15,12 @@ export const globalErrorHandler = (
   if (err instanceof AppError) {
     statusCode = err.statusCode;
     message = err.message;
+  } else if (typeof (err as any).statusCode === 'number') {
+    // Handle Object.assign(new Error(...), { statusCode }) pattern used across services
+    statusCode = (err as any).statusCode;
+    message = err.message || message;
   } else {
-    // Other unknown errors (e.g. Prisma errors, generic exceptions)
+    // Truly unexpected errors
     logger.error('Unhandled Error:', err);
     message = err.message || message;
   }

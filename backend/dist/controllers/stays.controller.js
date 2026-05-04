@@ -41,7 +41,9 @@ const getAll = async (req, res) => {
         const limit = parseInt(req.query.limit) || 10;
         const search = req.query.search;
         const status = req.query.status;
-        res.json(await StaysService.getAllStays(page, limit, search, status));
+        const dateStart = req.query.dateStart;
+        const dateEnd = req.query.dateEnd;
+        res.json(await StaysService.getAllStays(page, limit, search, status, dateStart, dateEnd));
     }
     catch (error) {
         res.status(500).json({ error: error.message || 'Failed to fetch stays' });

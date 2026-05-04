@@ -32,3 +32,4 @@ __exportStar(require("./gallery.repository"), exports);
 __exportStar(require("./message.repository"), exports);
 __exportStar(require("./review.repository"), exports);
 __exportStar(require("./dashboard.repository"), exports);
+__exportStar(require("./penalty.repository"), exports);

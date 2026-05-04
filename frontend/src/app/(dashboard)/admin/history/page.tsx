@@ -1,6 +1,8 @@
 ﻿'use client';
+import { apiFetch } from '@/lib/apiFetch';
 
 import { History, Search } from 'lucide-react';
+import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
 import { formatRp, fmtDate } from '@/lib/formatters';
 
 import { useEffect, useState, useCallback } from 'react';
@@ -21,13 +23,15 @@ export default function AdminHistoryPage() {
   const [meta, setMeta] = useState({ total: 0, page: 1, limit: 10, totalPages: 1 });
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState(searchParams.get('search') || '');
+  const [dateStart, setDateStart] = useState(searchParams.get('dateStart') || '');
+  const [dateEnd, setDateEnd] = useState(searchParams.get('dateEnd') || '');
   const [selectedStay, setSelectedStay] = useState<any | null>(null);
   const [editStay, setEditStay] = useState<any | null>(null);
 
   const handleDeleteStay = async (id: string) => {
     if (!confirm('Yakin ingin menghapus riwayat menginap ini secara permanen?')) return;
     try {
-      const res = await fetch(`/api/stays/${id}`, { method: 'DELETE' });
+      const res = await apiFetch(`/stays/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Gagal menghapus');
       fetchHistory();
     } catch (e: any) {
@@ -44,9 +48,11 @@ export default function AdminHistoryPage() {
     params.set('page', String(currentPage));
     params.set('limit', '10');
     if (search) params.set('search', search);
+    if (dateStart) params.set('dateStart', dateStart);
+    if (dateEnd) params.set('dateEnd', dateEnd);
 
     try {
-      const res = await fetch(`/api/stays?${params.toString()}`);
+      const res = await apiFetch(`/stays?${params.toString()}`);
       if (res.ok) {
         const json = await res.json();
         setStays(json.data || []);
@@ -56,20 +62,31 @@ export default function AdminHistoryPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, search]);
+  }, [currentPage, search, dateStart, dateEnd]);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
+      const params = new URLSearchParams(searchParams);
+      let changed = false;
       if (search !== searchParams.get('search')) {
-        const params = new URLSearchParams(searchParams);
-        if (search) params.set('search', search);
-        else params.delete('search');
+        if (search) params.set('search', search); else params.delete('search');
+        changed = true;
+      }
+      if (dateStart !== (searchParams.get('dateStart') || '')) {
+        if (dateStart) params.set('dateStart', dateStart); else params.delete('dateStart');
+        changed = true;
+      }
+      if (dateEnd !== (searchParams.get('dateEnd') || '')) {
+        if (dateEnd) params.set('dateEnd', dateEnd); else params.delete('dateEnd');
+        changed = true;
+      }
+      if (changed) {
         params.set('page', '1');
         router.push(`${pathname}?${params.toString()}`);
       }
-    }, 500);
+    }, 300);
     return () => clearTimeout(delayDebounceFn);
-  }, [search, searchParams, pathname, router]);
+  }, [search, dateStart, dateEnd, searchParams, pathname, router]);
 
   useEffect(() => {
     fetchHistory();
@@ -118,13 +135,22 @@ export default function AdminHistoryPage() {
         </div>
       </div>
 
-      <div className="search-bar flex-1">
-        <Search size={18} className="text-gray-400 ml-2 shrink-0" />
-        <input
-          className="w-full text-sm outline-none bg-transparent placeholder-gray-400 text-gray-700"
-          placeholder="Cari nama tamu atau nomor kamar..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="search-bar flex-1 m-0">
+          <Search size={18} className="text-gray-400 ml-2 shrink-0" />
+          <input
+            className="w-full text-sm outline-none bg-transparent placeholder-gray-400 text-gray-700"
+            placeholder="Cari nama tamu atau nomor kamar..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <DateRangeFilter
+          startDate={dateStart}
+          endDate={dateEnd}
+          onStartDateChange={setDateStart}
+          onEndDateChange={setDateEnd}
+          className="bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm"
         />
       </div>
 
@@ -194,7 +220,7 @@ export default function AdminHistoryPage() {
                   return (
                     <tr
                       key={s.id}
-                      className="hover:bg-gray-50/60 transition-colors border-b border-gray-50 last:border-0"
+                      className="hover:bg-red-50/20 transition-colors border-b border-gray-100 last:border-0"
                     >
                       <td className="px-5 py-4">
                         <div className="font-semibold text-dark text-sm">

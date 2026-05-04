@@ -8,8 +8,10 @@ export const getAll = async (req: Request, res: Response) => {
 		const limit = parseInt(req.query.limit as string) || 10;
 		const search = req.query.search as string;
 		const status = req.query.status as string;
+		const dateStart = req.query.dateStart as string | undefined;
+		const dateEnd = req.query.dateEnd as string | undefined;
 
-		res.json(await StaysService.getAllStays(page, limit, search, status));
+		res.json(await StaysService.getAllStays(page, limit, search, status, dateStart, dateEnd));
 	} catch (error: any) {
 		res.status(500).json({ error: error.message || 'Failed to fetch stays' });
 	}

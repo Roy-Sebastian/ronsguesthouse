@@ -1,8 +1,9 @@
 ﻿'use client';
+import { apiFetch } from '@/lib/apiFetch';
 
 
 import { defaultRoleMatrix, permissionsGroups } from '@/lib/rbac';
-import { Check, Save, ShieldCheck } from 'lucide-react';
+import { Check, RotateCcw, Save, ShieldCheck } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 const roles = [
@@ -37,7 +38,7 @@ export default function SuperadminRolesPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/roles')
+    apiFetch('/roles')
       .then(res => res.json())
       .then(data => {
         if (data && Object.keys(data).length > 0) {
@@ -68,10 +69,15 @@ export default function SuperadminRolesPage() {
     }));
   };
 
+  const handleReset = () => {
+    if (!confirm('Reset semua hak akses ke pengaturan default? Perubahan yang belum disimpan akan hilang.')) return;
+    setMatrix(defaultMatrix);
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
-      const res = await fetch('/api/roles', {
+      const res = await apiFetch('/roles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(matrix)
@@ -97,7 +103,14 @@ export default function SuperadminRolesPage() {
             Konfigurasi hak akses untuk setiap peran pengguna
           </p>
         </div>
-        <button
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleReset}
+            className="px-4 py-2.5 text-sm font-semibold rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 transition-all inline-flex items-center gap-2"
+          >
+            <RotateCcw size={14} /> Reset Default
+          </button>
+          <button
           onClick={handleSave}
           disabled={saving}
           className={`px-5 py-2.5 text-sm font-semibold rounded-lg transition-all inline-flex items-center gap-2 shadow-sm disabled:opacity-60 ${saved ? 'bg-green-500 text-white' : 'bg-primary hover:bg-primary-hover text-white'}`}
@@ -114,6 +127,7 @@ export default function SuperadminRolesPage() {
             </>
           )}
         </button>
+        </div>
       </div>
 
       {/* Role legend */}
@@ -180,7 +194,7 @@ export default function SuperadminRolesPage() {
                 {permissions.map(({ key, label }) => (
                   <tr
                     key={key}
-                    className="hover:bg-gray-50/60 transition-colors border-b border-gray-50 last:border-0"
+                    className="hover:bg-red-50/20 transition-colors border-b border-gray-100 last:border-0"
                   >
                     <td className="px-6 py-3.5 text-gray-600 pl-10">{label}</td>
                     {roles.map((r) => (

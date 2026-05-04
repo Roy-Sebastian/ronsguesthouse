@@ -25,8 +25,10 @@ import { transactionRepository } from '../repositories/transaction.repository';
 
 // ─── Midtrans Snap Client ──────────────────────────────────────────
 
+const IS_PRODUCTION = process.env.MIDTRANS_IS_PRODUCTION === 'true';
+
 const snap = new MidtransClient.Snap({
-  isProduction: false,
+  isProduction: IS_PRODUCTION,
   serverKey: process.env.MIDTRANS_SERVER_KEY || '',
 });
 
@@ -67,7 +69,8 @@ export async function createSnapToken(input: SnapTokenInput) {
 export async function chargeMidtrans(amount: number) {
   const orderId = `RONS-${Date.now()}-${Math.floor(Math.random() * 100)}`;
   const authString = Buffer.from(`${process.env.MIDTRANS_SERVER_KEY}:`).toString('base64');
-  const midtransRes = await fetch('https://app.sandbox.midtrans.com/snap/v1/transactions', {
+  const midtransHost = IS_PRODUCTION ? 'app.midtrans.com' : 'app.sandbox.midtrans.com';
+  const midtransRes = await fetch(`https://${midtransHost}/snap/v1/transactions`, {
     method: 'POST',
     headers: {
       Accept: 'application/json',
@@ -87,7 +90,7 @@ export async function chargeMidtrans(amount: number) {
 // ─── Midtrans Core Client for Status API ────────────────────────────
 
 const coreApi = new MidtransClient.CoreApi({
-  isProduction: false,
+  isProduction: IS_PRODUCTION,
   serverKey: process.env.MIDTRANS_SERVER_KEY || '',
 });
 
@@ -116,7 +119,13 @@ export async function processMidtransNotification(body: MidtransNotificationBody
     .update(`${order_id}${status_code}${gross_amount}${serverKey}`)
     .digest('hex');
 
-  if (hash !== signature_key) {
+  const hashBuf = Buffer.from(hash);
+  const sigBuf = Buffer.from(signature_key);
+  const signatureValid =
+    hashBuf.length === sigBuf.length &&
+    crypto.timingSafeEqual(hashBuf, sigBuf);
+
+  if (!signatureValid) {
     logger.warn('Invalid Midtrans webhook signature', { orderId: order_id });
     throw Object.assign(new Error('Invalid signature'), { statusCode: 400 });
   }
@@ -188,9 +197,10 @@ export async function processMidtransNotification(body: MidtransNotificationBody
       data: { paymentStatus: 'paid', paymentDate: new Date(), paymentMethod: pMethod },
     });
 
-    // Dashboard Integration: Create Income record
-    await prisma.income.create({
-      data: {
+    // Dashboard Integration: Upsert Income record (idempotent for duplicate webhooks)
+    await prisma.income.upsert({
+      where: { transactionId: transaction.id },
+      create: {
         transactionId: transaction.id,
         amount: transaction.amount,
         description: `Online Payment (Midtrans) - Booking ID: ${reservation.id.slice(-6).toUpperCase()}`,
@@ -203,6 +213,7 @@ export async function processMidtransNotification(body: MidtransNotificationBody
         roomNumberSnapshot: reservation.room?.roomNumber,
         type: 'income',
       },
+      update: {},
     });
 
     // Confirm the reservation

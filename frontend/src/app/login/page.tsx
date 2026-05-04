@@ -1,8 +1,8 @@
-﻿'use client';
+'use client';
 
 import { authClient, signIn } from '@/lib/auth-client';
 import { ROLE_REDIRECTS } from '@/lib/constants';
-import { ChevronLeft, Lock, Mail, Loader2 } from 'lucide-react';
+import { ChevronLeft, Eye, EyeOff, Lock, Mail, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -17,6 +17,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   // ── Handlers & Helpers ─────────────────────────────────────────────────────
 
@@ -53,28 +54,27 @@ export default function LoginPage() {
       <div className="hidden lg:flex flex-1 flex-col justify-between p-12 relative overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img
-            src="https://images.unsplash.com/photo-1542314831-c53cd4b85ca4?auto=format&fit=crop&q=80&w=2000"
-            alt="Luxury Hotel"
-            className="w-full h-full object-cover opacity-40 blur-[2px]"
+            src="/hotel.jpeg"
+            alt="Pemandangan Berastagi"
+            className="w-full h-full object-cover opacity-100"
           />
           <div className="absolute inset-0 bg-linear-to-t from-black via-black/80 to-transparent" />
         </div>
 
         <div className="relative z-10">
-          <Link href="/" className="inline-block text-white hover:text-red-50 transition-colors">
-            <span className="font-serif text-2xl tracking-widest uppercase">
-              Ron's <span className="text-red-400">Guest House</span>
-            </span>
-          </Link>
+          <span className="font-serif text-2xl tracking-widest uppercase text-white font-bold">
+            Ron's <span className="text-red-600 font-bold">Guest House</span>
+          </span>
+
         </div>
 
         <div className="relative z-10 max-w-lg mb-20">
           <h1 className="font-serif text-5xl text-white leading-tight mb-6">
-            Exclusive <br /> Management <br /> Portal
+            Selamat <br /> Datang <br /> Kembali
           </h1>
           <div className="w-16 h-0.5 bg-red-700 mb-6" />
           <p className="text-white/70 font-light text-lg tracking-wide leading-relaxed">
-            Welcome back. Access the internal suite to manage guests, reservations, and luxury accommodations.
+            Masuk untuk mengakses dashboard manajemen Ron's Guest House.
           </p>
         </div>
       </div>
@@ -83,34 +83,15 @@ export default function LoginPage() {
       <div className="w-full lg:w-125 bg-white border-l border-gray-100 flex flex-col justify-center px-8 lg:px-16 py-12 relative z-10 shadow-2xl">
         <Link
           href="/"
-          className="text-xs tracking-widest uppercase text-gray-500 hover:text-gray-900 transition-colors mb-12 inline-flex items-center"
+          className="text-xs tracking-widest uppercase text-gray-500 hover:text-gray-900 transition-colors mb-8 inline-flex items-center"
         >
-          <ChevronLeft className="w-4 h-4 mr-1" /> Return to Home
+          <ChevronLeft className="w-4 h-4 mr-1" /> Kembali ke Beranda
         </Link>
 
-        <h2 className="font-serif text-3xl text-gray-900 mb-2 tracking-wide">Sign In</h2>
-        <p className="text-gray-500 font-light mb-8 text-sm">
-          Please enter your specialized credentials.
+        <h2 className="font-serif text-3xl text-gray-900 mb-2 tracking-wide">Masuk</h2>
+        <p className="text-gray-500 font-light mb-6 text-sm">
+          Masukkan kredensial Anda untuk melanjutkan.
         </p>
-
-        {/* Demo Credentials Section */}
-        <div className="bg-white/5 border border-white/10 p-4 mb-8 text-xs font-light text-gray-400">
-          <div className="font-bold text-white tracking-widest uppercase mb-3 text-[10px]">Demo Credentials (Password: Admin@12345)</div>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center cursor-pointer hover:text-white transition-colors" onClick={() => { setEmail('superadmin@ronsguesthouse.com'); setPassword('Admin@12345'); }}>
-              <span className="text-red-700 font-bold">Superadmin</span>
-              <span>superadmin@ronsguesthouse.com</span>
-            </div>
-            <div className="flex justify-between items-center cursor-pointer hover:text-white transition-colors" onClick={() => { setEmail('admin@ronsguesthouse.com'); setPassword('Admin@12345'); }}>
-              <span className="text-red-700 font-bold">Admin</span>
-              <span>admin@ronsguesthouse.com</span>
-            </div>
-            <div className="flex justify-between items-center cursor-pointer hover:text-white transition-colors" onClick={() => { setEmail('receptionist@ronsguesthouse.com'); setPassword('Admin@12345'); }}>
-              <span className="text-red-700 font-bold">Receptionist</span>
-              <span>receptionist@ronsguesthouse.com</span>
-            </div>
-          </div>
-        </div>
 
         {error && (
           <div className="bg-red-900/20 border border-red-900/50 text-red-500 text-sm px-4 py-3 mb-6 flex items-center">
@@ -129,7 +110,7 @@ export default function LoginPage() {
               <input
                 type="email"
                 className="w-full bg-gray-50 border border-gray-200 text-gray-900 px-11 py-3 focus:outline-none focus:border-red-800 focus:bg-white transition-all font-light placeholder-gray-400"
-                placeholder="admin@ronsguesthouse.com"
+                placeholder="email@contoh.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -137,35 +118,44 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="flex flex-col mb-4">
+          <div className="flex flex-col mb-2">
             <label className="text-xs font-bold tracking-widest uppercase text-gray-500 mb-2">
               Password
             </label>
             <div className="relative">
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
               <input
-                type="password"
-                className="w-full bg-gray-50 border border-gray-200 text-gray-900 px-11 py-3 focus:outline-none focus:border-red-800 focus:bg-white transition-all font-light placeholder-gray-400"
+                type={showPassword ? 'text' : 'password'}
+                className="w-full bg-gray-50 border border-gray-200 text-gray-900 px-11 py-3 pr-11 focus:outline-none focus:border-red-800 focus:bg-white transition-all font-light placeholder-gray-400"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                tabIndex={-1}
+                aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-900 transition-colors"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-red-800 hover:bg-black text-white font-bold tracking-widest uppercase text-sm py-4 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-red-800 hover:bg-black text-white font-bold tracking-widest uppercase text-sm py-4 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Authenticate'}
+            {loading ? <Loader2 className="w-5 h-5 animate-spin " /> : 'Masuk'}
           </button>
         </form>
 
-        <div className="mt-auto pt-16 text-center">
+        <div className="mt-auto pt-10 text-center">
           <p className="text-xs text-gray-600 font-light">
-            © {new Date().getFullYear()} Ron's Guesthouse. All rights reserved.
+            &copy; {new Date().getFullYear()} Ron&apos;s Guesthouse. All rights reserved.
           </p>
         </div>
       </div>
