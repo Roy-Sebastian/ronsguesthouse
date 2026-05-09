@@ -76,7 +76,7 @@ export const auditLogMiddleware = async (
 
           try {
             const io = getIO();
-            io.emit('new_audit_log', log);
+            io?.emit('new_audit_log', log);
           } catch (e) {
           }
         } catch (err) {

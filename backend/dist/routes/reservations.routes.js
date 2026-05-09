@@ -38,6 +38,7 @@ const controller = __importStar(require("../controllers/reservations.controller"
 const auth_middleware_1 = require("../middlewares/auth.middleware");
 const router = (0, express_1.Router)();
 router.get('/utils/reminders', auth_middleware_1.requireAuth, (0, auth_middleware_1.requirePermission)('reservation.view'), controller.getReminders);
+router.get('/utils/recent', auth_middleware_1.requireAuth, (0, auth_middleware_1.requirePermission)('reservation.view'), controller.getRecent);
 router.get('/', auth_middleware_1.requireAuth, (0, auth_middleware_1.requirePermission)('reservation.view'), controller.getAll);
 router.get('/:id', auth_middleware_1.requireAuth, (0, auth_middleware_1.requirePermission)('reservation.view'), controller.getById);
 router.post('/', auth_middleware_1.requireAuth, (0, auth_middleware_1.requirePermission)('reservation.create'), controller.create);

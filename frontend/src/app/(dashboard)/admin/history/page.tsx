@@ -13,6 +13,7 @@ import StayDetailModal from '@/components/features/StayDetailModal';
 import EditStayModal from '@/components/features/EditStayModal';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/ui/SortableHeader';
+import swal from '@/lib/swal';
 
 export default function AdminHistoryPage() {
   const router = useRouter();
@@ -29,13 +30,21 @@ export default function AdminHistoryPage() {
   const [editStay, setEditStay] = useState<any | null>(null);
 
   const handleDeleteStay = async (id: string) => {
-    if (!confirm('Yakin ingin menghapus riwayat menginap ini secara permanen?')) return;
+    const result = await swal.fire({
+      icon: 'warning',
+      title: 'Konfirmasi',
+      text: 'Yakin ingin menghapus riwayat menginap ini secara permanen?',
+      showCancelButton: true,
+      confirmButtonText: 'Ya, Lanjutkan',
+      cancelButtonText: 'Batal',
+    });
+    if (!result.isConfirmed) return;
     try {
       const res = await apiFetch(`/stays/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Gagal menghapus');
       fetchHistory();
     } catch (e: any) {
-      alert(e.message);
+      await swal.fire({ icon: 'error', title: 'Gagal', text: e.message });
     }
   };
 

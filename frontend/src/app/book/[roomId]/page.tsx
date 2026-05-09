@@ -41,6 +41,9 @@ export default function BookingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [room, setRoom] = useState<Room | null>(null);
   const [bookingCode, setBookingCode] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const today = new Date().toISOString().split('T')[0];
 
   const [formData, setFormData] = useState({
     checkIn: checkInQuery || '',
@@ -72,23 +75,36 @@ export default function BookingPage() {
 
   // ── Handlers ───────────────────────────────────────────────────────────────
 
+  const phoneRegex = /^\+?[0-9\s\-().]{7,20}$/;
+
   const handleNext = () => {
     if (step === 1) {
-      if (!formData.guestName || !formData.guestPhone || !formData.guestEmail) {
-        toast.error("Please complete guest details (Name, Email, and Phone)");
-        return;
+      const newErrors: Record<string, string> = {};
+
+      if (!formData.checkIn) newErrors.checkIn = 'Check-in date is required';
+      if (!formData.checkOut) newErrors.checkOut = 'Check-out date is required';
+      if (formData.checkIn && formData.checkOut) {
+        const inDate = new Date(formData.checkIn);
+        const outDate = new Date(formData.checkOut);
+        if (inDate >= outDate) newErrors.checkOut = 'Check-out must be after check-in';
       }
-      if (!formData.checkIn || !formData.checkOut) {
-        toast.error("Please fill in Check-in and Check-out dates");
-        return;
+      if (!formData.guestName.trim()) newErrors.guestName = 'Full name is required';
+      if (!formData.guestEmail.trim()) {
+        newErrors.guestEmail = 'Email address is required';
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.guestEmail)) {
+        newErrors.guestEmail = 'Enter a valid email address';
+      }
+      if (!formData.guestPhone.trim()) {
+        newErrors.guestPhone = 'Phone number is required';
+      } else if (!phoneRegex.test(formData.guestPhone.trim())) {
+        newErrors.guestPhone = 'Enter a valid phone number (min. 7 digits)';
       }
 
-      const inDate = new Date(formData.checkIn);
-      const outDate = new Date(formData.checkOut);
-      if (inDate >= outDate) {
-        toast.error("Check-out date must be after Check-in");
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
         return;
       }
+      setErrors({});
     }
     setStep((prev) => prev + 1);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -131,7 +147,7 @@ export default function BookingPage() {
 
       snap.pay(data.payment.token, {
         onSuccess: async (_result: any) => {
-          // Force manual backend synchronization (useful for localhost testing without webhook)
+          snap.hide();
           try {
              await apiFetch(`/transactions/midtrans/sync/${_result.order_id}`);
           } catch(e) {}
@@ -142,6 +158,7 @@ export default function BookingPage() {
           setSubmitting(false);
         },
         onPending: async (_result: any) => {
+          snap.hide();
           setBookingCode(data.bookingCode);
           setStep(4);
           toast.success('Booking created! Awaiting payment confirmation.');
@@ -234,21 +251,25 @@ export default function BookingPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                   <div>
                     <label className="block text-xs font-bold tracking-widest uppercase text-gray-500 mb-2">Check-in</label>
-                    <input 
-                      type="date" 
+                    <input
+                      type="date"
+                      min={today}
                       value={formData.checkIn}
-                      onChange={(e) => setFormData({...formData, checkIn: e.target.value})}
-                      className="w-full border border-gray-300 px-4 py-3 outline-none focus:border-red-800 transition-colors"
+                      onChange={(e) => { setFormData({...formData, checkIn: e.target.value}); setErrors((p) => ({...p, checkIn: ''})); }}
+                      className={`w-full border px-4 py-3 outline-none focus:border-red-800 transition-colors ${errors.checkIn ? 'border-red-500' : 'border-gray-300'}`}
                     />
+                    {errors.checkIn && <p className="text-red-500 text-xs mt-1">{errors.checkIn}</p>}
                   </div>
                   <div>
                     <label className="block text-xs font-bold tracking-widest uppercase text-gray-500 mb-2">Check-out</label>
-                    <input 
-                      type="date" 
+                    <input
+                      type="date"
+                      min={formData.checkIn || today}
                       value={formData.checkOut}
-                      onChange={(e) => setFormData({...formData, checkOut: e.target.value})}
-                      className="w-full border border-gray-300 px-4 py-3 outline-none focus:border-red-800 transition-colors"
+                      onChange={(e) => { setFormData({...formData, checkOut: e.target.value}); setErrors((p) => ({...p, checkOut: ''})); }}
+                      className={`w-full border px-4 py-3 outline-none focus:border-red-800 transition-colors ${errors.checkOut ? 'border-red-500' : 'border-gray-300'}`}
                     />
+                    {errors.checkOut && <p className="text-red-500 text-xs mt-1">{errors.checkOut}</p>}
                   </div>
                 </div>
 
@@ -259,29 +280,33 @@ export default function BookingPage() {
                       type="text"
                       placeholder="As per ID / Passport"
                       value={formData.guestName}
-                      onChange={(e) => setFormData({...formData, guestName: e.target.value})}
-                      className="w-full border border-gray-300 px-4 py-3 outline-none focus:border-red-800 transition-colors"
+                      onChange={(e) => { setFormData({...formData, guestName: e.target.value}); setErrors((p) => ({...p, guestName: ''})); }}
+                      className={`w-full border px-4 py-3 outline-none focus:border-red-800 transition-colors ${errors.guestName ? 'border-red-500' : 'border-gray-300'}`}
                     />
+                    {errors.guestName && <p className="text-red-500 text-xs mt-1">{errors.guestName}</p>}
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-xs font-bold tracking-widest uppercase text-gray-500 mb-2">Email Address *</label>
-                      <input 
-                        type="email" 
+                      <input
+                        type="email"
                         value={formData.guestEmail}
-                        onChange={(e) => setFormData({...formData, guestEmail: e.target.value})}
-                        className="w-full border border-gray-300 px-4 py-3 outline-none focus:border-red-800 transition-colors"
+                        onChange={(e) => { setFormData({...formData, guestEmail: e.target.value}); setErrors((p) => ({...p, guestEmail: ''})); }}
+                        className={`w-full border px-4 py-3 outline-none focus:border-red-800 transition-colors ${errors.guestEmail ? 'border-red-500' : 'border-gray-300'}`}
                       />
+                      {errors.guestEmail && <p className="text-red-500 text-xs mt-1">{errors.guestEmail}</p>}
                     </div>
                     <div>
                       <label className="block text-xs font-bold tracking-widest uppercase text-gray-500 mb-2">Phone / WhatsApp *</label>
-                      <input 
-                        type="tel" 
+                      <input
+                        type="tel"
+                        placeholder="e.g. +1 555 0123456"
                         value={formData.guestPhone}
-                        onChange={(e) => setFormData({...formData, guestPhone: e.target.value})}
-                        className="w-full border border-gray-300 px-4 py-3 outline-none focus:border-red-800 transition-colors"
+                        onChange={(e) => { setFormData({...formData, guestPhone: e.target.value}); setErrors((p) => ({...p, guestPhone: ''})); }}
+                        className={`w-full border px-4 py-3 outline-none focus:border-red-800 transition-colors ${errors.guestPhone ? 'border-red-500' : 'border-gray-300'}`}
                       />
+                      {errors.guestPhone && <p className="text-red-500 text-xs mt-1">{errors.guestPhone}</p>}
                     </div>
                   </div>
 

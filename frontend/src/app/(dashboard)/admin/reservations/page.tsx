@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
+import swal from '@/lib/swal';
 
 
 
@@ -34,6 +35,10 @@ export default function SuperadminReservationsPage() {
   const [paymentStatus, setPaymentStatus] = useState<'unpaid' | 'paid' | 'partial'>('unpaid');
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [paymentAmount, setPaymentAmount] = useState('');
+  const [guestSearch, setGuestSearch] = useState('');
+  const [guestDropdownOpen, setGuestDropdownOpen] = useState(false);
+  const [priceOverride, setPriceOverride] = useState(false);
+  const [showPastConfirm, setShowPastConfirm] = useState(false);
   const [form, setForm] = useState({
     guestId: '',
     roomId: '',
@@ -75,6 +80,7 @@ export default function SuperadminReservationsPage() {
   }, []);
 
   const calcPrice = () => {
+    if (priceOverride) return;
     const room = rooms.find((r) => r.id === form.roomId);
     if (!room || !form.checkInDate || !form.checkOutDate) return;
     const nights = Math.max(
@@ -90,7 +96,8 @@ export default function SuperadminReservationsPage() {
 
   useEffect(() => {
     calcPrice();
-  }, [form.roomId, form.checkInDate, form.checkOutDate]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.roomId, form.checkInDate, form.checkOutDate, priceOverride]);
 
   const resetForm = () => {
     setEditId(null);
@@ -98,6 +105,10 @@ export default function SuperadminReservationsPage() {
     setPaymentStatus('unpaid');
     setPaymentMethod('cash');
     setPaymentAmount('');
+    setGuestSearch('');
+    setGuestDropdownOpen(false);
+    setPriceOverride(false);
+    setShowPastConfirm(false);
     setError('');
   };
 
@@ -106,6 +117,8 @@ export default function SuperadminReservationsPage() {
   const openEdit = (r: any) => {
     setEditId(r.id);
     setOriginalStatus(r.status || 'pending');
+    setGuestSearch(r.guest?.fullName || '');
+    setPriceOverride(false);
     setForm({
       guestId: r.guestId || r.guest?.id || '',
       roomId: r.roomId || r.room?.id || '',
@@ -120,17 +133,17 @@ export default function SuperadminReservationsPage() {
     setShowModal(true);
   };
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const executeSave = async (isPast: boolean) => {
     setSaving(true);
     setError('');
+    setShowPastConfirm(false);
     try {
       const url = editId ? `/api/reservations/${editId}` : '/api/reservations';
       const method = editId ? 'PATCH' : 'POST';
       const { status, ...createForm } = form;
       const body = editId
         ? { numGuests: form.numGuests, specialRequests: form.specialRequests, status: form.status }
-        : { ...createForm, channel: 'internal' };
+        : { ...createForm, channel: 'internal', ...(isPast && { status: 'checked_out' }) };
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -162,9 +175,30 @@ export default function SuperadminReservationsPage() {
     setSaving(false);
   };
 
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.guestId) { setError('Pilih tamu terlebih dahulu'); return; }
+    if (!editId) {
+      const today = new Date().toISOString().split('T')[0];
+      if (form.checkOutDate && form.checkOutDate < today) {
+        setShowPastConfirm(true);
+        return;
+      }
+    }
+    await executeSave(false);
+  };
+
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Hapus reservasi ini secara permanen? Tindakan ini tidak bisa dibatalkan.')) return;
+    const result = await swal.fire({
+      icon: 'warning',
+      title: 'Konfirmasi',
+      text: 'Hapus reservasi ini secara permanen? Tindakan ini tidak bisa dibatalkan.',
+      showCancelButton: true,
+      confirmButtonText: 'Ya, Lanjutkan',
+      cancelButtonText: 'Batal',
+    });
+    if (!result.isConfirmed) return;
     try {
       const res = await apiFetch(`/reservations/${id}`, { method: 'DELETE' });
       if (!res.ok) {
@@ -173,9 +207,18 @@ export default function SuperadminReservationsPage() {
       }
       fetchAll();
     } catch (e: any) {
-      alert(e.message);
+      await swal.fire({ icon: 'error', title: 'Gagal', text: e.message });
     }
   };
+  const sortedGuests = [...guests].sort((a, b) =>
+    a.fullName.localeCompare(b.fullName, 'id', { sensitivity: 'base' }),
+  );
+  const filteredGuests = guestSearch
+    ? sortedGuests.filter((g) =>
+        g.fullName.toLowerCase().includes(guestSearch.toLowerCase()),
+      )
+    : sortedGuests;
+
   const filtered = reservations.filter((r) => {
     let dateMatch = true;
     if (dateStart || dateEnd) {
@@ -196,7 +239,7 @@ export default function SuperadminReservationsPage() {
       r.guest?.fullName?.toLowerCase().includes(search.toLowerCase()) ||
       r.room?.roomNumber?.toLowerCase().includes(search.toLowerCase()) ||
       r.status?.toLowerCase().includes(search.toLowerCase());
-      
+
     return dateMatch && searchMatch;
   });
 
@@ -407,8 +450,8 @@ export default function SuperadminReservationsPage() {
       {/* Create / Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-8">
-            <div className="flex items-center justify-between mb-6">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between px-8 pt-8 pb-4 border-b border-gray-100 shrink-0">
               <h2 className="page-title">
                 {editId ? 'Edit Reservasi' : 'Buat Reservasi'}
               </h2>
@@ -419,6 +462,7 @@ export default function SuperadminReservationsPage() {
                 <X size={16} />
               </button>
             </div>
+            <div className="overflow-y-auto flex-1 px-8 py-6">
             {error && (
               <div className="mb-4 px-4 py-3 bg-red-50 text-red-700 rounded-xl text-sm border border-red-100">
                 {error}
@@ -429,22 +473,45 @@ export default function SuperadminReservationsPage() {
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
                   Tamu
                 </label>
-                <select
-                  required
-                  disabled={!!editId}
-                  value={form.guestId}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, guestId: e.target.value }))
-                  }
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-gray-50 disabled:opacity-60"
-                >
-                  <option value="">Pilih tamu...</option>
-                  {guests.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.fullName}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <input
+                    type="text"
+                    autoComplete="off"
+                    placeholder="Ketik nama tamu..."
+                    value={guestSearch}
+                    disabled={!!editId}
+                    onChange={(e) => {
+                      setGuestSearch(e.target.value);
+                      setGuestDropdownOpen(true);
+                      setForm((f) => ({ ...f, guestId: '' }));
+                    }}
+                    onFocus={() => setGuestDropdownOpen(true)}
+                    onBlur={() => setTimeout(() => setGuestDropdownOpen(false), 150)}
+                    className={`w-full px-4 py-2.5 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary/15 bg-gray-50 pr-8 disabled:opacity-60 ${form.guestId ? 'border-green-400 focus:border-green-400' : 'border-gray-200 focus:border-primary'}`}
+                  />
+                  {form.guestId && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500 text-xs font-bold">✓</span>
+                  )}
+                  {!editId && guestDropdownOpen && (filteredGuests.length > 0 || guestSearch) && (
+                    <div className="absolute z-30 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                      {filteredGuests.length > 0 ? filteredGuests.map((g) => (
+                        <div
+                          key={g.id}
+                          onMouseDown={() => {
+                            setForm((f) => ({ ...f, guestId: g.id }));
+                            setGuestSearch(g.fullName);
+                            setGuestDropdownOpen(false);
+                          }}
+                          className="px-4 py-2.5 text-sm hover:bg-primary/5 cursor-pointer"
+                        >
+                          {g.fullName}
+                        </div>
+                      )) : (
+                        <div className="px-4 py-2.5 text-sm text-gray-400">Tamu tidak ditemukan</div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
@@ -608,11 +675,43 @@ export default function SuperadminReservationsPage() {
                   )}
                 </div>
               )}
-              {form.totalPrice > 0 && (
-                <div className="bg-primary/5 border border-primary/15 rounded-xl px-4 py-3 text-sm font-semibold text-dark">
-                  Estimasi Total: {formatRp(form.totalPrice)}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    Harga Total
+                  </label>
+                  {priceOverride && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPriceOverride(false);
+                        const room = rooms.find((r) => r.id === form.roomId);
+                        if (room && form.checkInDate && form.checkOutDate) {
+                          const nights = Math.max(1, Math.ceil((new Date(form.checkOutDate).getTime() - new Date(form.checkInDate).getTime()) / 86400000));
+                          setForm((f) => ({ ...f, totalPrice: Number(room.pricePerNight) * nights }));
+                        }
+                      }}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      Reset otomatis
+                    </button>
+                  )}
                 </div>
-              )}
+                <input
+                  type="number"
+                  min={0}
+                  value={form.totalPrice || ''}
+                  onChange={(e) => {
+                    setPriceOverride(true);
+                    setForm((f) => ({ ...f, totalPrice: Number(e.target.value) }));
+                  }}
+                  placeholder="Masukkan harga..."
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-gray-50"
+                />
+                <p className="mt-1 text-xs text-gray-400">
+                  {priceOverride ? '⚠ Harga diatur manual' : 'Dihitung otomatis berdasarkan kamar & tanggal'}
+                </p>
+              </div>
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
@@ -630,6 +729,37 @@ export default function SuperadminReservationsPage() {
                 </button>
               </div>
             </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Past Reservation Confirmation */}
+      {showPastConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-base font-bold text-gray-900 mb-3">Reservasi Masa Lalu?</h3>
+            <p className="text-sm text-gray-600 mb-5">
+              Tanggal check-out yang diinput sudah berlalu. Apakah ini reservasi yang belum tercatat?
+              Reservasi akan langsung dikonfirmasi dan masuk ke riwayat.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowPastConfirm(false)}
+                className="flex-1 py-2.5 border border-gray-200 text-gray-600 font-semibold text-sm rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                Kembali ke Form
+              </button>
+              <button
+                type="button"
+                onClick={() => executeSave(true)}
+                disabled={saving}
+                className="flex-1 py-2.5 bg-primary text-white font-semibold text-sm rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {saving ? 'Menyimpan...' : 'Ya, Simpan ke Riwayat'}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -637,8 +767,8 @@ export default function SuperadminReservationsPage() {
       {/* View Detail Modal */}
       {viewReservation && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-8">
-            <div className="flex items-center justify-between mb-6">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between px-8 pt-8 pb-4 border-b border-gray-100 shrink-0">
               <h2 className="page-title">Detail Reservasi</h2>
               <button
                 onClick={() => setViewReservation(null)}
@@ -647,6 +777,7 @@ export default function SuperadminReservationsPage() {
                 <X size={16} />
               </button>
             </div>
+            <div className="overflow-y-auto flex-1 px-8 py-6">
             <dl className="space-y-3 text-sm">
               {[
                 ['Kode Booking', viewReservation.bookingCode || '-'],
@@ -673,6 +804,7 @@ export default function SuperadminReservationsPage() {
             >
               Tutup
             </button>
+            </div>
           </div>
         </div>
       )}

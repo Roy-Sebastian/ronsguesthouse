@@ -91,11 +91,11 @@ export default function SuperAdminDashboard() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse whitespace-nowrap">
               <thead>
-                <tr>
-                  <th>Pengguna</th>
-                  <th>Aksi</th>
-                  <th>Entitas</th>
-                  <th>Waktu</th>
+                <tr className="bg-gray-50 border-b border-gray-100">
+                  <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Pengguna</th>
+                  <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Aksi</th>
+                  <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Entitas</th>
+                  <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Waktu</th>
                 </tr>
               </thead>
               <tbody>

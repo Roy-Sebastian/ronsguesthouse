@@ -1,15 +1,15 @@
 import { Request, Response } from 'express';
 
-export const uploadFile = (req: Request, res: Response): void => {
+import { uploadToCloudinary } from '../config/cloudinary';
+
+export const uploadFile = async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.file) {
       res.status(400).json({ error: 'No file uploaded' });
       return;
     }
-
-    // Return the public URL for the uploaded file
-    const fileUrl = `/uploads/${req.file.filename}`;
-    res.status(200).json({ url: fileUrl });
+    const url = await uploadToCloudinary(req.file.buffer);
+    res.status(200).json({ url });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'File upload failed' });
   }

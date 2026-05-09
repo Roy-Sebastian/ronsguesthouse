@@ -200,20 +200,15 @@ function RoomsContent() {
   useEffect(() => {
     fetchRooms();
 
-    let socket: any;
-    try {
-      socket = io(backendUrl, {
-        path: '/api/socket.io',
-        transports: ['polling'],
-      });
-      socket.on('room_booked', fetchRooms);
-      socket.on('room_freed', fetchRooms);
-    } catch (e) {
-      /* socket connection failed silently */
-    }
+    const socket = io(backendUrl, {
+      path: '/api/socket.io',
+      transports: ['websocket', 'polling'],
+    });
+    socket.on('room_booked', fetchRooms);
+    socket.on('room_freed', fetchRooms);
 
     return () => {
-      if (socket) socket.disconnect();
+      socket.disconnect();
     };
   }, [fetchRooms, backendUrl]);
 

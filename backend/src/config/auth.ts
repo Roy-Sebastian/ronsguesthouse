@@ -44,6 +44,9 @@ export const auth = betterAuth({
       },
     },
   },
+  rateLimit: {
+    enabled: false,
+  },
   trustedOrigins: (process.env.FRONTEND_URL || 'http://localhost:3000')
     .split(',')
     .map((s) => s.trim()),

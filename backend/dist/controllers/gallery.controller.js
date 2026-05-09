@@ -34,6 +34,7 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.remove = exports.update = exports.create = exports.getById = exports.getAll = void 0;
+const cloudinary_1 = require("../config/cloudinary");
 const GalleryService = __importStar(require("../services/gallery.service"));
 const getAll = async (req, res) => {
     try {
@@ -65,7 +66,7 @@ const create = async (req, res) => {
     try {
         if (!req.file)
             throw new Error('No image file uploaded');
-        const imageUrl = `/uploads/${req.file.filename}`;
+        const imageUrl = await (0, cloudinary_1.uploadToCloudinary)(req.file.buffer, 'rons-guesthouse/gallery');
         const data = await GalleryService.createGallery({
             category: req.body.category,
             imageUrl
@@ -83,7 +84,7 @@ const update = async (req, res) => {
         if (req.body.category)
             payload.category = req.body.category;
         if (req.file) {
-            payload.imageUrl = `/uploads/${req.file.filename}`;
+            payload.imageUrl = await (0, cloudinary_1.uploadToCloudinary)(req.file.buffer, 'rons-guesthouse/gallery');
         }
         const data = await GalleryService.updateGallery(String(req.params.id), payload);
         res.json(data);

@@ -11,6 +11,7 @@ import CheckOutBillModal from '@/components/features/CheckOutBillModal';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
+import swal from '@/lib/swal';
 
 export default function ReceptionistStaysPage() {
   const [stays, setStays] = useState<any[]>([]);
@@ -59,7 +60,7 @@ export default function ReceptionistStaysPage() {
       }
       fetchStays();
     } catch (e: any) {
-      alert(e.message);
+      await swal.fire({ icon: 'error', title: 'Gagal', text: e.message });
     }
   };
 
@@ -76,7 +77,7 @@ export default function ReceptionistStaysPage() {
       }
       fetchStays();
     } catch (e: any) {
-      alert(e.message);
+      await swal.fire({ icon: 'error', title: 'Gagal', text: e.message });
     }
   };
 

@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.removeAddOn = exports.addAddOn = exports.remove = exports.update = exports.create = exports.getById = exports.getAll = exports.getReminders = void 0;
+exports.removeAddOn = exports.addAddOn = exports.remove = exports.update = exports.create = exports.getById = exports.getAll = exports.getRecent = exports.getReminders = void 0;
 const ReservationService = __importStar(require("../services/reservation.service"));
 const getReminders = async (req, res, next) => {
     try {
@@ -45,6 +45,17 @@ const getReminders = async (req, res, next) => {
     }
 };
 exports.getReminders = getReminders;
+const getRecent = async (req, res, next) => {
+    try {
+        const since = req.query.since ? new Date(String(req.query.since)) : new Date(Date.now() - 60_000);
+        const data = await ReservationService.getRecent(since);
+        res.json(data);
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.getRecent = getRecent;
 const getAll = async (req, res, next) => {
     try {
         const data = await ReservationService.getAll();

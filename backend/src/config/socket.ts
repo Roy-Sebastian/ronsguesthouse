@@ -7,6 +7,7 @@ let io: SocketIOServer | null = null;
 export const initSocket = (server: HttpServer) => {
   io = new SocketIOServer(server, {
     path: '/api/socket.io',
+    transports: ['websocket', 'polling'],
     cors: {
       origin: (process.env.FRONTEND_URL || 'http://localhost:3000')
         .split(',')
@@ -27,9 +28,4 @@ export const initSocket = (server: HttpServer) => {
   return io;
 };
 
-export const getIO = () => {
-  if (!io) {
-    throw new Error('Socket.io is not initialized');
-  }
-  return io;
-};
+export const getIO = (): SocketIOServer | null => io;

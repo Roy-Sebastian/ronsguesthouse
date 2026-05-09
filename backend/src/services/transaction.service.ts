@@ -1,7 +1,26 @@
+import { ReservationStatus } from '@prisma/client';
+import { dbRepository } from '../repositories/db.repository';
 import { incomeRepository } from '../repositories/income.repository';
 import { reservationRepository } from '../repositories/reservation.repository';
 import { transactionRepository } from '../repositories/transaction.repository';
 import { buildIncomeDescriptionWithAddOns, extractAddOnLines } from '../utils';
+
+/** Derive new reservation status from payment status change */
+function resolveReservationStatus(
+  paymentStatus: string,
+  currentReservationStatus: string,
+): ReservationStatus | null {
+  if (paymentStatus === 'paid' && currentReservationStatus === ReservationStatus.pending) {
+    return ReservationStatus.confirmed;
+  }
+  if (
+    (paymentStatus === 'cancelled' || paymentStatus === 'refunded') &&
+    currentReservationStatus === ReservationStatus.confirmed
+  ) {
+    return ReservationStatus.pending;
+  }
+  return null;
+}
 
 const WITH_RESERVATION = {
   reservation: {
@@ -60,9 +79,21 @@ export async function createTransaction(
     }
   }
 
-  const data = await transactionRepository.create({
-    data: payload,
-    include: WITH_RESERVATION,
+  const data = await dbRepository.transaction(async (tx) => {
+    const created = await transactionRepository.create({
+      data: payload,
+      include: WITH_RESERVATION,
+    }, tx);
+
+    if (created.reservationId) {
+      const reservation = await reservationRepository.findById(String(created.reservationId), {}, tx);
+      const newStatus = reservation ? resolveReservationStatus(created.paymentStatus, reservation.status) : null;
+      if (newStatus) {
+        await reservationRepository.update(String(created.reservationId), { data: { status: newStatus } }, tx);
+      }
+    }
+
+    return created;
   });
 
   if (data.paymentStatus === 'paid') {
@@ -101,9 +132,21 @@ export async function updateTransaction(
     payload.paymentDate = new Date();
   }
 
-  const data = await transactionRepository.update(id, {
-    data: payload,
-    include: WITH_RESERVATION,
+  const data = await dbRepository.transaction(async (tx) => {
+    const updated = await transactionRepository.update(id, {
+      data: payload,
+      include: WITH_RESERVATION,
+    }, tx);
+
+    if (oldTx && updated.reservationId && oldTx.paymentStatus !== updated.paymentStatus) {
+      const reservation = await reservationRepository.findById(String(updated.reservationId), {}, tx);
+      const newStatus = reservation ? resolveReservationStatus(updated.paymentStatus, reservation.status) : null;
+      if (newStatus) {
+        await reservationRepository.update(String(updated.reservationId), { data: { status: newStatus } }, tx);
+      }
+    }
+
+    return updated;
   });
 
   if (oldTx && oldTx.paymentStatus !== 'paid' && data.paymentStatus === 'paid') {

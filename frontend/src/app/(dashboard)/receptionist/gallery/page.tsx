@@ -1,5 +1,6 @@
 ﻿'use client';
 import { apiFetch } from '@/lib/apiFetch';
+import swal from '@/lib/swal';
 
 import { Image as ImageIcon, Trash2, Upload, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -59,21 +60,29 @@ export default function AdminGalleryPage() {
       setCategory('umum');
       fetchGallery();
     } catch (err: any) {
-      alert(err.message);
+      await swal.fire({ icon: 'error', title: 'Gagal', text: err.message });
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Hapus foto ini?')) return;
+    const result = await swal.fire({
+      icon: 'warning',
+      title: 'Konfirmasi',
+      text: 'Hapus foto ini?',
+      showCancelButton: true,
+      confirmButtonText: 'Ya, Lanjutkan',
+      cancelButtonText: 'Batal',
+    });
+    if (!result.isConfirmed) return;
     try {
       await apiFetch(`/gallery/${id}`, {
         method: 'DELETE',
       });
       fetchGallery();
     } catch (e: any) {
-      alert('Gagal menghapus');
+      await swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal menghapus' });
     }
   };
 
@@ -87,10 +96,10 @@ export default function AdminGalleryPage() {
       if (res.ok) {
         setItems(prev => prev.map(item => item.id === id ? { ...item, isActive: !currentState } : item));
       } else {
-        alert('Gagal mengubah status publik');
+        await swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal mengubah status publik' });
       }
     } catch (err) {
-      alert('Terjadi kesalahan jaringan');
+      await swal.fire({ icon: 'error', title: 'Gagal', text: 'Terjadi kesalahan jaringan' });
     }
   };
 

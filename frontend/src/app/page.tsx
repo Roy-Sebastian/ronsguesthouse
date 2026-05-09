@@ -73,6 +73,7 @@ export default function Home() {
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
   const [bookingCode, setBookingCode] = useState('');
+  const today = new Date().toISOString().split('T')[0];
 
   const checkInRef = useRef<HTMLInputElement>(null);
   const checkOutRef = useRef<HTMLInputElement>(null);
@@ -131,18 +132,15 @@ export default function Home() {
       .then((d) => { if (Array.isArray(d) && d.length > 0) setReviews(d); })
       .catch(() => { });
 
-    let socket: any;
-    try {
-      socket = io(window.location.origin, {
-        path: '/api/socket.io',
-        transports: ['polling'],
-      });
-      socket.on('room_booked', fetchRooms);
-      socket.on('room_freed', fetchRooms);
-    } catch (error) { }
+    const socket = io(window.location.origin, {
+      path: '/api/socket.io',
+      transports: ['websocket', 'polling'],
+    });
+    socket.on('room_booked', fetchRooms);
+    socket.on('room_freed', fetchRooms);
 
     return () => {
-      if (socket) socket.disconnect();
+      socket.disconnect();
     };
   }, [fetchRooms]);
 
@@ -281,6 +279,7 @@ export default function Home() {
                   ref={checkInRef}
                   type="date"
                   required
+                  min={today}
                   value={checkIn}
                   onChange={(e) => setCheckIn(e.target.value)}
                   onClick={(e) => e.stopPropagation()}
@@ -300,6 +299,7 @@ export default function Home() {
                   ref={checkOutRef}
                   type="date"
                   required
+                  min={checkIn || today}
                   value={checkOut}
                   onChange={(e) => setCheckOut(e.target.value)}
                   onClick={(e) => e.stopPropagation()}

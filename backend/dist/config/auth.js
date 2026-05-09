@@ -45,6 +45,9 @@ exports.auth = (0, better_auth_1.betterAuth)({
             },
         },
     },
+    rateLimit: {
+        enabled: false,
+    },
     trustedOrigins: (process.env.FRONTEND_URL || 'http://localhost:3000')
         .split(',')
         .map((s) => s.trim()),

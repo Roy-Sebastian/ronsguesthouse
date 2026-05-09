@@ -4,6 +4,7 @@ import { apiFetch } from '@/lib/apiFetch';
 import { useEffect, useState } from "react";
 import { Star, CheckCircle, XCircle, Trash2, Clock } from "lucide-react";
 import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
+import swal from '@/lib/swal';
 
 export default function AdminReviewsPage() {
   const [reviews, setReviews] = useState<any[]>([]);
@@ -25,13 +26,29 @@ export default function AdminReviewsPage() {
   useEffect(() => { fetchReviews(); }, [filter, dateStart, dateEnd]);
 
   const updateStatus = async (id: string, status: string) => {
-    if (!confirm(`Tandai ulasan sebagai ${status}?`)) return;
+    const result = await swal.fire({
+      icon: 'warning',
+      title: 'Konfirmasi',
+      text: `Tandai ulasan sebagai ${status}?`,
+      showCancelButton: true,
+      confirmButtonText: 'Ya, Lanjutkan',
+      cancelButtonText: 'Batal',
+    });
+    if (!result.isConfirmed) return;
     await apiFetch(`/reviews/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) });
     fetchReviews();
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Hapus ulasan ini permanen?")) return;
+    const result = await swal.fire({
+      icon: 'warning',
+      title: 'Konfirmasi',
+      text: 'Hapus ulasan ini permanen?',
+      showCancelButton: true,
+      confirmButtonText: 'Ya, Lanjutkan',
+      cancelButtonText: 'Batal',
+    });
+    if (!result.isConfirmed) return;
     await apiFetch(`/reviews/${id}`, { method: "DELETE" });
     fetchReviews();
   };

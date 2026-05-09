@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
+import swal from '@/lib/swal';
 
 const methodOptions = [
   { id: 'cash', label: 'Tunai (Cash)' },
@@ -69,7 +70,7 @@ export default function ReceptionistTransactionsPage() {
       setShowModal(false);
       fetchData();
     } catch (err: any) {
-      alert(err.message);
+      await swal.fire({ icon: 'error', title: 'Gagal', text: err.message });
     } finally {
       setSaving(false);
     }

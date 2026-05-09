@@ -16,6 +16,7 @@ import {
 import { useEffect, useState } from 'react';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/ui/SortableHeader';
+import swal from '@/lib/swal';
 
 interface User {
   id: string;
@@ -140,21 +141,29 @@ export default function SuperadminUsersPage() {
       });
       fetchUsers();
     } catch {
-      alert('Gagal merubah status pengguna');
+      await swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal merubah status pengguna' });
     }
   };
 
   const handleDelete = async (id: string, role: string) => {
     if (role === 'superadmin') {
-      alert('Tidak dapat menghapus superadmin!');
+      await swal.fire({ icon: 'info', title: 'Info', text: 'Tidak dapat menghapus superadmin!' });
       return;
     }
-    if (!confirm('Yakin ingin menghapus pengguna ini?')) return;
+    const result = await swal.fire({
+      icon: 'warning',
+      title: 'Konfirmasi',
+      text: 'Yakin ingin menghapus pengguna ini?',
+      showCancelButton: true,
+      confirmButtonText: 'Ya, Lanjutkan',
+      cancelButtonText: 'Batal',
+    });
+    if (!result.isConfirmed) return;
     try {
       await apiFetch(`/users/${id}`, { method: 'DELETE' });
       fetchUsers();
     } catch {
-      alert('Gagal menghapus');
+      await swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal menghapus' });
     }
   };
 
@@ -183,11 +192,9 @@ export default function SuperadminUsersPage() {
     setShowModal(true);
   };
 
-  const openEdit = (user: User) => {
+  const openEdit = async (user: User) => {
     if (user.role === 'superadmin') {
-      alert(
-        'Superadmin access bypasses granular permissions, manage directly via config.',
-      );
+      await swal.fire({ icon: 'info', title: 'Info', text: 'Superadmin access bypasses granular permissions, manage directly via config.' });
       return;
     }
     setEditId(user.id);

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 
+import { uploadToCloudinary } from '../config/cloudinary';
 import * as GalleryService from '../services/gallery.service';
 
 export const getAll = async (req: Request, res: Response) => {
@@ -27,7 +28,7 @@ export const getById = async (req: Request, res: Response) => {
 export const create = async (req: Request, res: Response) => {
 	try {
         if (!req.file) throw new Error('No image file uploaded');
-        const imageUrl = `/uploads/${req.file.filename}`;
+        const imageUrl = await uploadToCloudinary(req.file.buffer, 'rons-guesthouse/gallery');
 		const data = await GalleryService.createGallery({
             category: req.body.category,
             imageUrl
@@ -42,9 +43,9 @@ export const update = async (req: Request, res: Response) => {
 	try {
         const payload: any = {};
         if (req.body.category) payload.category = req.body.category;
-        
+
         if (req.file) {
-            payload.imageUrl = `/uploads/${req.file.filename}`;
+            payload.imageUrl = await uploadToCloudinary(req.file.buffer, 'rons-guesthouse/gallery');
         }
 		const data = await GalleryService.updateGallery(String(req.params.id), payload);
 		res.json(data);

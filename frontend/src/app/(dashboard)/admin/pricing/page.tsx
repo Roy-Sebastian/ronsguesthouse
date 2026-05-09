@@ -13,6 +13,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useEffect, useState, useMemo, useCallback } from 'react';
+import swal from '@/lib/swal';
 
 
 
@@ -202,18 +203,26 @@ export default function AdminPricingPage() {
       setBulkPrice('');
       setShowBulkModal(false);
     } catch (err) {
-      alert('Gagal menyimpan harga');
+      await swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal menyimpan harga' });
     }
     setSaving(false);
   };
 
   const deleteOverride = async (id: string) => {
-    if (!confirm('Hapus override harga ini? Harga akan kembali ke harga dasar.')) return;
+    const result = await swal.fire({
+      icon: 'warning',
+      title: 'Konfirmasi',
+      text: 'Hapus override harga ini? Harga akan kembali ke harga dasar.',
+      showCancelButton: true,
+      confirmButtonText: 'Ya, Lanjutkan',
+      cancelButtonText: 'Batal',
+    });
+    if (!result.isConfirmed) return;
     try {
       await apiFetch(`/pricing/${id}`, { method: 'DELETE' });
       await fetchPrices();
     } catch {
-      alert('Gagal menghapus harga');
+      await swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal menghapus harga' });
     }
   };
 
@@ -222,10 +231,18 @@ export default function AdminPricingPage() {
       .map((d) => overrideMap.get(d))
       .filter(Boolean);
     if (toDelete.length === 0) {
-      alert('Tidak ada override harga pada tanggal yang dipilih');
+      await swal.fire({ icon: 'info', title: 'Info', text: 'Tidak ada override harga pada tanggal yang dipilih' });
       return;
     }
-    if (!confirm(`Hapus ${toDelete.length} override harga?`)) return;
+    const result = await swal.fire({
+      icon: 'warning',
+      title: 'Konfirmasi',
+      text: `Hapus ${toDelete.length} override harga?`,
+      showCancelButton: true,
+      confirmButtonText: 'Ya, Lanjutkan',
+      cancelButtonText: 'Batal',
+    });
+    if (!result.isConfirmed) return;
     setSaving(true);
     try {
       await Promise.all(
@@ -234,7 +251,7 @@ export default function AdminPricingPage() {
       await fetchPrices();
       setSelectedDates(new Set());
     } catch {
-      alert('Gagal menghapus harga');
+      await swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal menghapus harga' });
     }
     setSaving(false);
   };

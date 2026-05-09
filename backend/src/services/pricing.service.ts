@@ -35,6 +35,7 @@ export async function validateBookingInput(
   checkIn: Date,
   checkOut: Date,
   tx: TxClient = prisma,
+  options: { allowPastDates?: boolean } = {},
 ) {
   if (isNaN(checkIn.getTime()) || isNaN(checkOut.getTime())) {
     throw Object.assign(new Error('Tanggal tidak valid'), { statusCode: 400 });
@@ -44,9 +45,11 @@ export async function validateBookingInput(
     throw Object.assign(new Error('Tanggal check-in harus sebelum check-out'), { statusCode: 400 });
   }
 
-  const today = normalizeToUTCMidnight(new Date());
-  if (normalizeToUTCMidnight(checkIn) < today) {
-    throw Object.assign(new Error('Tanggal check-in tidak boleh di masa lalu'), { statusCode: 400 });
+  if (!options.allowPastDates) {
+    const today = normalizeToUTCMidnight(new Date());
+    if (normalizeToUTCMidnight(checkIn) < today) {
+      throw Object.assign(new Error('Tanggal check-in tidak boleh di masa lalu'), { statusCode: 400 });
+    }
   }
 
   const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Calendar, Plus, Trash } from 'lucide-react';
 import AddOnModal from './AddOnModal';
+import swal from '@/lib/swal';
 
 interface EditStayModalProps {
   stay: any;
@@ -39,7 +40,15 @@ export default function EditStayModal({ stay, onClose, onSuccess, onRefresh }: E
   };
 
   const handleRemoveAddon = async (addonId: string) => {
-    if (!confirm('Yakin ingin menghapus layanan ini?')) return;
+    const result = await swal.fire({
+      icon: 'warning',
+      title: 'Konfirmasi',
+      text: 'Yakin ingin menghapus layanan ini?',
+      showCancelButton: true,
+      confirmButtonText: 'Ya, Lanjutkan',
+      cancelButtonText: 'Batal',
+    });
+    if (!result.isConfirmed) return;
     setRemoving(addonId);
     try {
       const res = await fetch(`/api/reservations/${localStay.reservationId}/addons/${addonId}`, {
@@ -48,7 +57,7 @@ export default function EditStayModal({ stay, onClose, onSuccess, onRefresh }: E
       if (!res.ok) throw new Error('Gagal menghapus layanan');
       await fetchStay();
     } catch (e: any) {
-      alert(e.message);
+      await swal.fire({ icon: 'error', title: 'Gagal', text: e.message });
     } finally {
       setRemoving(null);
     }

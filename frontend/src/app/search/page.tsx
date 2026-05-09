@@ -47,6 +47,7 @@ function SearchContent() {
   
   const [formCheckIn, setFormCheckIn] = useState(urlCheckIn);
   const [formCheckOut, setFormCheckOut] = useState(urlCheckOut);
+  const today = new Date().toISOString().split('T')[0];
 
   const [groupedRooms, setGroupedRooms] = useState<GroupedRoomType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -116,18 +117,15 @@ function SearchContent() {
   useEffect(() => {
     fetchRooms();
 
-    let socket: any;
-    try {
-      socket = io(BACKEND_URL, {
-        path: '/api/socket.io',
-        transports: ['polling'],
-      });
-      socket.on('room_booked', fetchRooms);
-      socket.on('room_freed', fetchRooms);
-    } catch (e) {}
+    const socket = io(BACKEND_URL, {
+      path: '/api/socket.io',
+      transports: ['websocket', 'polling'],
+    });
+    socket.on('room_booked', fetchRooms);
+    socket.on('room_freed', fetchRooms);
 
     return () => {
-      if (socket) socket.disconnect();
+      socket.disconnect();
     };
   }, [fetchRooms]);
 
@@ -186,9 +184,10 @@ function SearchContent() {
                 
                 <div>
                   <label className="block text-xs font-bold tracking-widest uppercase text-gray-500 mb-2">Check-in</label>
-                  <input 
-                    type="date" 
+                  <input
+                    type="date"
                     required
+                    min={today}
                     value={formCheckIn}
                     onChange={(e) => setFormCheckIn(e.target.value)}
                     className="w-full border border-gray-300 px-4 py-3 outline-none focus:border-red-700 transition-colors text-sm"
@@ -197,9 +196,10 @@ function SearchContent() {
                 
                 <div>
                   <label className="block text-xs font-bold tracking-widest uppercase text-gray-500 mb-2">Check-out</label>
-                  <input 
-                    type="date" 
+                  <input
+                    type="date"
                     required
+                    min={formCheckIn || today}
                     value={formCheckOut}
                     onChange={(e) => setFormCheckOut(e.target.value)}
                     className="w-full border border-gray-300 px-4 py-3 outline-none focus:border-red-700 transition-colors text-sm"

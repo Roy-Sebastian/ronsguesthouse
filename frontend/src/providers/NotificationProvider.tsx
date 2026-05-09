@@ -118,13 +118,13 @@ export function NotificationProvider({
       .catch(() => {});
   }, [role, addNotification]);
 
-  // Single shared Socket.io connection
+  // Real-time Socket.io connection
   useEffect(() => {
     if (!STAFF_ROLES.includes(role)) return;
 
     const socket = io(
       process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001',
-      { path: '/api/socket.io', autoConnect: true },
+      { path: '/api/socket.io', transports: ['websocket', 'polling'] },
     );
     socketRef.current = socket;
 
@@ -152,10 +152,8 @@ export function NotificationProvider({
         checkInDate: data.checkInDate ?? '',
       };
       setToasts((prev) => [...prev, toast]);
-
       playNotificationSound();
 
-      // Auto-dismiss after 8s
       setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== toastId));
       }, 8000);

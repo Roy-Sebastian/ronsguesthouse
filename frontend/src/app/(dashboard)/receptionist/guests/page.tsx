@@ -70,13 +70,14 @@ function GuestForm({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-6">
+      <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between px-8 pt-8 pb-4 border-b border-gray-100 shrink-0">
           <h2 className="page-title">{title}</h2>
           <button onClick={onCancel} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center">
             <X size={16} />
           </button>
         </div>
+        <div className="overflow-y-auto flex-1 px-8 py-6">
         {error && (
           <div className="mb-4 px-4 py-3 bg-red-50 text-red-700 rounded-xl text-sm border border-red-100">
             {error}
@@ -143,6 +144,7 @@ function GuestForm({
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );
@@ -426,13 +428,14 @@ export default function ReceptionistGuestsPage() {
       {/* Guest Detail Drawer */}
       {selected && (
         <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-sm" onClick={() => setSelected(null)}>
-          <div className="w-full max-w-md bg-white h-full overflow-y-auto p-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
+          <div className="w-full max-w-md bg-white h-full overflow-hidden flex flex-col shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-8 pt-8 pb-4 border-b border-gray-100 shrink-0">
               <h2 className="page-title">Detail Tamu</h2>
               <button onClick={() => setSelected(null)} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center">
                 <X size={16} />
               </button>
             </div>
+            <div className="overflow-y-auto flex-1 px-8 py-6">
             <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-100">
               <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-primary to-primary-hover flex items-center justify-center text-white text-2xl font-bold">
                 {selected.fullName?.charAt(0).toUpperCase()}
@@ -492,6 +495,7 @@ export default function ReceptionistGuestsPage() {
                 </div>
               </div>
             )}
+            </div>
           </div>
         </div>
       )}

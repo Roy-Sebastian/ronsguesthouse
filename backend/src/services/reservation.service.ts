@@ -11,10 +11,19 @@ import {
   TX_MAX_RETRIES,
 } from '../constants/reservation.constants';
 import { dbRepository } from '../repositories/db.repository';
+import { incomeRepository } from '../repositories/income.repository';
 import { reservationRepository } from '../repositories/reservation.repository';
+import { transactionRepository } from '../repositories/transaction.repository';
 import { syncPaidTransactionIncomeForAddOn } from '../utils';
-import { appendLine, buildAddOnLogLine } from '../utils';
+import { appendLine, buildAddOnLogLine, buildIncomeDescriptionWithAddOns } from '../utils';
 import { AppError } from '../utils/AppError';
+
+/** Map reservation status → payment status to sync */
+function resolvePaymentStatusFromReservation(newReservationStatus: string): 'paid' | 'cancelled' | null {
+  if (newReservationStatus === ReservationStatus.confirmed) return 'paid';
+  if (newReservationStatus === ReservationStatus.cancelled || newReservationStatus === ReservationStatus.no_show) return 'cancelled';
+  return null;
+}
 
 export async function getReminders() {
   const today = new Date();
@@ -34,6 +43,17 @@ export async function getReminders() {
       room: { select: { roomNumber: true } },
     },
     orderBy: { checkInDate: 'asc' },
+  });
+}
+
+export async function getRecent(since: Date) {
+  return reservationRepository.findAll({
+    where: { createdAt: { gt: since } },
+    orderBy: { createdAt: 'desc' },
+    include: {
+      guest: { select: { id: true, fullName: true } },
+      room: { select: { id: true, roomNumber: true, roomType: true } },
+    },
   });
 }
 
@@ -62,12 +82,17 @@ export async function createReservation(
   const checkIn = new Date(checkInDate);
   const checkOut = new Date(checkOutDate);
 
+  // Only internal (staff) source may create historical (checked_out) reservations
+  if (body.status === 'checked_out' && socketSource !== 'internal') {
+    throw new AppError('Tidak diizinkan membuat reservasi dengan status ini', 403);
+  }
+
   // Retry loop for serialization conflicts
   for (let attempt = 0; attempt <= TX_MAX_RETRIES; attempt++) {
     try {
       const data = await prisma.$transaction(async (tx) => {
         // 1. Validate input (room exists, dates valid, max stay)
-        await validateBookingInput(roomId, checkIn, checkOut, tx);
+        await validateBookingInput(roomId, checkIn, checkOut, tx, { allowPastDates: socketSource === 'internal' });
 
         // 2. Per-date availability check with stock support
         const { available, fullyBookedDates } = await checkRoomAvailability(roomId, checkIn, checkOut, tx);
@@ -78,9 +103,11 @@ export async function createReservation(
           );
         }
 
-        // 3. Calculate price server-side (ignores client-supplied totalPrice)
+        // 3. Calculate price server-side; honor client price for internal (offline) bookings
         const { totalPrice: computedPrice } = await calculateBookingPrice(roomId, checkIn, checkOut, tx);
+        const clientPrice = Number(otherData.totalPrice) || 0;
         delete otherData.totalPrice;
+        const finalPrice = socketSource === 'internal' && clientPrice > 0 ? clientPrice : computedPrice;
 
         // 4. Resolve guest and user IDs
         let guestIdToUse = otherData.guestId;
@@ -97,14 +124,17 @@ export async function createReservation(
         delete otherData.user;
         delete otherData.channel;
 
-        // 5. Set booking expiry for pending reservations
-        const expiresAt = new Date(Date.now() + BOOKING_EXPIRY_MINUTES * 60 * 1000);
+        // 5. Set booking expiry for pending reservations only; past/historical bookings get no expiry
+        const initialStatus = (otherData as any).status;
+        const expiresAt = (!initialStatus || initialStatus === 'pending')
+          ? new Date(Date.now() + BOOKING_EXPIRY_MINUTES * 60 * 1000)
+          : null;
 
-        return await tx.reservation.create({
+        const reservation = await tx.reservation.create({
           data: {
             checkInDate: checkIn,
             checkOutDate: checkOut,
-            totalPrice: computedPrice,
+            totalPrice: finalPrice,
             expiresAt,
             ...otherData,
             room: { connect: { id: roomId } },
@@ -117,6 +147,19 @@ export async function createReservation(
             user: { select: { id: true, role: true, name: true } },
           },
         });
+
+        // Auto-create Stay for historical (past) reservations so they appear in guest history
+        if (initialStatus === 'checked_out') {
+          await tx.stay.create({
+            data: {
+              reservationId: reservation.id,
+              checkInAt: checkIn,
+              checkOutAt: checkOut,
+            },
+          });
+        }
+
+        return reservation;
       }, {
         isolationLevel: 'Serializable',
         timeout: TX_TIMEOUT_MS,
@@ -152,13 +195,15 @@ export async function createReservation(
   }
 }
 
-export async function updateReservation(id: string, body: any) {
-  const current = await reservationRepository.findById(id, { select: { id: true, status: true } });
-  if (!current) {
-    throw new AppError('Reservation not found', 404);
-  }
+export async function updateReservation(id: string, body: any, requestUserId?: string) {
+  const current = await reservationRepository.findById(id, {
+    select: { id: true, status: true, totalPrice: true, userId: true },
+  });
+  if (!current) throw new AppError('Reservation not found', 404);
 
-  if (body?.status) {
+  const statusChanging = body?.status && body.status !== current.status;
+
+  if (statusChanging) {
     const nextStatus = String(body.status);
     const allowed = ALLOWED_TRANSITIONS[current.status] || [];
     if (!allowed.includes(nextStatus)) {
@@ -166,12 +211,83 @@ export async function updateReservation(id: string, body: any) {
     }
   }
 
-  const data = await reservationRepository.update(id, { data: body });
+  const linkedTx = statusChanging ? await transactionRepository.findByReservationId(id) : null;
+  const newPaymentStatus = statusChanging && body.status
+    ? resolvePaymentStatusFromReservation(body.status)
+    : null;
+
+  const now = new Date();
+  const actingUserId = requestUserId ?? (current as any).userId ?? null;
+
+  const { createdTx, data } = await dbRepository.transaction(async (tx) => {
+    const updated = await reservationRepository.update(id, { data: body }, tx);
+    let createdTx = null;
+
+    if (newPaymentStatus === 'paid') {
+      if (linkedTx) {
+        // Update existing transaction
+        if (linkedTx.paymentStatus !== 'paid') {
+          await tx.transaction.update({
+            where: { id: linkedTx.id },
+            data: { paymentStatus: 'paid', paymentDate: linkedTx.paymentDate ?? now },
+          });
+        }
+      } else {
+        // Auto-create transaction since none exists
+        createdTx = await tx.transaction.create({
+          data: {
+            reservationId: id,
+            amount: (current as any).totalPrice,
+            paymentStatus: 'paid',
+            paymentMethod: 'cash',
+            paymentDate: now,
+          },
+        });
+      }
+    }
+
+    if (newPaymentStatus === 'cancelled') {
+      if (linkedTx && linkedTx.paymentStatus !== 'cancelled') {
+        await tx.transaction.update({
+          where: { id: linkedTx.id },
+          data: { paymentStatus: 'cancelled' },
+        });
+      }
+    }
+
+    return { createdTx, data: updated };
+  });
+
+  // Income side-effects outside transaction
+  if (newPaymentStatus === 'paid') {
+    const targetTx = createdTx ?? linkedTx;
+    const wasAlreadyPaid = !createdTx && linkedTx?.paymentStatus === 'paid';
+    if (targetTx && !wasAlreadyPaid) {
+      await incomeRepository.create({
+        data: {
+          transactionId: targetTx.id,
+          amount: targetTx.amount,
+          description: buildIncomeDescriptionWithAddOns('Pembayaran Reservasi / Kamar (Dikonfirmasi)', (targetTx as any).notes ?? null),
+          userId: actingUserId,
+          incomeDate: (targetTx as any).paymentDate ?? now,
+          sourceType: 'RESERVATION',
+          referenceId: id,
+          paymentMethod: targetTx.paymentMethod,
+          status: 'paid',
+          type: 'income',
+        },
+      });
+    }
+  }
+
+  if (newPaymentStatus === 'cancelled' && linkedTx?.paymentStatus === 'paid') {
+    await incomeRepository.deleteMany({ where: { transactionId: linkedTx.id } });
+  }
 
   try {
     const io = getIO();
-    io.emit('reservation_updated', data);
-    io.emit('room_freed', { roomId: data.roomId });
+    io?.emit('reservation_updated', data);
+    io?.emit('room_freed', { roomId: data.roomId });
   } catch (e) {}
 
   return data;
@@ -188,8 +304,8 @@ export async function deleteReservation(id: string) {
 
   try {
     const io = getIO();
-    io.emit('reservation_deleted', { id: data.id });
-    io.emit('room_freed', { roomId: data.roomId });
+    io?.emit('reservation_deleted', { id: data.id });
+    io?.emit('room_freed', { roomId: data.roomId });
   } catch (e) {}
 
   return data;
@@ -287,7 +403,7 @@ export async function addReservationAddOn({
 
   try {
     const io = getIO();
-    io.emit('reservation_addon_added', {
+    io?.emit('reservation_addon_added', {
       reservationId,
       addOnName: result.addOnName,
       quantity: result.bookingAddOn.quantity,

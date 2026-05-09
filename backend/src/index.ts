@@ -18,7 +18,7 @@ const httpServer = createServer(app);
 const port = process.env.PORT || 3001;
 
 // Trust Cloudflare proxy to get real client IPs
-app.set('trust proxy', true);
+app.set('trust proxy', 1);
 
 // Initialize Socket.IO
 initSocket(httpServer);
@@ -34,6 +34,9 @@ app.use(
     credentials: true,
   }),
 );
+
+// Handle CORS preflight for auth routes explicitly
+app.options(/^\/api\/auth/, cors({ origin: allowedOrigins, credentials: true }));
 
 // Better Auth Express Middleware
 app.all(/^\/api\/auth/, toNodeHandler(auth));
@@ -51,6 +54,11 @@ app.use(
 // Default route
 app.get('/', (req, res) => {
   res.send('Rons Guesthouse Backend API (Migrated to Node.js & Express)');
+});
+
+// Health check
+app.get('/api/health', (_req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // Audit log middleware

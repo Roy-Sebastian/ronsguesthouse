@@ -71,7 +71,7 @@ const auditLogMiddleware = async (req, res, next) => {
                     });
                     try {
                         const io = (0, socket_1.getIO)();
-                        io.emit('new_audit_log', log);
+                        io?.emit('new_audit_log', log);
                     }
                     catch (e) {
                     }

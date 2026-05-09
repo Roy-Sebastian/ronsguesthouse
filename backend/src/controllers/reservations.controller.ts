@@ -11,6 +11,16 @@ export const getReminders = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
+export const getRecent = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const since = req.query.since ? new Date(String(req.query.since)) : new Date(Date.now() - 60_000);
+    const data = await ReservationService.getRecent(since);
+    res.json(data);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getAll = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const data = await ReservationService.getAll();
@@ -46,7 +56,7 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
 
 export const update = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await ReservationService.updateReservation(String(req.params.id), req.body);
+    const data = await ReservationService.updateReservation(String(req.params.id), req.body, req.user?.id);
     res.json(data);
   } catch (error) {
     next(error);

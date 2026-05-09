@@ -5,6 +5,7 @@ import { apiFetch } from '@/lib/apiFetch';
 import { defaultRoleMatrix, permissionsGroups } from '@/lib/rbac';
 import { Check, RotateCcw, Save, ShieldCheck } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import swal from '@/lib/swal';
 
 const roles = [
   {
@@ -69,8 +70,16 @@ export default function SuperadminRolesPage() {
     }));
   };
 
-  const handleReset = () => {
-    if (!confirm('Reset semua hak akses ke pengaturan default? Perubahan yang belum disimpan akan hilang.')) return;
+  const handleReset = async () => {
+    const result = await swal.fire({
+      icon: 'warning',
+      title: 'Konfirmasi',
+      text: 'Reset semua hak akses ke pengaturan default? Perubahan yang belum disimpan akan hilang.',
+      showCancelButton: true,
+      confirmButtonText: 'Ya, Lanjutkan',
+      cancelButtonText: 'Batal',
+    });
+    if (!result.isConfirmed) return;
     setMatrix(defaultMatrix);
   };
 
@@ -86,7 +95,7 @@ export default function SuperadminRolesPage() {
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
-      alert('Gagal menyimpan matrix roles.');
+      await swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal menyimpan matrix roles.' });
     } finally {
       setSaving(false);
     }

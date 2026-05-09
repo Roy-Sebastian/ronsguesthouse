@@ -19,7 +19,7 @@ const app = (0, express_1.default)();
 const httpServer = (0, http_1.createServer)(app);
 const port = process.env.PORT || 3001;
 // Trust Cloudflare proxy to get real client IPs
-app.set('trust proxy', true);
+app.set('trust proxy', 1);
 // Initialize Socket.IO
 (0, socket_1.initSocket)(httpServer);
 // CORS setup to allow the frontend (supports comma-separated FRONTEND_URL for www + non-www)
@@ -30,6 +30,8 @@ app.use((0, cors_1.default)({
     origin: allowedOrigins,
     credentials: true,
 }));
+// Handle CORS preflight for auth routes explicitly
+app.options(/^\/api\/auth/, (0, cors_1.default)({ origin: allowedOrigins, credentials: true }));
 // Better Auth Express Middleware
 app.all(/^\/api\/auth/, (0, node_1.toNodeHandler)(auth_1.auth));
 // Body parser
@@ -40,6 +42,10 @@ app.use('/uploads', express_1.default.static(path_1.default.join(process.cwd(), 
 // Default route
 app.get('/', (req, res) => {
     res.send('Rons Guesthouse Backend API (Migrated to Node.js & Express)');
+});
+// Health check
+app.get('/api/health', (_req, res) => {
+    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 // Audit log middleware
 app.use('/api', auditLog_middleware_1.auditLogMiddleware);

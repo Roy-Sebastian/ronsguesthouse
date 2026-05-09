@@ -37,10 +37,9 @@ export default function AuditLogsPage() {
   useEffect(() => {
     fetchLogs(page);
 
-    // Real-time: prepend incoming events only on page 1
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
-    const socket = io(backendUrl, { path: '/api/socket.io' });
-    socket.on('new_audit_log', (newLog) => {
+    const socket = io(backendUrl, { path: '/api/socket.io', transports: ['websocket', 'polling'] });
+    socket.on('new_audit_log', (newLog: any) => {
       if (page === 1) {
         setLogs((prev) => {
           if (prev.find((l) => l.id === newLog.id)) return prev;

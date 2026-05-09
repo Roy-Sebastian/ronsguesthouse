@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getReminders = getReminders;
+exports.getRecent = getRecent;
 exports.getAll = getAll;
 exports.getById = getById;
 exports.createReservation = createReservation;
@@ -38,6 +39,16 @@ async function getReminders() {
         orderBy: { checkInDate: 'asc' },
     });
 }
+async function getRecent(since) {
+    return reservation_repository_1.reservationRepository.findAll({
+        where: { createdAt: { gt: since } },
+        orderBy: { createdAt: 'desc' },
+        include: {
+            guest: { select: { id: true, fullName: true } },
+            room: { select: { id: true, roomNumber: true, roomType: true } },
+        },
+    });
+}
 async function getAll() {
     return reservation_repository_1.reservationRepository.findAll({
         orderBy: { createdAt: 'desc' },
@@ -56,20 +67,26 @@ async function createReservation(body, requestUserId, socketSource) {
     const { roomId, checkInDate, checkOutDate, ...otherData } = body;
     const checkIn = new Date(checkInDate);
     const checkOut = new Date(checkOutDate);
+    // Only internal (staff) source may create historical (checked_out) reservations
+    if (body.status === 'checked_out' && socketSource !== 'internal') {
+        throw new AppError_1.AppError('Tidak diizinkan membuat reservasi dengan status ini', 403);
+    }
     // Retry loop for serialization conflicts
     for (let attempt = 0; attempt <= reservation_constants_1.TX_MAX_RETRIES; attempt++) {
         try {
             const data = await prisma_1.prisma.$transaction(async (tx) => {
                 // 1. Validate input (room exists, dates valid, max stay)
-                await (0, pricing_service_1.validateBookingInput)(roomId, checkIn, checkOut, tx);
+                await (0, pricing_service_1.validateBookingInput)(roomId, checkIn, checkOut, tx, { allowPastDates: socketSource === 'internal' });
                 // 2. Per-date availability check with stock support
                 const { available, fullyBookedDates } = await (0, pricing_service_1.checkRoomAvailability)(roomId, checkIn, checkOut, tx);
                 if (!available) {
                     throw Object.assign(new AppError_1.AppError(`Maaf, kamar tidak tersedia pada tanggal: ${fullyBookedDates.join(', ')}`, 409), { fullyBookedDates });
                 }
-                // 3. Calculate price server-side (ignores client-supplied totalPrice)
+                // 3. Calculate price server-side; honor client price for internal (offline) bookings
                 const { totalPrice: computedPrice } = await (0, pricing_service_1.calculateBookingPrice)(roomId, checkIn, checkOut, tx);
+                const clientPrice = Number(otherData.totalPrice) || 0;
                 delete otherData.totalPrice;
+                const finalPrice = socketSource === 'internal' && clientPrice > 0 ? clientPrice : computedPrice;
                 // 4. Resolve guest and user IDs
                 let guestIdToUse = otherData.guestId;
                 let userIdToUse = otherData.userId || requestUserId;
@@ -83,13 +100,16 @@ async function createReservation(body, requestUserId, socketSource) {
                 delete otherData.room;
                 delete otherData.user;
                 delete otherData.channel;
-                // 5. Set booking expiry for pending reservations
-                const expiresAt = new Date(Date.now() + reservation_constants_1.BOOKING_EXPIRY_MINUTES * 60 * 1000);
-                return await tx.reservation.create({
+                // 5. Set booking expiry for pending reservations only; past/historical bookings get no expiry
+                const initialStatus = otherData.status;
+                const expiresAt = (!initialStatus || initialStatus === 'pending')
+                    ? new Date(Date.now() + reservation_constants_1.BOOKING_EXPIRY_MINUTES * 60 * 1000)
+                    : null;
+                const reservation = await tx.reservation.create({
                     data: {
                         checkInDate: checkIn,
                         checkOutDate: checkOut,
-                        totalPrice: computedPrice,
+                        totalPrice: finalPrice,
                         expiresAt,
                         ...otherData,
                         room: { connect: { id: roomId } },
@@ -102,6 +122,17 @@ async function createReservation(body, requestUserId, socketSource) {
                         user: { select: { id: true, role: true, name: true } },
                     },
                 });
+                // Auto-create Stay for historical (past) reservations so they appear in guest history
+                if (initialStatus === 'checked_out') {
+                    await tx.stay.create({
+                        data: {
+                            reservationId: reservation.id,
+                            checkInAt: checkIn,
+                            checkOutAt: checkOut,
+                        },
+                    });
+                }
+                return reservation;
             }, {
                 isolationLevel: 'Serializable',
                 timeout: reservation_constants_1.TX_TIMEOUT_MS,
@@ -140,7 +171,7 @@ async function updateReservation(id, body) {
     if (!current) {
         throw new AppError_1.AppError('Reservation not found', 404);
     }
-    if (body?.status) {
+    if (body?.status && body.status !== current.status) {
         const nextStatus = String(body.status);
         const allowed = reservation_constants_1.ALLOWED_TRANSITIONS[current.status] || [];
         if (!allowed.includes(nextStatus)) {
@@ -150,8 +181,8 @@ async function updateReservation(id, body) {
     const data = await reservation_repository_1.reservationRepository.update(id, { data: body });
     try {
         const io = (0, socket_1.getIO)();
-        io.emit('reservation_updated', data);
-        io.emit('room_freed', { roomId: data.roomId });
+        io?.emit('reservation_updated', data);
+        io?.emit('room_freed', { roomId: data.roomId });
     }
     catch (e) { }
     return data;
@@ -166,8 +197,8 @@ async function deleteReservation(id) {
     const data = await reservation_repository_1.reservationRepository.delete(id);
     try {
         const io = (0, socket_1.getIO)();
-        io.emit('reservation_deleted', { id: data.id });
-        io.emit('room_freed', { roomId: data.roomId });
+        io?.emit('reservation_deleted', { id: data.id });
+        io?.emit('room_freed', { roomId: data.roomId });
     }
     catch (e) { }
     return data;
@@ -243,7 +274,7 @@ async function addReservationAddOn({ reservationId, addOnId, quantity, notes = '
     });
     try {
         const io = (0, socket_1.getIO)();
-        io.emit('reservation_addon_added', {
+        io?.emit('reservation_addon_added', {
             reservationId,
             addOnName: result.addOnName,
             quantity: result.bookingAddOn.quantity,

@@ -12,6 +12,7 @@ import 'filepond/dist/filepond.min.css';
 import { BedDouble, Edit, Info, Plus, Search, Trash2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { FilePond, registerPlugin } from 'react-filepond';
+import swal from '@/lib/swal';
 
 registerPlugin(FilePondPluginImagePreview, FilePondPluginFileValidateType);
 
@@ -136,7 +137,15 @@ export default function AdminRoomsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Hapus kamar ini?')) return;
+    const result = await swal.fire({
+      icon: 'warning',
+      title: 'Konfirmasi',
+      text: 'Hapus kamar ini?',
+      showCancelButton: true,
+      confirmButtonText: 'Ya, Lanjutkan',
+      cancelButtonText: 'Batal',
+    });
+    if (!result.isConfirmed) return;
     await apiFetch(`/rooms/${id}`, { method: 'DELETE' });
     fetchData();
   };

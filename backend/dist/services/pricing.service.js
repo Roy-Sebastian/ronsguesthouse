@@ -33,16 +33,18 @@ const db_repository_1 = require("../repositories/db.repository");
 const room_price_repository_1 = require("../repositories/room-price.repository");
 const date_utils_1 = require("../utils/date.utils");
 // ─── Input Validation ──────────────────────────────────────────────
-async function validateBookingInput(roomId, checkIn, checkOut, tx = prisma_1.prisma) {
+async function validateBookingInput(roomId, checkIn, checkOut, tx = prisma_1.prisma, options = {}) {
     if (isNaN(checkIn.getTime()) || isNaN(checkOut.getTime())) {
         throw Object.assign(new Error('Tanggal tidak valid'), { statusCode: 400 });
     }
     if (checkIn >= checkOut) {
         throw Object.assign(new Error('Tanggal check-in harus sebelum check-out'), { statusCode: 400 });
     }
-    const today = (0, date_utils_1.normalizeToUTCMidnight)(new Date());
-    if ((0, date_utils_1.normalizeToUTCMidnight)(checkIn) < today) {
-        throw Object.assign(new Error('Tanggal check-in tidak boleh di masa lalu'), { statusCode: 400 });
+    if (!options.allowPastDates) {
+        const today = (0, date_utils_1.normalizeToUTCMidnight)(new Date());
+        if ((0, date_utils_1.normalizeToUTCMidnight)(checkIn) < today) {
+            throw Object.assign(new Error('Tanggal check-in tidak boleh di masa lalu'), { statusCode: 400 });
+        }
     }
     const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
     if (nights > reservation_constants_1.MAX_STAY_NIGHTS) {
