@@ -124,9 +124,19 @@ export function NotificationProvider({
 
     const socket = io(
       process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001',
-      { path: '/api/socket.io', transports: ['websocket', 'polling'] },
+      {
+        path: '/api/socket.io',
+        transports: ['websocket', 'polling'],
+        autoConnect: false,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 2000,
+      },
     );
     socketRef.current = socket;
+
+    const connectTimer = setTimeout(() => {
+      if (socketRef.current) socketRef.current.connect();
+    }, 300);
 
     socket.on('reservation_created', (data: any) => {
       const toastId = 'realtime_' + (data.id ?? Date.now());
@@ -160,6 +170,7 @@ export function NotificationProvider({
     });
 
     return () => {
+      clearTimeout(connectTimer);
       socket.disconnect();
       socketRef.current = null;
     };

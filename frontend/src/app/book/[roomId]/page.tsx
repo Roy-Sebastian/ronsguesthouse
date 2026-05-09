@@ -145,34 +145,46 @@ export default function BookingPage() {
         return;
       }
 
-      snap.pay(data.payment.token, {
-        onSuccess: async (_result: any) => {
-          snap.hide();
-          try {
-             await apiFetch(`/transactions/midtrans/sync/${_result.order_id}`);
-          } catch(e) {}
+      const snapToken = data.payment?.token;
+      if (!snapToken) {
+        toast.error('Token pembayaran tidak ditemukan. Silakan coba lagi.');
+        setSubmitting(false);
+        return;
+      }
 
-          setBookingCode(data.bookingCode);
-          setStep(4);
-          toast.success('Payment successful! Your booking has been confirmed.');
-          setSubmitting(false);
-        },
-        onPending: async (_result: any) => {
-          snap.hide();
-          setBookingCode(data.bookingCode);
-          setStep(4);
-          toast.success('Booking created! Awaiting payment confirmation.');
-          setSubmitting(false);
-        },
-        onError: (_result: any) => {
-          toast.error('Payment failed. Please try again.');
-          setSubmitting(false);
-        },
-        onClose: () => {
-          toast('You closed the payment window. Your booking is saved — you can pay later.', { icon: 'ℹ️' });
-          setSubmitting(false);
-        },
-      });
+      try {
+        snap.pay(snapToken, {
+          onSuccess: async (_result: any) => {
+            snap.hide();
+            try {
+              await apiFetch(`/transactions/midtrans/sync/${_result.order_id}`);
+            } catch(e) {}
+
+            setBookingCode(data.bookingCode);
+            setStep(4);
+            toast.success('Payment successful! Your booking has been confirmed.');
+            setSubmitting(false);
+          },
+          onPending: async (_result: any) => {
+            snap.hide();
+            setBookingCode(data.bookingCode);
+            setStep(4);
+            toast.success('Booking created! Awaiting payment confirmation.');
+            setSubmitting(false);
+          },
+          onError: (_result: any) => {
+            toast.error('Payment failed. Please try again.');
+            setSubmitting(false);
+          },
+          onClose: () => {
+            toast('You closed the payment window. Your booking is saved — you can pay later.', { icon: 'ℹ️' });
+            setSubmitting(false);
+          },
+        });
+      } catch (snapError: any) {
+        toast.error('Gagal membuka halaman pembayaran. Silakan coba lagi.');
+        setSubmitting(false);
+      }
     } catch (error: any) {
       toast.error(error.message);
       setSubmitting(false);
