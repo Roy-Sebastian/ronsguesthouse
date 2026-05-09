@@ -10,9 +10,15 @@ export default function ReceptionistDashboard() {
   const today = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
+    const safeFetch = (url: string) =>
+      fetch(url)
+        .then(r => r.ok ? r.json() : [])
+        .then(r => r.data || r)
+        .catch(() => []);
+
     Promise.all([
-      fetch("/api/reservations?limit=500").then(r => r.json()).then(r => r.data || r),
-      fetch("/api/stays?limit=500").then(r => r.json()).then(r => r.data || []),
+      safeFetch("/api/reservations?limit=500"),
+      safeFetch("/api/stays?limit=500"),
     ]).then(([res, sta]) => {
       setReservations(Array.isArray(res) ? res : []);
       setStays(Array.isArray(sta) ? sta : []);
