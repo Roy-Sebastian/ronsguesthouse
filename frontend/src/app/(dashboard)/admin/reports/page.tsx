@@ -129,7 +129,7 @@ export default function AdminReportsPage() {
   const handleExportExcel = async () => {
     const incomes = await fetchIncomesForExport();
     let no = 1;
-    const worksheetData = incomes.map((item) => ({
+    const worksheetData = incomes.map((item: any) => ({
       'No': no++,
       'Tanggal': new Date(item.date).toLocaleDateString('id-ID'),
       'Nama Tamu': (item as any).guest_name,
@@ -141,7 +141,7 @@ export default function AdminReportsPage() {
     }));
 
     // Append summary row
-    const total = incomes.reduce((s, i) => s + i.amount, 0);
+    const total = incomes.reduce((s: number, i: any) => s + i.amount, 0);
     worksheetData.push({ 'No': '' as any, 'Tanggal': '', 'Nama Tamu': '', 'No. Kamar': '', 'Deskripsi': 'TOTAL', 'Metode Pembayaran': '', 'Dicatat Oleh': '', 'Jumlah (Rp)': total });
 
     const worksheet = XLSX.utils.json_to_sheet(worksheetData);
@@ -236,7 +236,7 @@ export default function AdminReportsPage() {
 
     // -- Data table (landscape, more columns)
     let no = 1;
-    const tableRows = incomes.map((item) => [
+    const tableRows = incomes.map((item: any) => [
       no++,
       new Date(item.date).toLocaleDateString('id-ID'),
       (item as any).guest_name,

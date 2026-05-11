@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { apiFetch } from '@/lib/apiFetch';
 
 import {
@@ -94,7 +94,7 @@ export default function SuperadminReportsPage() {
   const handleExportExcel = async () => {
     const incomes = await fetchIncomesForExport();
     let no = 1;
-    const worksheetData = incomes.map((item) => ({
+    const worksheetData = incomes.map((item: any) => ({
       'No': no++,
       'Tanggal': new Date(item.date).toLocaleDateString('id-ID'),
       'Nama Tamu': (item as any).guest_name,
@@ -104,7 +104,7 @@ export default function SuperadminReportsPage() {
       'Dicatat Oleh': (item as any).staff_name,
       'Jumlah (Rp)': item.amount,
     }));
-    const total = incomes.reduce((s, i) => s + i.amount, 0);
+    const total = incomes.reduce((s: number, i: any) => s + i.amount, 0);
     worksheetData.push({ 'No': '' as any, 'Tanggal': '', 'Nama Tamu': '', 'No. Kamar': '', 'Deskripsi': 'TOTAL', 'Metode Pembayaran': '', 'Dicatat Oleh': '', 'Jumlah (Rp)': total });
     const worksheet = XLSX.utils.json_to_sheet(worksheetData);
     worksheet['!cols'] = [
@@ -183,7 +183,7 @@ export default function SuperadminReportsPage() {
     doc.line(14, sectionY + 2, 80, sectionY + 2);
 
     // -- Data table -----------------------------------------------
-    const tableRows = incomes.map((item) => [
+    const tableRows = incomes.map((item: any) => [
       new Date(item.date).toLocaleDateString('id-ID'),
       item.description,
       item.payment_method,
