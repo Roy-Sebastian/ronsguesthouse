@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { apiFetch } from '@/lib/apiFetch';
 
 import {
@@ -125,7 +125,7 @@ export default function ReceptionistReportsPage() {
     doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor('#94a3b8');
     doc.text('LAPORAN KEUANGAN', 14, 29);
     doc.setFontSize(8); doc.setTextColor('#64748b');
-    doc.text(Dicetak: {today}, W - 14, 29, { align: 'right' });
+    doc.text(`Dicetak: ${today}`, W - 14, 29, { align: 'right' });
     const statsY = 58; const cardW = (W - 28 - 8) / 3; const cardH = 26;
     const stats = [
       { label: 'TOTAL PENDAPATAN', value: formatRp(data?.totalIncome || 0), accent: '#16a34a' },
