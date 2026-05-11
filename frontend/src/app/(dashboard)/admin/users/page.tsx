@@ -1,10 +1,12 @@
-﻿'use client';
+'use client';
 import { apiFetch } from '@/lib/apiFetch';
 
 import { permissionsGroups } from '@/lib/rbac';
 import { TableActions } from '@/components/ui/TableActions';
 
 import {
+  Eye,
+  EyeOff,
   Plus,
   Search,
   ShieldCheck,
@@ -57,6 +59,9 @@ export default function SuperadminUsersPage() {
     phone: '',
     permissions: [] as string[],
   });
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -134,6 +139,9 @@ export default function SuperadminUsersPage() {
       phone: '',
       permissions: ['reservation.view', 'reservation.create', 'guest.view'],
     });
+    setConfirmPassword('');
+    setShowPassword(false);
+    setShowConfirmPassword(false);
     setError('');
     setShowModal(true);
   };
@@ -152,6 +160,9 @@ export default function SuperadminUsersPage() {
       phone: user.phone || '',
       permissions: user.permissions || [],
     });
+    setConfirmPassword('');
+    setShowPassword(false);
+    setShowConfirmPassword(false);
     setError('');
     setShowModal(true);
   };
@@ -160,6 +171,18 @@ export default function SuperadminUsersPage() {
     e.preventDefault();
     setSaving(true);
     setError('');
+
+    // Client-side confirm password validation (only for create or when password is being changed)
+    if (!editId && form.password !== confirmPassword) {
+      setError('Password dan konfirmasi password tidak cocok');
+      setSaving(false);
+      return;
+    }
+    if (editId && form.password && form.password !== confirmPassword) {
+      setError('Password dan konfirmasi password tidak cocok');
+      setSaving(false);
+      return;
+    }
 
     try {
       let res;
@@ -440,17 +463,59 @@ export default function SuperadminUsersPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       {editId ? 'Ubah Password (opsional)' : 'Password*'}
                     </label>
-                    <input
-                      type="password"
-                      required={!editId}
-                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm"
-                      value={form.password}
-                      onChange={(e) =>
-                        setForm({ ...form, password: e.target.value })
-                      }
-                      autoComplete="new-password"
-                    />
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        required={!editId}
+                        className="w-full px-3.5 py-2.5 pr-10 border border-gray-300 rounded-lg text-sm"
+                        value={form.password}
+                        onChange={(e) =>
+                          setForm({ ...form, password: e.target.value })
+                        }
+                        autoComplete="new-password"
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        onClick={() => setShowPassword(!showPassword)}
+                        tabIndex={-1}
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                   </div>
+                  {(!editId || form.password) && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        Konfirmasi Password*
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          required={!editId || !!form.password}
+                          className={`w-full px-3.5 py-2.5 pr-10 border rounded-lg text-sm ${
+                            confirmPassword && form.password !== confirmPassword
+                              ? 'border-red-400 bg-red-50'
+                              : 'border-gray-300'
+                          }`}
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          autoComplete="new-password"
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          tabIndex={-1}
+                        >
+                          {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
+                      {confirmPassword && form.password !== confirmPassword && (
+                        <p className="text-xs text-red-500 mt-1">Password tidak cocok</p>
+                      )}
+                    </div>
+                  )}
                   <div className="col-span-1 md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       Role Pengguna*

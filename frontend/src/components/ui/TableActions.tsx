@@ -10,6 +10,7 @@ interface TableActionsProps {
   onView?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  editClassName?: string;
 }
 
 export function TableActions({
@@ -19,6 +20,7 @@ export function TableActions({
   onView,
   onEdit,
   onDelete,
+  editClassName = 'btn btn-ghost btn-icon text-orange-600 hover:bg-orange-50 hover:text-orange-700',
 }: TableActionsProps) {
   const { data: session } = useSession();
   const user = session?.user;
@@ -65,7 +67,7 @@ export function TableActions({
             e.stopPropagation();
             onEdit();
           }}
-          className="btn btn-ghost btn-icon text-orange-600 hover:bg-orange-50 hover:text-orange-700"
+          className={editClassName}
           title="Edit"
         >
           <Edit size={16} />

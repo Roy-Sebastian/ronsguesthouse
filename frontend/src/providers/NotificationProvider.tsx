@@ -13,7 +13,7 @@ import { io, Socket } from 'socket.io-client';
 
 export interface Notification {
   id: string;
-  type: 'new_booking' | 'reminder';
+  type: 'new_booking' | 'reminder' | 'payment_confirmed';
   message: string;
   date: Date;
   read: boolean;
@@ -28,14 +28,26 @@ export interface ReservationToast {
   checkInDate: string;
 }
 
+export interface PaymentToast {
+  id: string;
+  guestName: string;
+  roomNumber: string;
+  bookingCode: string;
+  amount: number;
+  paymentMethod: string;
+  confirmedAt: string;
+}
+
 interface NotificationContextValue {
   notifications: Notification[];
   unreadCount: number;
   reservationBadge: number;
   toasts: ReservationToast[];
+  paymentToasts: PaymentToast[];
   markAllRead: () => void;
   clearReservationBadge: () => void;
   dismissToast: (id: string) => void;
+  dismissPaymentToast: (id: string) => void;
 }
 
 const NotificationContext = createContext<NotificationContextValue>({
@@ -43,9 +55,11 @@ const NotificationContext = createContext<NotificationContextValue>({
   unreadCount: 0,
   reservationBadge: 0,
   toasts: [],
+  paymentToasts: [],
   markAllRead: () => {},
   clearReservationBadge: () => {},
   dismissToast: () => {},
+  dismissPaymentToast: () => {},
 });
 
 function playNotificationSound() {
@@ -84,6 +98,7 @@ export function NotificationProvider({
   const [unreadCount, setUnreadCount] = useState(0);
   const [reservationBadge, setReservationBadge] = useState(0);
   const [toasts, setToasts] = useState<ReservationToast[]>([]);
+  const [paymentToasts, setPaymentToasts] = useState<PaymentToast[]>([]);
   const socketRef = useRef<Socket | null>(null);
 
   const addNotification = useCallback((notif: Notification) => {
@@ -169,6 +184,36 @@ export function NotificationProvider({
       }, 8000);
     });
 
+    socket.on('payment_confirmed', (data: any) => {
+      const toastId = 'payment_' + (data.id ?? Date.now());
+      const guestName = data.guestName || 'Tamu';
+      const roomNumber = data.roomNumber || '-';
+
+      addNotification({
+        id: toastId,
+        type: 'payment_confirmed',
+        message: `Pembayaran dikonfirmasi: ${guestName} (Kamar ${roomNumber}) — ${data.bookingCode}`,
+        date: new Date(),
+        read: false,
+      });
+
+      const paymentToast: PaymentToast = {
+        id: toastId,
+        guestName,
+        roomNumber,
+        bookingCode: data.bookingCode ?? '-',
+        amount: Number(data.amount ?? 0),
+        paymentMethod: data.paymentMethod ?? 'transfer',
+        confirmedAt: data.confirmedAt ?? new Date().toISOString(),
+      };
+      setPaymentToasts((prev) => [...prev, paymentToast]);
+      playNotificationSound();
+
+      setTimeout(() => {
+        setPaymentToasts((prev) => prev.filter((t) => t.id !== toastId));
+      }, 10000);
+    });
+
     return () => {
       clearTimeout(connectTimer);
       socket.disconnect();
@@ -189,6 +234,10 @@ export function NotificationProvider({
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
+  const dismissPaymentToast = useCallback((id: string) => {
+    setPaymentToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
   return (
     <NotificationContext.Provider
       value={{
@@ -196,9 +245,11 @@ export function NotificationProvider({
         unreadCount,
         reservationBadge,
         toasts,
+        paymentToasts,
         markAllRead,
         clearReservationBadge,
         dismissToast,
+        dismissPaymentToast,
       }}
     >
       {children}

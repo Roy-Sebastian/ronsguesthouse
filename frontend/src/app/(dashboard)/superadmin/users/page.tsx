@@ -1,9 +1,11 @@
-﻿'use client';
+'use client';
 import { apiFetch } from '@/lib/apiFetch';
-
+import { permissionsGroups } from '@/lib/rbac';
 import { TableActions } from '@/components/ui/TableActions';
 
 import {
+  Eye,
+  EyeOff,
   Plus,
   Search,
   ShieldCheck,
@@ -43,58 +45,6 @@ const roleLabel: Record<string, string> = {
   guest: 'Tamu',
 };
 
-const AVAILABLE_PERMISSIONS = [
-  { id: 'user.view', label: 'Lihat Pengguna', group: 'User' },
-  { id: 'user.create', label: 'Tambah Pengguna', group: 'User' },
-  { id: 'user.edit', label: 'Edit Pengguna', group: 'User' },
-  { id: 'user.delete', label: 'Hapus Pengguna', group: 'User' },
-  { id: 'guest.view', label: 'Lihat Tamu', group: 'Operasional' },
-  { id: 'guest.create', label: 'Tambah Tamu', group: 'Operasional' },
-  { id: 'guest.edit', label: 'Edit Tamu', group: 'Operasional' },
-  { id: 'guest.delete', label: 'Hapus Tamu', group: 'Operasional' },
-  { id: 'reservation.view', label: 'Lihat Reservasi', group: 'Operasional' },
-  { id: 'reservation.create', label: 'Buat Reservasi', group: 'Operasional' },
-  { id: 'reservation.edit', label: 'Edit Reservasi', group: 'Operasional' },
-  { id: 'reservation.cancel', label: 'Batalkan Reservasi', group: 'Operasional' },
-  { id: 'stay.view', label: 'Lihat Stay', group: 'Operasional' },
-  { id: 'stay.create', label: 'Check-In', group: 'Operasional' },
-  { id: 'stay.edit', label: 'Check-Out / Update Stay', group: 'Operasional' },
-  { id: 'stay.delete', label: 'Hapus Stay', group: 'Operasional' },
-  { id: 'penalty.view', label: 'Lihat Denda', group: 'Operasional' },
-  { id: 'penalty.create', label: 'Tambah Denda', group: 'Operasional' },
-  { id: 'penalty.edit', label: 'Edit Denda', group: 'Operasional' },
-  { id: 'penalty.delete', label: 'Hapus Denda', group: 'Operasional' },
-  { id: 'transaction.view', label: 'Lihat Transaksi', group: 'Keuangan' },
-  { id: 'transaction.create', label: 'Buat Transaksi', group: 'Keuangan' },
-  { id: 'transaction.edit', label: 'Edit Transaksi', group: 'Keuangan' },
-  { id: 'transaction.delete', label: 'Hapus Transaksi', group: 'Keuangan' },
-  { id: 'income.view', label: 'Lihat Pendapatan', group: 'Keuangan' },
-  { id: 'income.create', label: 'Tambah Pendapatan', group: 'Keuangan' },
-  { id: 'income.edit', label: 'Edit Pendapatan', group: 'Keuangan' },
-  { id: 'income.delete', label: 'Hapus Pendapatan', group: 'Keuangan' },
-  { id: 'expense.view', label: 'Lihat Pengeluaran', group: 'Keuangan' },
-  { id: 'expense.create', label: 'Tambah Pengeluaran', group: 'Keuangan' },
-  { id: 'expense.edit', label: 'Edit Pengeluaran', group: 'Keuangan' },
-  { id: 'expense.delete', label: 'Hapus Pengeluaran', group: 'Keuangan' },
-  { id: 'report.view', label: 'Lihat Laporan', group: 'Keuangan' },
-  { id: 'room.view', label: 'Lihat Kamar', group: 'Inventory' },
-  { id: 'room.create', label: 'Tambah Kamar', group: 'Inventory' },
-  { id: 'room.edit', label: 'Edit Kamar', group: 'Inventory' },
-  { id: 'room.delete', label: 'Hapus Kamar', group: 'Inventory' },
-  { id: 'facility.manage', label: 'Kelola Fasilitas', group: 'Konten' },
-  { id: 'amenity.manage', label: 'Kelola Amenitas', group: 'Konten' },
-  { id: 'gallery.manage', label: 'Kelola Galeri', group: 'Konten' },
-  { id: 'review.manage', label: 'Kelola Ulasan', group: 'Konten' },
-  { id: 'message.view', label: 'Lihat Pesan', group: 'Konten' },
-  { id: 'message.create', label: 'Tambah Pesan', group: 'Konten' },
-  { id: 'message.edit', label: 'Edit Pesan', group: 'Konten' },
-  { id: 'message.delete', label: 'Hapus Pesan', group: 'Konten' },
-  { id: 'addon.view', label: 'Lihat Add-On', group: 'Konten' },
-  { id: 'addon.manage', label: 'Kelola Add-On', group: 'Konten' },
-  { id: 'audit.view', label: 'Lihat Audit Log', group: 'Sistem' },
-  { id: 'role.manage', label: 'Kelola Role', group: 'Sistem' },
-  { id: 'settings.manage', label: 'Pengaturan Sistem', group: 'Sistem' },
-];
 
 export default function SuperadminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -111,6 +61,9 @@ export default function SuperadminUsersPage() {
     phone: '',
     permissions: [] as string[],
   });
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -188,6 +141,9 @@ export default function SuperadminUsersPage() {
       phone: '',
       permissions: ['reservation.view', 'reservation.create', 'guest.view'],
     });
+    setConfirmPassword('');
+    setShowPassword(false);
+    setShowConfirmPassword(false);
     setError('');
     setShowModal(true);
   };
@@ -206,6 +162,9 @@ export default function SuperadminUsersPage() {
       phone: user.phone || '',
       permissions: user.permissions || [],
     });
+    setConfirmPassword('');
+    setShowPassword(false);
+    setShowConfirmPassword(false);
     setError('');
     setShowModal(true);
   };
@@ -214,6 +173,18 @@ export default function SuperadminUsersPage() {
     e.preventDefault();
     setSaving(true);
     setError('');
+
+    // Validasi konfirmasi password di client-side
+    if (!editId && form.password !== confirmPassword) {
+      setError('Password dan konfirmasi password tidak cocok');
+      setSaving(false);
+      return;
+    }
+    if (editId && form.password && form.password !== confirmPassword) {
+      setError('Password dan konfirmasi password tidak cocok');
+      setSaving(false);
+      return;
+    }
 
     try {
       let res;
@@ -499,17 +470,59 @@ export default function SuperadminUsersPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       {editId ? 'Ubah Password (opsional)' : 'Password*'}
                     </label>
-                    <input
-                      type="password"
-                      required={!editId}
-                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm"
-                      value={form.password}
-                      onChange={(e) =>
-                        setForm({ ...form, password: e.target.value })
-                      }
-                      autoComplete="new-password"
-                    />
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        required={!editId}
+                        className="w-full px-3.5 py-2.5 pr-10 border border-gray-300 rounded-lg text-sm"
+                        value={form.password}
+                        onChange={(e) =>
+                          setForm({ ...form, password: e.target.value })
+                        }
+                        autoComplete="new-password"
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        onClick={() => setShowPassword(!showPassword)}
+                        tabIndex={-1}
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                   </div>
+                  {(!editId || form.password) && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        Konfirmasi Password*
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          required={!editId || !!form.password}
+                          className={`w-full px-3.5 py-2.5 pr-10 border rounded-lg text-sm ${
+                            confirmPassword && form.password !== confirmPassword
+                              ? 'border-red-400 bg-red-50'
+                              : 'border-gray-300'
+                          }`}
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          autoComplete="new-password"
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          tabIndex={-1}
+                        >
+                          {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
+                      {confirmPassword && form.password !== confirmPassword && (
+                        <p className="text-xs text-red-500 mt-1">Password tidak cocok</p>
+                      )}
+                    </div>
+                  )}
                   <div className="col-span-1 md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       Role Pengguna*
@@ -539,27 +552,31 @@ export default function SuperadminUsersPage() {
                     dashboard mereka.
                   </p>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    {AVAILABLE_PERMISSIONS.map((perm) => (
-                      <label
-                        key={perm.id}
-                        className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={form.permissions.includes(perm.id)}
-                          onChange={() => togglePermission(perm.id)}
-                          className="mt-0.5 accent-primary h-4 w-4 rounded"
-                        />
-                        <div>
-                          <div className="text-sm font-medium text-gray-800">
-                            {perm.label}
-                          </div>
-                          <div className="text-[10px] text-gray-500 uppercase tracking-wide mt-0.5">
-                            {perm.group}
-                          </div>
+                  <div className="space-y-4">
+                    {permissionsGroups.map((grp) => (
+                      <div key={grp.group}>
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                          {grp.group}
+                        </p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {grp.permissions.map((perm) => (
+                            <label
+                              key={perm.key}
+                              className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={form.permissions.includes(perm.key)}
+                                onChange={() => togglePermission(perm.key)}
+                                className="mt-0.5 accent-primary h-4 w-4 rounded"
+                              />
+                              <div className="text-sm font-medium text-gray-800">
+                                {perm.label}
+                              </div>
+                            </label>
+                          ))}
                         </div>
-                      </label>
+                      </div>
                     ))}
                   </div>
                 </div>

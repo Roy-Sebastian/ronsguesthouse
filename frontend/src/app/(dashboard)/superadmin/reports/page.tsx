@@ -69,8 +69,11 @@ export default function SuperadminReportsPage() {
         id: inc.id,
         date: inc.incomeDate || inc.createdAt,
         description: inc.description || 'Tanpa Keterangan',
-        payment_method: inc.transaction?.paymentMethod || 'cash',
+        payment_method: inc.paymentMethod || inc.transaction?.paymentMethod || 'cash',
         amount: Number(inc.amount),
+        guest_name: inc.transaction?.reservation?.guest?.fullName || inc.guestNameSnapshot || '-',
+        room_number: inc.transaction?.reservation?.room?.roomNumber || '-',
+        staff_name: inc.user?.name || '-',
       }));
     } catch {
       // Fallback: Using recentTransactions data from dashboard stats if fetching fails
@@ -81,20 +84,33 @@ export default function SuperadminReportsPage() {
         description: tx.description || 'Pendapatan',
         payment_method: 'N/A',
         amount: Number(tx.amount),
+        guest_name: '-',
+        room_number: '-',
+        staff_name: '-',
       }));
     }
   };
 
   const handleExportExcel = async () => {
     const incomes = await fetchIncomesForExport();
+    let no = 1;
     const worksheetData = incomes.map((item) => ({
+      'No': no++,
       'Tanggal': new Date(item.date).toLocaleDateString('id-ID'),
+      'Nama Tamu': (item as any).guest_name,
+      'No. Kamar': (item as any).room_number,
       'Deskripsi': item.description,
       'Metode Pembayaran': item.payment_method,
-      'Jumlah': item.amount,
+      'Dicatat Oleh': (item as any).staff_name,
+      'Jumlah (Rp)': item.amount,
     }));
-
+    const total = incomes.reduce((s, i) => s + i.amount, 0);
+    worksheetData.push({ 'No': '' as any, 'Tanggal': '', 'Nama Tamu': '', 'No. Kamar': '', 'Deskripsi': 'TOTAL', 'Metode Pembayaran': '', 'Dicatat Oleh': '', 'Jumlah (Rp)': total });
     const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+    worksheet['!cols'] = [
+      { wch: 5 }, { wch: 14 }, { wch: 24 }, { wch: 10 },
+      { wch: 40 }, { wch: 18 }, { wch: 20 }, { wch: 18 },
+    ];
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Laporan Pendapatan');
     XLSX.writeFile(workbook, 'Laporan_Pendapatan.xlsx');
@@ -102,7 +118,7 @@ export default function SuperadminReportsPage() {
 
   const handleExportPDF = async () => {
     const incomes = await fetchIncomesForExport();
-    const doc = new jsPDF({ orientation: 'portrait', format: 'a4' });
+    const doc = new jsPDF({ orientation: 'landscape', format: 'a4' });
     const W = doc.internal.pageSize.getWidth();
     const H = doc.internal.pageSize.getHeight();
 
@@ -164,7 +180,7 @@ export default function SuperadminReportsPage() {
     doc.text('RINCIAN TRANSAKSI PENDAPATAN', 14, sectionY);
     doc.setDrawColor('#C4922A');
     doc.setLineWidth(0.5);
-    doc.line(14, sectionY + 2, 66, sectionY + 2);
+    doc.line(14, sectionY + 2, 80, sectionY + 2);
 
     // -- Data table -----------------------------------------------
     const tableRows = incomes.map((item) => [
@@ -200,16 +216,16 @@ export default function SuperadminReportsPage() {
         2: { cellWidth: 28 },
         3: { cellWidth: 38, halign: 'right', fontStyle: 'bold' },
       },
-      margin: { left: 14, right: 14 },
+      margin: { left: 14, right: 14, bottom: 20 },
     });
 
     // -- Total row ------------------------------------------------
     const finalY = (doc as any).lastAutoTable.finalY || sectionY + 30;
-    doc.setFillColor('#0f172a');
-    doc.rect(14, finalY, W - 28, 11, 'F');
+    doc.setFillColor('#C4922A');
+    doc.rect(14, finalY, W - 28, 12, 'F');
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8.5);
-    doc.setTextColor('#ffffff');
+    doc.setFontSize(9);
+    doc.setTextColor('#1f2937');
     doc.text('TOTAL PENDAPATAN', 19, finalY + 7.5);
     doc.text(formatRp(totalPendapatan), W - 19, finalY + 7.5, { align: 'right' });
 
@@ -232,7 +248,11 @@ export default function SuperadminReportsPage() {
       ...(data?.monthlyIncome?.map((i) => i.month) || []),
       ...(data?.monthlyExpenses?.map((e) => e.month) || []),
     ]),
-  );
+  ).filter((m) => {
+    const inc = Number(data?.monthlyIncome?.find((i: any) => i.month === m)?.income || 0);
+    const exp = Number(data?.monthlyExpenses?.find((e: any) => e.month === m)?.expense || 0);
+    return inc > 0 || exp > 0;
+  });
 
   const barChartData = {
     labels: months,

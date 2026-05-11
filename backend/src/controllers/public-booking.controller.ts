@@ -23,6 +23,7 @@ import {
 import { transactionRepository } from '../repositories/transaction.repository';
 import * as MidtransService from '../services/midtrans.service';
 import * as PricingService from '../services/pricing.service';
+import { toTitleCase } from '../utils';
 
 /**
  * POST /api/public/book
@@ -56,8 +57,9 @@ export const publicBook = async (req: Request, res: Response) => {
       });
     }
 
-    const checkInDate = new Date(checkIn);
+    const checkInDate  = new Date(checkIn);
     const checkOutDate = new Date(checkOut);
+    const normalizedName  = toTitleCase(guestName);
 
     // 1. Find or create guest securely without ID Number
     // Match by email only (primary identifier). Matching by phone OR email previously
@@ -72,7 +74,7 @@ export const publicBook = async (req: Request, res: Response) => {
     if (!guest) {
       guest = await prisma.guest.create({
         data: {
-          fullName: guestName,
+          fullName: normalizedName,
           phone: guestPhone,
           email: normalizedEmail,
           nationality: 'Indonesia',
@@ -81,12 +83,12 @@ export const publicBook = async (req: Request, res: Response) => {
       });
     } else {
       // Same email = same guest — sync latest name/phone from form
-      const shouldUpdate = guest.phone !== guestPhone || guest.fullName !== guestName;
+      const shouldUpdate = guest.phone !== guestPhone || guest.fullName !== normalizedName;
       if (shouldUpdate) {
         guest = await prisma.guest.update({
           where: { id: guest.id },
           data: {
-            fullName: guestName,
+            fullName: normalizedName,
             phone: guestPhone,
           },
         });

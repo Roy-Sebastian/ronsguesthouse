@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { apiFetch } from '@/lib/apiFetch';
 
 import { TableActions } from '@/components/ui/TableActions';
@@ -14,6 +14,7 @@ import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
 import swal from '@/lib/swal';
+import { useNotifications } from '@/providers/NotificationProvider';
 
 
 
@@ -56,6 +57,8 @@ export default function SuperadminReservationsPage() {
     checked_in: ['checked_in', 'checked_out'],
   };
 
+  const { paymentToasts } = useNotifications();
+
   const fetchAll = async () => {
     setLoading(true);
     const [res, g, r] = await Promise.all([
@@ -78,6 +81,14 @@ export default function SuperadminReservationsPage() {
   useEffect(() => {
     fetchAll();
   }, []);
+
+  // Auto-refresh reservations when a payment is confirmed in real-time
+  useEffect(() => {
+    if (paymentToasts.length > 0) {
+      fetchAll();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paymentToasts.length]);
 
   const calcPrice = () => {
     if (priceOverride) return;
@@ -214,9 +225,14 @@ export default function SuperadminReservationsPage() {
     a.fullName.localeCompare(b.fullName, 'id', { sensitivity: 'base' }),
   );
   const filteredGuests = guestSearch
-    ? sortedGuests.filter((g) =>
-        g.fullName.toLowerCase().includes(guestSearch.toLowerCase()),
-      )
+    ? sortedGuests.filter((g) => {
+        const q = guestSearch.toLowerCase();
+        return (
+          g.fullName.toLowerCase().includes(q) ||
+          (g.phone && g.phone.includes(q)) ||
+          (g.email && g.email.toLowerCase().includes(q))
+        );
+      })
     : sortedGuests;
 
   const filtered = reservations.filter((r) => {
@@ -438,6 +454,7 @@ export default function SuperadminReservationsPage() {
                         onEdit={() => openEdit(r)}
                         deletePermission="reservation.delete"
                         onDelete={() => handleDelete(r.id)}
+                        editClassName="btn btn-ghost btn-icon text-green-600 hover:bg-green-50 hover:text-green-700"
                     />
                   </td>
                 </tr>
@@ -502,9 +519,19 @@ export default function SuperadminReservationsPage() {
                             setGuestSearch(g.fullName);
                             setGuestDropdownOpen(false);
                           }}
-                          className="px-4 py-2.5 text-sm hover:bg-primary/5 cursor-pointer"
+                          className="px-4 py-2.5 hover:bg-primary/5 cursor-pointer border-b border-gray-50 last:border-0"
                         >
-                          {g.fullName}
+                          <div className="text-sm font-medium text-gray-900 truncate">{g.fullName}</div>
+                          <div className="text-xs text-gray-400 mt-0.5 truncate">
+                            {g.phone
+                              ? <>{g.phone}{g.email ? <span className="hidden sm:inline"> · {g.email}</span> : null}</>
+                              : g.email
+                                ? g.email
+                                : g.idNumber
+                                  ? <>NIK: ****{String(g.idNumber).slice(-4)}</>
+                                  : <span className="font-mono">#{String(g.id).slice(-6).toUpperCase()}</span>
+                            }
+                          </div>
                         </div>
                       )) : (
                         <div className="px-4 py-2.5 text-sm text-gray-400">Tamu tidak ditemukan</div>
@@ -571,15 +598,16 @@ export default function SuperadminReservationsPage() {
                 const opts = ALLOWED_TRANSITIONS[originalStatus] ?? [];
                 const isTerminal = opts.length === 0;
                 return (
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
-                      Status
+                  <div className="rounded-xl bg-green-50 border border-green-200 p-4">
+                    <label className="block text-xs font-bold text-green-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span>
+                      Status Reservasi
                     </label>
                     <select
                       disabled={isTerminal}
                       value={form.status}
                       onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-gray-50 disabled:opacity-60"
+                      className="w-full px-4 py-3 border-2 border-green-300 rounded-xl text-sm font-semibold outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 bg-white disabled:opacity-60 text-green-800"
                     >
                       {isTerminal
                         ? <option value={form.status}>{STATUS_LABEL[form.status] || form.status}</option>
@@ -589,7 +617,7 @@ export default function SuperadminReservationsPage() {
                       }
                     </select>
                     {isTerminal && (
-                      <p className="mt-1 text-xs text-gray-400">Status ini tidak dapat diubah lagi.</p>
+                      <p className="mt-1.5 text-xs text-green-600">Status ini tidak dapat diubah lagi.</p>
                     )}
                   </div>
                 );

@@ -1,8 +1,9 @@
-﻿'use client';
+'use client';
 import { apiFetch } from '@/lib/apiFetch';
 
 import { TableActions } from '@/components/ui/TableActions';
 import { formatRp } from '@/lib/formatters';
+import { ROOM_TYPE_LABEL, getRoomTypeByNumber } from '@/lib/constants';
 
 
 import FilePondPluginFileValidateType from 'filepond-plugin-file-validate-type';
@@ -245,7 +246,7 @@ export default function AdminRoomsPage() {
                 </div>
                 <div className="z-10">
                   <div className="text-white/60 text-xs font-semibold uppercase tracking-widest mb-1">
-                    {r.roomType}
+                    {ROOM_TYPE_LABEL[r.roomType] || r.roomType}
                   </div>
                   <h3 className="font-serif text-3xl font-bold text-white leading-none">
                     {r.roomNumber}
@@ -326,11 +327,13 @@ export default function AdminRoomsPage() {
                     <input
                       className="form-input"
                       value={form.roomNumber}
-                      onChange={(e) =>
-                        setForm({ ...form, roomNumber: e.target.value })
-                      }
+                      onChange={(e) => {
+                        const num = e.target.value;
+                        const autoType = getRoomTypeByNumber(num);
+                        setForm({ ...form, roomNumber: num, roomType: autoType });
+                      }}
                       required
-                      placeholder="Ex: 101"
+                      placeholder="1–10"
                     />
                   </div>
                   <div>
@@ -344,8 +347,8 @@ export default function AdminRoomsPage() {
                         setForm({ ...form, roomType: e.target.value })
                       }
                     >
-                      <option value="standard">Standard</option>
                       <option value="city_view">City View</option>
+                      <option value="standard">Standard</option>
                       <option value="suite">Suite</option>
                       <option value="family">Family</option>
                     </select>

@@ -5,6 +5,7 @@ import MidtransClient from 'midtrans-client';
 
 import { logger } from '../config/logger';
 import { prisma } from '../config/prisma';
+import { getIO } from '../config/socket';
 import { transactionRepository } from '../repositories/transaction.repository';
 
 /**
@@ -223,6 +224,24 @@ export async function processMidtransNotification(body: MidtransNotificationBody
     });
 
     logger.info('Reservation confirmed via payment', { orderId: order_id, reservationId: reservation.id });
+
+    // Emit real-time event to dashboard staff
+    try {
+      const io = getIO();
+      if (io) {
+        io.emit('payment_confirmed', {
+          id: reservation.id,
+          bookingCode: reservation.bookingCode,
+          guestName: reservation.guest?.fullName || 'Tamu',
+          roomNumber: reservation.room?.roomNumber || '-',
+          amount: transaction.amount,
+          paymentMethod: pMethod,
+          confirmedAt: new Date().toISOString(),
+        });
+      }
+    } catch (socketErr) {
+      logger.warn('Failed to emit payment_confirmed socket event', { error: socketErr });
+    }
   } else if (internalStatus === 'expired' || internalStatus === 'failed') {
     // Mark transaction as cancelled
     await transactionRepository.update(transaction.id, {

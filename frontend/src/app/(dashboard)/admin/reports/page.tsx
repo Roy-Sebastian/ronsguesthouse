@@ -15,7 +15,6 @@ import {
   DollarSign,
   FileSpreadsheet,
   FileText,
-  Search,
   TrendingUp,
 } from 'lucide-react';
 import { useEffect, useState, useCallback } from 'react';
@@ -63,10 +62,6 @@ export default function AdminReportsPage() {
   const [filterStart, setFilterStart] = useState('');
   const [filterEnd,   setFilterEnd]   = useState('');
 
-  // Applied period (only updated when "Tampilkan Laporan" is clicked)
-  const [appliedStart, setAppliedStart] = useState('');
-  const [appliedEnd,   setAppliedEnd]   = useState('');
-
   const [data, setData] = useState<{
     totalIncome: number;
     totalExpense: number;
@@ -76,7 +71,6 @@ export default function AdminReportsPage() {
     recentTransactions: any[];
   } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [dateError, setDateError] = useState('');
 
   const fetchStats = useCallback((start: string, end: string) => {
     setLoading(true);
@@ -86,43 +80,22 @@ export default function AdminReportsPage() {
       .catch(() => setLoading(false));
   }, []);
 
-  // Initial load — all-time
-  useEffect(() => { fetchStats('', ''); }, [fetchStats]);
-
-  const handleApply = () => {
-    // Validate dates
-    if (filterStart && filterEnd && filterStart > filterEnd) {
-      setDateError('Tanggal akhir harus lebih besar dari tanggal awal');
-      return;
-    }
-    setDateError('');
-    setAppliedStart(filterStart);
-    setAppliedEnd(filterEnd);
-    fetchStats(filterStart, filterEnd);
-  };
-
-  const handleReset = () => {
-    setFilterStart('');
-    setFilterEnd('');
-    setDateError('');
-    setAppliedStart('');
-    setAppliedEnd('');
-    fetchStats('', '');
-  };
+  // Auto-apply when dates change
+  useEffect(() => { fetchStats(filterStart, filterEnd); }, [filterStart, filterEnd, fetchStats]);
 
   const periodLabel = (() => {
-    if (appliedStart && appliedEnd)
-      return `${new Date(appliedStart).toLocaleDateString('id-ID')} – ${new Date(appliedEnd).toLocaleDateString('id-ID')}`;
-    if (appliedStart) return `Mulai ${new Date(appliedStart).toLocaleDateString('id-ID')}`;
-    if (appliedEnd)   return `s/d ${new Date(appliedEnd).toLocaleDateString('id-ID')}`;
+    if (filterStart && filterEnd)
+      return `${new Date(filterStart).toLocaleDateString('id-ID')} – ${new Date(filterEnd).toLocaleDateString('id-ID')}`;
+    if (filterStart) return `Mulai ${new Date(filterStart).toLocaleDateString('id-ID')}`;
+    if (filterEnd)   return `s/d ${new Date(filterEnd).toLocaleDateString('id-ID')}`;
     return 'Semua Periode';
   })();
 
   // ── Export helpers ────────────────────────────────────────────────────────
 
-  const fetchIncomesForExport = async (): Promise<IncomeTransaction[]> => {
+  const fetchIncomesForExport = async () => {
     try {
-      const res = await apiFetch(buildIncomesUrl(appliedStart, appliedEnd));
+      const res = await apiFetch(buildIncomesUrl(filterStart, filterEnd));
       if (!res.ok) throw new Error('API request failed');
       const json = await res.json();
       const records = Array.isArray(json) ? json : json.data || [];
@@ -130,8 +103,12 @@ export default function AdminReportsPage() {
         id: inc.id,
         date: inc.incomeDate || inc.createdAt,
         description: inc.description || 'Tanpa Keterangan',
-        payment_method: inc.transaction?.paymentMethod || 'cash',
+        payment_method: inc.paymentMethod || inc.transaction?.paymentMethod || 'cash',
         amount: Number(inc.amount),
+        guest_name: inc.transaction?.reservation?.guest?.fullName || inc.guestNameSnapshot || '-',
+        room_number: inc.transaction?.reservation?.room?.roomNumber || '-',
+        staff_name: inc.user?.name || '-',
+        source_type: inc.sourceType || 'RESERVATION',
       }));
     } catch {
       const fallback = data?.recentTransactions.filter((tx: any) => tx.type === 'INCOME') || [];
@@ -141,31 +118,57 @@ export default function AdminReportsPage() {
         description: tx.description || 'Pendapatan',
         payment_method: 'N/A',
         amount: Number(tx.amount),
+        guest_name: '-',
+        room_number: '-',
+        staff_name: '-',
+        source_type: 'RESERVATION',
       }));
     }
   };
 
   const handleExportExcel = async () => {
     const incomes = await fetchIncomesForExport();
+    let no = 1;
     const worksheetData = incomes.map((item) => ({
+      'No': no++,
       'Tanggal': new Date(item.date).toLocaleDateString('id-ID'),
+      'Nama Tamu': (item as any).guest_name,
+      'No. Kamar': (item as any).room_number,
       'Deskripsi': item.description,
       'Metode Pembayaran': item.payment_method,
-      'Jumlah': item.amount,
+      'Dicatat Oleh': (item as any).staff_name,
+      'Jumlah (Rp)': item.amount,
     }));
 
+    // Append summary row
+    const total = incomes.reduce((s, i) => s + i.amount, 0);
+    worksheetData.push({ 'No': '' as any, 'Tanggal': '', 'Nama Tamu': '', 'No. Kamar': '', 'Deskripsi': 'TOTAL', 'Metode Pembayaran': '', 'Dicatat Oleh': '', 'Jumlah (Rp)': total });
+
     const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+
+    // Column widths
+    worksheet['!cols'] = [
+      { wch: 5 },   // No
+      { wch: 14 },  // Tanggal
+      { wch: 24 },  // Nama Tamu
+      { wch: 10 },  // No. Kamar
+      { wch: 40 },  // Deskripsi
+      { wch: 18 },  // Metode Pembayaran
+      { wch: 20 },  // Dicatat Oleh
+      { wch: 18 },  // Jumlah
+    ];
+
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Laporan Pendapatan');
-    const filename = appliedStart || appliedEnd
-      ? `Laporan_Pendapatan_${appliedStart || 'awal'}_sd_${appliedEnd || 'akhir'}.xlsx`
+    const filename = filterStart || filterEnd
+      ? `Laporan_Pendapatan_${filterStart || 'awal'}_sd_${filterEnd || 'akhir'}.xlsx`
       : 'Laporan_Pendapatan.xlsx';
     XLSX.writeFile(workbook, filename);
   };
 
   const handleExportPDF = async () => {
     const incomes = await fetchIncomesForExport();
-    const doc = new jsPDF({ orientation: 'portrait', format: 'a4' });
+    const doc = new jsPDF({ orientation: 'landscape', format: 'a4' });
     const W = doc.internal.pageSize.getWidth();
     const H = doc.internal.pageSize.getHeight();
 
@@ -229,24 +232,29 @@ export default function AdminReportsPage() {
     doc.text('RINCIAN TRANSAKSI PENDAPATAN', 14, sectionY);
     doc.setDrawColor('#C4922A');
     doc.setLineWidth(0.5);
-    doc.line(14, sectionY + 2, 66, sectionY + 2);
+    doc.line(14, sectionY + 2, 80, sectionY + 2);
 
-    // -- Data table
+    // -- Data table (landscape, more columns)
+    let no = 1;
     const tableRows = incomes.map((item) => [
+      no++,
       new Date(item.date).toLocaleDateString('id-ID'),
-      item.description,
+      (item as any).guest_name,
+      (item as any).room_number,
+      item.description.length > 50 ? item.description.slice(0, 50) + '...' : item.description,
       item.payment_method,
+      (item as any).staff_name,
       formatRp(item.amount),
     ]);
 
     autoTable(doc, {
       startY: sectionY + 6,
-      head: [['Tanggal', 'Deskripsi', 'Metode', 'Jumlah']],
+      head: [['No', 'Tanggal', 'Nama Tamu', 'Kamar', 'Deskripsi', 'Metode', 'Dicatat Oleh', 'Jumlah']],
       body: tableRows,
       theme: 'plain',
       styles: {
-        fontSize: 8,
-        cellPadding: { top: 3.5, bottom: 3.5, left: 5, right: 5 },
+        fontSize: 7.5,
+        cellPadding: { top: 3.5, bottom: 3.5, left: 4, right: 4 },
         textColor: [55, 65, 81] as [number, number, number],
         lineColor: [235, 232, 225] as [number, number, number],
         lineWidth: 0.3,
@@ -255,26 +263,30 @@ export default function AdminReportsPage() {
         fillColor: [15, 23, 42] as [number, number, number],
         textColor: [255, 255, 255] as [number, number, number],
         fontStyle: 'bold',
-        fontSize: 7.5,
-        cellPadding: { top: 5, bottom: 5, left: 5, right: 5 },
+        fontSize: 7,
+        cellPadding: { top: 5, bottom: 5, left: 4, right: 4 },
       },
       alternateRowStyles: { fillColor: [248, 246, 242] as [number, number, number] },
       columnStyles: {
-        0: { cellWidth: 27 },
-        1: { cellWidth: 'auto' },
-        2: { cellWidth: 28 },
-        3: { cellWidth: 38, halign: 'right', fontStyle: 'bold' },
+        0: { cellWidth: 12, halign: 'center' },
+        1: { cellWidth: 24 },
+        2: { cellWidth: 35 },
+        3: { cellWidth: 20, halign: 'center' },
+        4: { cellWidth: 'auto' },
+        5: { cellWidth: 22 },
+        6: { cellWidth: 28 },
+        7: { cellWidth: 32, halign: 'right', fontStyle: 'bold' },
       },
-      margin: { left: 14, right: 14 },
+      margin: { left: 14, right: 14, bottom: 20 },
     });
 
     // -- Total row
     const finalY = (doc as any).lastAutoTable.finalY || sectionY + 30;
-    doc.setFillColor('#0f172a');
-    doc.rect(14, finalY, W - 28, 11, 'F');
+    doc.setFillColor('#C4922A');
+    doc.rect(14, finalY, W - 28, 12, 'F');
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8.5);
-    doc.setTextColor('#ffffff');
+    doc.setFontSize(9);
+    doc.setTextColor('#1f2937');
     doc.text('TOTAL PENDAPATAN', 19, finalY + 7.5);
     doc.text(formatRp(totalPendapatan), W - 19, finalY + 7.5, { align: 'right' });
 
@@ -289,8 +301,8 @@ export default function AdminReportsPage() {
     doc.text("Ron's Guest House  •  Laporan Keuangan Resmi", 14, footerY);
     doc.text(today, W - 14, footerY, { align: 'right' });
 
-    const filename = appliedStart || appliedEnd
-      ? `Laporan_Keuangan_${appliedStart || 'awal'}_sd_${appliedEnd || 'akhir'}.pdf`
+    const filename = filterStart || filterEnd
+      ? `Laporan_Keuangan_${filterStart || 'awal'}_sd_${filterEnd || 'akhir'}.pdf`
       : 'Laporan_Keuangan_RonsGuestHouse.pdf';
     doc.save(filename);
   };
@@ -302,7 +314,11 @@ export default function AdminReportsPage() {
       ...(data?.monthlyIncome?.map((i) => i.month) || []),
       ...(data?.monthlyExpenses?.map((e) => e.month) || []),
     ]),
-  );
+  ).filter((m) => {
+    const inc = Number(data?.monthlyIncome?.find((i: any) => i.month === m)?.income || 0);
+    const exp = Number(data?.monthlyExpenses?.find((e: any) => e.month === m)?.expense || 0);
+    return inc > 0 || exp > 0;
+  });
 
   const barChartData = {
     labels: months,
@@ -384,62 +400,6 @@ export default function AdminReportsPage() {
         </div>
       </div>
 
-      {/* ── Period Filter ──────────────────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-8">
-        <div className="flex items-center gap-2 mb-4">
-          <CalendarRange size={16} className="text-primary" />
-          <h3 className="font-semibold text-gray-800 text-sm">Filter Periode Laporan</h3>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
-          <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500 font-medium">Tanggal Awal</label>
-            <input
-              type="date"
-              value={filterStart}
-              onChange={(e) => { setFilterStart(e.target.value); setDateError(''); }}
-              className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500 font-medium">Tanggal Akhir</label>
-            <input
-              type="date"
-              value={filterEnd}
-              min={filterStart || undefined}
-              onChange={(e) => { setFilterEnd(e.target.value); setDateError(''); }}
-              className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-colors"
-            />
-          </div>
-          <div className="flex gap-2 pb-0.5">
-            <button
-              onClick={handleApply}
-              disabled={loading}
-              className="px-5 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-lg transition-colors flex items-center gap-2 disabled:opacity-60 shadow-sm"
-            >
-              {loading ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <Search size={15} />
-              )}
-              Tampilkan Laporan
-            </button>
-            {(appliedStart || appliedEnd) && (
-              <button
-                onClick={handleReset}
-                className="px-4 py-2 border border-gray-200 hover:bg-gray-50 text-gray-600 text-sm font-semibold rounded-lg transition-colors"
-              >
-                Reset
-              </button>
-            )}
-          </div>
-        </div>
-        {dateError && (
-          <p className="mt-2 text-sm text-red-600 flex items-center gap-1.5">
-            <span>⚠</span> {dateError}
-          </p>
-        )}
-      </div>
-
       {/* ── Stats Cards ──────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {[
@@ -459,6 +419,44 @@ export default function AdminReportsPage() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* ── Inline Period Filter ─────────────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center mb-8">
+        <div className="flex items-center gap-2 shrink-0">
+          <CalendarRange size={16} className="text-primary" />
+          <span className="text-sm font-semibold text-gray-700">Periode:</span>
+        </div>
+        <div className="flex flex-wrap gap-2 items-center">
+          <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm">
+            <label className="text-xs text-gray-400 shrink-0">Dari</label>
+            <input
+              type="date"
+              value={filterStart}
+              onChange={(e) => setFilterStart(e.target.value)}
+              className="text-sm outline-none bg-transparent text-gray-700"
+            />
+          </div>
+          <span className="text-gray-400 text-sm">–</span>
+          <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm">
+            <label className="text-xs text-gray-400 shrink-0">S/d</label>
+            <input
+              type="date"
+              value={filterEnd}
+              min={filterStart || undefined}
+              onChange={(e) => setFilterEnd(e.target.value)}
+              className="text-sm outline-none bg-transparent text-gray-700"
+            />
+          </div>
+          {(filterStart || filterEnd) && (
+            <button
+              onClick={() => { setFilterStart(''); setFilterEnd(''); }}
+              className="px-3 py-2 text-xs text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg bg-white hover:bg-gray-50 transition-colors"
+            >
+              Reset
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── Chart + Recent Transactions ───────────────────────────────────────── */}

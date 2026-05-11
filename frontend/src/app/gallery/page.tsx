@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import PublicFooter from '@/components/layout/PublicFooter';
 import PublicNavbar from '@/components/layout/PublicNavbar';

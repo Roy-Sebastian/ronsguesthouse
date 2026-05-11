@@ -1,5 +1,4 @@
-import bcrypt from 'bcryptjs';
-
+import { auth } from '../config/auth';
 import { prisma } from '../config/prisma';
 import { getRolePermissions } from '../config/rbac';
 import { userRepository } from '../repositories/user.repository';
@@ -57,7 +56,11 @@ export async function createUser(body: any, ctx: RequesterContext) {
   if (existing) throw new Error('Email sudah terdaftar');
 
   const safe = sanitizePayload(ctx, { role, permissions, phone });
-  const hashed = await bcrypt.hash(password, 10);
+
+  // Use Better Auth's own password hasher (scrypt by default) to ensure
+  // login verification works correctly via Better Auth's sign-in flow.
+  const authCtx = await auth.$context;
+  const hashed = await authCtx.password.hash(password);
 
   const user = await prisma.user.create({
     data: {
@@ -74,7 +77,7 @@ export async function createUser(body: any, ctx: RequesterContext) {
   await prisma.account.create({
     data: {
       userId: user.id,
-      accountId: user.id,
+      accountId: email, // Better Auth uses email as the credential identifier
       providerId: 'credential',
       password: hashed,
     },
@@ -89,7 +92,8 @@ export async function updateUser(id: string, body: any, ctx: RequesterContext) {
   const user = await userRepository.update(id, { data: safe });
 
   if (password && typeof password === 'string' && password.length >= 8) {
-    const hashed = await bcrypt.hash(password, 10);
+    const authCtx = await auth.$context;
+    const hashed = await authCtx.password.hash(password);
     await prisma.account.updateMany({
       where: { userId: id, providerId: 'credential' },
       data: { password: hashed },

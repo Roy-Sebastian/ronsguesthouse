@@ -1,6 +1,8 @@
 'use client';
 
+import swal from '@/lib/swal';
 import { LogIn, User, BedDouble, Calendar, CreditCard, X, CheckCircle } from 'lucide-react';
+import { useState } from 'react';
 
 interface Reservation {
   id: string;
@@ -59,9 +61,18 @@ export default function CheckInConfirmModal({
     ),
   );
 
+  const [loading, setLoading] = useState(false);
+
   const handleConfirm = async () => {
-    await onConfirm(reservation.id);
-    onClose();
+    setLoading(true);
+    try {
+      await onConfirm(reservation.id);
+      onClose();
+    } catch (err: any) {
+      await swal.fire({ icon: 'error', title: 'Check-In Gagal', text: err?.message || 'Terjadi kesalahan saat proses check-in.' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -187,10 +198,13 @@ export default function CheckInConfirmModal({
           </button>
           <button
             onClick={handleConfirm}
-            className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2 shadow-sm"
+            disabled={loading}
+            className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2 shadow-sm"
           >
-            <CheckCircle size={16} />
-            Konfirmasi Check-In
+            {loading
+              ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              : <CheckCircle size={16} />}
+            {loading ? 'Memproses...' : 'Konfirmasi Check-In'}
           </button>
         </div>
       </div>

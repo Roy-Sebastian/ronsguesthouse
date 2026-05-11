@@ -69,8 +69,11 @@ export default function ReceptionistReportsPage() {
         id: inc.id,
         date: inc.incomeDate || inc.createdAt,
         description: inc.description || 'Tanpa Keterangan',
-        payment_method: inc.transaction?.paymentMethod || 'cash',
+        payment_method: inc.paymentMethod || inc.transaction?.paymentMethod || 'cash',
         amount: Number(inc.amount),
+        guest_name: inc.transaction?.reservation?.guest?.fullName || inc.guestNameSnapshot || '-',
+        room_number: inc.transaction?.reservation?.room?.roomNumber || '-',
+        staff_name: inc.user?.name || '-',
       }));
     } catch {
       // Fallback: Using recentTransactions data from dashboard stats if fetching fails
@@ -81,17 +84,25 @@ export default function ReceptionistReportsPage() {
         description: tx.description || 'Pendapatan',
         payment_method: 'N/A',
         amount: Number(tx.amount),
+        guest_name: '-',
+        room_number: '-',
+        staff_name: '-',
       }));
     }
   };
 
   const handleExportExcel = async () => {
     const incomes = await fetchIncomesForExport();
+    let no = 1;
     const worksheetData = incomes.map((item) => ({
+      'No': no++,
       'Tanggal': new Date(item.date).toLocaleDateString('id-ID'),
+      'Nama Tamu': (item as any).guest_name,
+      'No. Kamar': (item as any).room_number,
       'Deskripsi': item.description,
       'Metode Pembayaran': item.payment_method,
-      'Jumlah': item.amount,
+      'Dicatat Oleh': (item as any).staff_name,
+      'Jumlah (Rp)': item.amount,
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(worksheetData);
@@ -102,39 +113,71 @@ export default function ReceptionistReportsPage() {
 
   const handleExportPDF = async () => {
     const incomes = await fetchIncomesForExport();
-    const doc = new jsPDF();
-
-    doc.setFontSize(16);
-    doc.text('Laporan Pendapatan Hotel', 14, 20);
-
-    doc.setFontSize(11);
+    const doc = new jsPDF({ orientation: 'landscape', format: 'a4' });
+    const W = doc.internal.pageSize.getWidth();
+    const H = doc.internal.pageSize.getHeight();
     const today = new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
-    doc.text(`Periode: ${data?.monthlyIncome?.[0]?.month || '-'} s/d ${data?.monthlyIncome?.[data.monthlyIncome.length - 1]?.month || '-'}`, 14, 30);
-    doc.text(`Dicetak pada: ${today}`, 14, 36);
-
-    const tableColumn = ['Tanggal', 'Deskripsi', 'Metode Pembayaran', 'Jumlah'];
+    const totalPendapatan = incomes.reduce((sum, item) => sum + item.amount, 0);
+    doc.setFillColor('#0f172a'); doc.rect(0, 0, W, 50, 'F');
+    doc.setFillColor('#C4922A'); doc.rect(0, 47, W, 3, 'F');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(20); doc.setTextColor('#FFFFFF');
+    doc.text("RON'S GUEST HOUSE", 14, 20);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor('#94a3b8');
+    doc.text('LAPORAN KEUANGAN', 14, 29);
+    doc.setFontSize(8); doc.setTextColor('#64748b');
+    doc.text(Dicetak: {today}, W - 14, 29, { align: 'right' });
+    const statsY = 58; const cardW = (W - 28 - 8) / 3; const cardH = 26;
+    const stats = [
+      { label: 'TOTAL PENDAPATAN', value: formatRp(data?.totalIncome || 0), accent: '#16a34a' },
+      { label: 'TOTAL PENGELUARAN', value: formatRp(data?.totalExpense || 0), accent: '#dc2626' },
+      { label: 'LABA BERSIH', value: formatRp(data?.netProfit || 0), accent: '#C4922A' },
+    ];
+    stats.forEach((stat, i) => {
+      const x = 14 + i * (cardW + 4);
+      doc.setFillColor('#F8F6F2'); doc.rect(x, statsY, cardW, cardH, 'F');
+      doc.setFillColor(stat.accent); doc.rect(x, statsY, 3, cardH, 'F');
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(6.5); doc.setTextColor('#6b7280');
+      doc.text(stat.label, x + 7, statsY + 8);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor('#1f2937');
+      doc.text(stat.value, x + 7, statsY + 19);
+    });
+    const sectionY = statsY + cardH + 10;
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor('#374151');
+    doc.text('RINCIAN TRANSAKSI PENDAPATAN', 14, sectionY);
+    doc.setDrawColor('#C4922A'); doc.setLineWidth(0.5);
+    doc.line(14, sectionY + 2, 80, sectionY + 2);
+    let no = 1;
     const tableRows = incomes.map((item) => [
+      no++,
       new Date(item.date).toLocaleDateString('id-ID'),
-      item.description,
+      (item as any).guest_name,
+      (item as any).room_number,
+      item.description.length > 50 ? item.description.slice(0, 50) + '...' : item.description,
       item.payment_method,
+      (item as any).staff_name,
       formatRp(item.amount),
     ]);
-
-    const totalPendapatan = incomes.reduce((sum, item) => sum + item.amount, 0);
-
     autoTable(doc, {
-      startY: 45,
-      head: [tableColumn],
-      body: tableRows,
-      theme: 'grid',
-      styles: { fontSize: 10 },
-      headStyles: { fillColor: '#0f172a' },
+      startY: sectionY + 6,
+      head: [['No', 'Tanggal', 'Nama Tamu', 'Kamar', 'Deskripsi', 'Metode', 'Dicatat Oleh', 'Jumlah']],
+      body: tableRows, theme: 'plain',
+      styles: { fontSize: 7.5, cellPadding: { top: 3.5, bottom: 3.5, left: 4, right: 4 }, textColor: [55, 65, 81] as [number,number,number], lineColor: [235, 232, 225] as [number,number,number], lineWidth: 0.3 },
+      headStyles: { fillColor: [15, 23, 42] as [number,number,number], textColor: [255,255,255] as [number,number,number], fontStyle: 'bold', fontSize: 7, cellPadding: { top: 5, bottom: 5, left: 4, right: 4 } },
+      alternateRowStyles: { fillColor: [248, 246, 242] as [number,number,number] },
+      columnStyles: { 0: { cellWidth: 12, halign: 'center' }, 1: { cellWidth: 24 }, 2: { cellWidth: 35 }, 3: { cellWidth: 20, halign: 'center' }, 4: { cellWidth: 'auto' }, 5: { cellWidth: 22 }, 6: { cellWidth: 28 }, 7: { cellWidth: 32, halign: 'right', fontStyle: 'bold' } },
+      margin: { left: 14, right: 14, bottom: 20 },
     });
-
-    const finalY = (doc as any).lastAutoTable.finalY || 45;
-    doc.setFontSize(12);
-    doc.text(`Total Pendapatan: ${formatRp(totalPendapatan)}`, 14, finalY + 10);
-
+    const finalY = (doc as any).lastAutoTable.finalY || sectionY + 30;
+    doc.setFillColor('#0f172a'); doc.rect(14, finalY, W - 28, 11, 'F');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor('#ffffff');
+    doc.text('TOTAL PENDAPATAN', 19, finalY + 7.5);
+    doc.text(formatRp(totalPendapatan), W - 19, finalY + 7.5, { align: 'right' });
+    const footerY = H - 12;
+    doc.setDrawColor('#C4922A'); doc.setLineWidth(0.4);
+    doc.line(14, footerY - 4, W - 14, footerY - 4);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor('#9ca3af');
+    doc.text("Ron's Guest House  \u2022  Laporan Keuangan Resmi", 14, footerY);
+    doc.text(today, W - 14, footerY, { align: 'right' });
     doc.save('Laporan_Pendapatan.pdf');
   };
 
@@ -143,7 +186,11 @@ export default function ReceptionistReportsPage() {
       ...(data?.monthlyIncome?.map((i) => i.month) || []),
       ...(data?.monthlyExpenses?.map((e) => e.month) || []),
     ]),
-  );
+  ).filter((m) => {
+    const inc = Number(data?.monthlyIncome?.find((i: any) => i.month === m)?.income || 0);
+    const exp = Number(data?.monthlyExpenses?.find((e: any) => e.month === m)?.expense || 0);
+    return inc > 0 || exp > 0;
+  });
 
   const barChartData = {
     labels: months,

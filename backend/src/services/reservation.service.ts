@@ -124,9 +124,11 @@ export async function createReservation(
         delete otherData.user;
         delete otherData.channel;
 
-        // 5. Set booking expiry for pending reservations only; past/historical bookings get no expiry
+        // 5. Set booking expiry ONLY for online bookings (non-internal).
+        //    Internal/staff reservations are managed manually — they should never auto-expire.
         const initialStatus = (otherData as any).status;
-        const expiresAt = (!initialStatus || initialStatus === 'pending')
+        const isOnlineBooking = socketSource !== 'internal';
+        const expiresAt = isOnlineBooking && (!initialStatus || initialStatus === 'pending')
           ? new Date(Date.now() + BOOKING_EXPIRY_MINUTES * 60 * 1000)
           : null;
 

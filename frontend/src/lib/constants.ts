@@ -22,6 +22,33 @@ export const STATUS_LABEL: Record<string, string> = {
   no_show: 'No Show',
 };
 
+// ─── Room Type Maps ──────────────────────────────────────────────────────────
+
+/** Human-readable labels for room types (no underscore) */
+export const ROOM_TYPE_LABEL: Record<string, string> = {
+  city_view: 'City View',
+  standard:  'Standard',
+  suite:     'Suite',
+  family:    'Family',
+};
+
+/**
+ * Auto-detect room type based on room number:
+ * 1–3  → city_view
+ * 4–6  → standard
+ * 7–9  → suite
+ * 10   → family
+ */
+export function getRoomTypeByNumber(roomNumber: string): string {
+  const n = parseInt(roomNumber, 10);
+  if (isNaN(n)) return 'standard';
+  if (n >= 1 && n <= 3)  return 'city_view';
+  if (n >= 4 && n <= 6)  return 'standard';
+  if (n >= 7 && n <= 9)  return 'suite';
+  if (n === 10)          return 'family';
+  return 'standard';
+}
+
 // ─── Gallery Category Map ────────────────────────────────────────────────────
 
 /** Maps Indonesian category names to English display names */

@@ -1,7 +1,7 @@
 'use client';
 
 import { useNotifications } from '@/providers/NotificationProvider';
-import { Bell, CalendarCheck } from 'lucide-react';
+import { Bell, CalendarCheck, CheckCircle2 } from 'lucide-react';
 import { useState } from 'react';
 
 export default function NotificationBell() {
@@ -52,7 +52,11 @@ export default function NotificationBell() {
                   >
                     <div className="flex gap-3 items-start">
                       <div className="mt-1 p-2 rounded-full bg-black border border-white/10">
-                        <CalendarCheck className="w-4 h-4 text-red-500" />
+                        {notif.type === 'payment_confirmed' ? (
+                          <CheckCircle2 className="w-4 h-4 text-green-400" />
+                        ) : (
+                          <CalendarCheck className="w-4 h-4 text-red-500" />
+                        )}
                       </div>
                       <div>
                         <p className="text-sm text-gray-200 leading-snug">

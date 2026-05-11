@@ -6,6 +6,7 @@ import { reservationRepository } from '../repositories/reservation.repository';
 import { stayRepository } from '../repositories/stay.repository';
 import { transactionRepository } from '../repositories/transaction.repository';
 import { userRepository } from '../repositories/user.repository';
+import { toTitleCase } from '../utils';
 
 export async function getAllGuests() {
   return guestRepository.findAll({ orderBy: { createdAt: 'desc' } });
@@ -74,7 +75,7 @@ export async function createGuest(input: CreateGuestInput) {
 
     const guest = await guestRepository.create({
       data: {
-        fullName,
+        fullName: toTitleCase(fullName),
         idNumber: identity,
         phone: phone || '000000',
         email,
@@ -173,6 +174,7 @@ export async function createGuest(input: CreateGuestInput) {
 }
 
 export async function updateGuest(id: string, data: any) {
+  if (data.fullName) data.fullName = toTitleCase(data.fullName);
   return guestRepository.update(id, { data });
 }
 
