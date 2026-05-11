@@ -173,7 +173,7 @@ export default function AdminReportsPage() {
     const H = doc.internal.pageSize.getHeight();
 
     const today = new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
-    const totalPendapatan = incomes.reduce((sum, item) => sum + item.amount, 0);
+    const totalPendapatan = incomes.reduce((sum: number, item: any) => sum + item.amount, 0);
 
     // -- Header band
     doc.setFillColor('#0f172a');

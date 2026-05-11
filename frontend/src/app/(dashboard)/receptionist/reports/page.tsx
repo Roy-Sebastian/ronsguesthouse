@@ -117,7 +117,7 @@ export default function ReceptionistReportsPage() {
     const W = doc.internal.pageSize.getWidth();
     const H = doc.internal.pageSize.getHeight();
     const today = new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
-    const totalPendapatan = incomes.reduce((sum, item) => sum + item.amount, 0);
+    const totalPendapatan = incomes.reduce((sum: number, item: any) => sum + item.amount, 0);
     doc.setFillColor('#0f172a'); doc.rect(0, 0, W, 50, 'F');
     doc.setFillColor('#C4922A'); doc.rect(0, 47, W, 3, 'F');
     doc.setFont('helvetica', 'bold'); doc.setFontSize(20); doc.setTextColor('#FFFFFF');
