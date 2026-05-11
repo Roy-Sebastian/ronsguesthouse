@@ -1,11 +1,12 @@
 'use client';
 
 import { apiFetch } from '@/lib/apiFetch';
-
+import { useSession } from '@/lib/auth-client';
+import { defaultRoleMatrix } from '@/lib/rbac';
 import { Eye, Globe, Mail, Pencil, Phone, Plus, Search, Trash2, Users, X } from 'lucide-react';
 import { fmtDate } from '@/lib/formatters';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
@@ -165,6 +166,23 @@ export default function AdminGuestsPage() {
   const [showEdit, setShowEdit] = useState(false);
   const [editTarget, setEditTarget] = useState<any>(null);
   const [editForm, setEditForm] = useState(EMPTY_FORM);
+  const { data: session } = useSession();
+
+  // Compute effective permissions — same logic as DashboardLayout
+  const canDeleteGuest = useMemo(() => {
+    const userRole = (session?.user as any)?.role;
+    if (userRole === 'superadmin') return true;
+    const roleDefaults = defaultRoleMatrix[userRole] || {};
+    const custom: string[] = Array.isArray((session?.user as any)?.permissions)
+      ? (session?.user as any).permissions
+      : [];
+    const effective = new Set([
+      ...Object.entries(roleDefaults).filter(([, v]) => v).map(([k]) => k),
+      ...custom,
+    ]);
+    return effective.has('guest.delete');
+  }, [session?.user]);
+
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -409,13 +427,15 @@ export default function AdminGuestsPage() {
                       >
                         <Pencil size={15} />
                       </button>
-                      <button
-                        onClick={() => setDeleteTarget(g)}
-                        className="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-500 hover:text-white text-red-400 flex items-center justify-center transition-all"
-                        title="Hapus"
-                      >
-                        <Trash2 size={15} />
-                      </button>
+                      {canDeleteGuest && (
+                        <button
+                          onClick={() => setDeleteTarget(g)}
+                          className="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-500 hover:text-white text-red-400 flex items-center justify-center transition-all"
+                          title="Hapus"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
