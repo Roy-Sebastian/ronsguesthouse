@@ -1,0 +1,95 @@
+classDiagram
+    direction LR
+
+    class BetterAuth {
+        +api.getSession(headers)
+        +handler
+    }
+
+    class AuthMiddleware {
+        +requireAuth(req, res, next)
+        +requirePermission(perm)
+        -getEffectivePermissionSet(req)
+        -hasAnyPermission(req, perms)
+    }
+
+    class RBAC {
+        +DEFAULT_ROLE_MATRIX
+        +ALL_PERMISSION_KEYS
+        +PERMISSION_GROUPS
+        +loadRoleMatrix()
+        +saveRoleMatrix(matrix)
+        +getRolePermissions(role)
+        +normalizeRoleMatrix(matrix)
+    }
+
+    class AuditLogMiddleware {
+        +auditLogMiddleware(req, res, next)
+        -deriveEntity(path)
+        -writeAuditLog(record)
+    }
+
+    class UploadMiddleware {
+        +uploadSingle(field)
+        +uploadMultiple(field, max)
+        -multerStorage
+    }
+
+    class RateLimitMiddleware {
+        +publicRateLimiter
+        +guestAccessRateLimiter
+    }
+
+    class ErrorMiddleware {
+        +globalErrorHandler(err, req, res, next)
+    }
+
+    class AppError {
+        +String message
+        +Number statusCode
+        +Boolean isOperational
+    }
+
+    class CryptoUtil {
+        +encryptKtp(plain)
+        +decryptKtp(cipher)
+        +hashKtp(plain)
+    }
+
+    class SocketIO {
+        +getIO()
+        +initSocket(server)
+    }
+
+    class ExpireReservationsJob {
+        +start()
+        -tick()
+    }
+
+    class AuditLogRepository {
+        +findAll(args, tx)
+        +create(args, tx)
+    }
+
+    class ReservationRepository {
+        +findAll(args, tx)
+        +update(id, args, tx)
+    }
+
+    class GuestService {
+        +createGuest(input)
+        +updateGuest(id, data)
+    }
+
+    class ReservationService {
+        +createReservation(input)
+    }
+
+    AuthMiddleware --> BetterAuth
+    AuthMiddleware --> RBAC
+    AuditLogMiddleware --> AuditLogRepository
+    AuditLogMiddleware --> SocketIO
+    ErrorMiddleware --> AppError
+    GuestService --> CryptoUtil
+    ReservationService --> SocketIO
+    ExpireReservationsJob --> ReservationRepository

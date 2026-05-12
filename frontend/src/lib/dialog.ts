@@ -1,22 +1,22 @@
-import Swal from 'sweetalert2';
+import swal from '@/lib/swal';
 
 export async function confirmAction(
   text: string,
   title = 'Konfirmasi',
 ): Promise<boolean> {
-  const result = await Swal.fire({
+  const result = await swal.fire({
     title,
     text,
     icon: 'warning',
     showCancelButton: true,
-    confirmButtonText: 'Ya',
+    confirmButtonText: 'Ya, Lanjutkan',
     cancelButtonText: 'Batal',
   });
   return result.isConfirmed;
 }
 
 export function showError(message: string, title = 'Gagal') {
-  return Swal.fire({
+  return swal.fire({
     title,
     text: message,
     icon: 'error',

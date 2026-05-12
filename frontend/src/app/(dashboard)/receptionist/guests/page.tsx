@@ -1,7 +1,8 @@
 'use client';
 
 import { apiFetch } from '@/lib/apiFetch';
-
+import { showToast } from '@/lib/toast';
+import { confirmAction } from '@/lib/dialog';
 import { Eye, Globe, Mail, Pencil, Phone, Plus, Search, Trash2, Users, X } from 'lucide-react';
 import { fmtDate } from '@/lib/formatters';
 
@@ -165,8 +166,6 @@ export default function ReceptionistGuestsPage() {
   const [showEdit, setShowEdit] = useState(false);
   const [editTarget, setEditTarget] = useState<any>(null);
   const [editForm, setEditForm] = useState(EMPTY_FORM);
-  const [deleteTarget, setDeleteTarget] = useState<any>(null);
-  const [deleting, setDeleting] = useState(false);
 
   const fetchGuests = async () => {
     setLoading(true);
@@ -199,6 +198,7 @@ export default function ReceptionistGuestsPage() {
       }
       setShowCreate(false);
       setForm(EMPTY_FORM);
+      showToast('Tamu berhasil ditambahkan');
       fetchGuests();
     } catch {
       setError('Terjadi kesalahan');
@@ -238,6 +238,7 @@ export default function ReceptionistGuestsPage() {
       }
       setShowEdit(false);
       setEditTarget(null);
+      showToast('Data tamu berhasil diperbarui');
       fetchGuests();
     } catch {
       setError('Terjadi kesalahan');
@@ -245,17 +246,19 @@ export default function ReceptionistGuestsPage() {
     setSaving(false);
   };
 
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
-    setDeleting(true);
+  const handleDelete = async (id: string, name: string) => {
+    const ok = await confirmAction(
+      `Hapus tamu ${name} secara permanen? Tindakan ini tidak bisa dibatalkan.`
+    );
+    if (!ok) return;
+
     try {
-      await apiFetch(`/guests/${deleteTarget.id}`, { method: 'DELETE' });
+      await apiFetch(`/guests/${id}`, { method: 'DELETE' });
+      showToast('Tamu berhasil dihapus', 'success');
+      fetchGuests();
     } catch {
-      // ignore
+      showToast('Gagal menghapus tamu', 'error');
     }
-    setDeleteTarget(null);
-    setDeleting(false);
-    fetchGuests();
   };
 
   const filtered = guests.filter((g) => {
@@ -410,7 +413,7 @@ export default function ReceptionistGuestsPage() {
                         <Pencil size={15} />
                       </button>
                       <button
-                        onClick={() => setDeleteTarget(g)}
+                        onClick={() => handleDelete(g.id, g.fullName)}
                         className="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-500 hover:text-white text-red-400 flex items-center justify-center transition-all"
                         title="Hapus"
                       >
@@ -527,33 +530,6 @@ export default function ReceptionistGuestsPage() {
       )}
 
       {/* Delete Confirm */}
-      {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-8">
-            <h2 className="page-title mb-2">Hapus Tamu</h2>
-            <p className="text-sm text-gray-500 mb-6">
-              Hapus <span className="font-semibold text-dark">{deleteTarget.fullName}</span>? Tindakan ini tidak bisa dibatalkan.
-            </p>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setDeleteTarget(null)}
-                className="flex-1 py-2.5 border border-gray-200 text-gray-600 font-semibold text-sm rounded-xl hover:bg-gray-50 transition-colors"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={deleting}
-                className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white font-semibold text-sm rounded-xl transition-colors disabled:opacity-60"
-              >
-                {deleting ? 'Menghapus...' : 'Hapus'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

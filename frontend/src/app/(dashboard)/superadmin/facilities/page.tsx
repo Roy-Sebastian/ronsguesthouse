@@ -1,7 +1,7 @@
 'use client';
 
 import { apiFetch } from '@/lib/apiFetch';
-
+import { showToast } from '@/lib/toast';
 import { confirmAction } from '@/lib/dialog';
 import {
   AirVent, Bath, Bed, BookOpen, Building2, Bus, Car, Coffee,
@@ -110,6 +110,7 @@ export default function SuperadminFacilitiesPage() {
       });
     }
     setSaving(false);
+    showToast(editItem ? 'Fasilitas berhasil diperbarui' : 'Fasilitas berhasil ditambahkan');
     closeModal();
     fetchFacilities();
   };
@@ -118,6 +119,7 @@ export default function SuperadminFacilitiesPage() {
     const ok = await confirmAction('Hapus fasilitas umum ini?');
     if (!ok) return;
     await apiFetch(`/facilities/${id}`, { method: 'DELETE' });
+    showToast('Fasilitas berhasil dihapus');
     fetchFacilities();
   };
 

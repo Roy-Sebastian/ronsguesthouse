@@ -1,6 +1,6 @@
-﻿'use client';
+'use client';
 import { apiFetch } from '@/lib/apiFetch';
-
+import { showToast } from '@/lib/toast';
 import { formatRp } from '@/lib/formatters';
 import {
   Calendar,
@@ -202,6 +202,7 @@ export default function AdminPricingPage() {
       setSelectedDates(new Set());
       setBulkPrice('');
       setShowBulkModal(false);
+      showToast('Harga override berhasil disimpan');
     } catch (err) {
       await swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal menyimpan harga' });
     }
@@ -220,6 +221,7 @@ export default function AdminPricingPage() {
     if (!result.isConfirmed) return;
     try {
       await apiFetch(`/pricing/${id}`, { method: 'DELETE' });
+      showToast('Override harga berhasil dihapus');
       await fetchPrices();
     } catch {
       await swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal menghapus harga' });
@@ -250,6 +252,7 @@ export default function AdminPricingPage() {
       );
       await fetchPrices();
       setSelectedDates(new Set());
+      showToast('Override harga berhasil direset');
     } catch {
       await swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal menghapus harga' });
     }

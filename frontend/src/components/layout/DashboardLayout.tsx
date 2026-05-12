@@ -34,6 +34,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useMemo, useState, useEffect } from 'react';
 import NotificationBell from '@/components/features/NotificationBell';
 import ReservationToastPopup from '@/components/features/ReservationToastPopup';
+import ToastContainer from '@/components/ui/ToastContainer';
 
 interface NavItem {
   label: string;
@@ -360,6 +361,7 @@ export default function DashboardLayout({
       </div>
 
       <ReservationToastPopup />
+      <ToastContainer />
 
       {showLogoutConfirm && (
         <div className="fixed inset-0 bg-black/60 z-[999] flex items-center justify-center p-4 backdrop-blur-sm animate-fadeIn">

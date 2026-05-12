@@ -1,0 +1,369 @@
+classDiagram
+    direction LR
+
+    class User {
+        +String id
+        +String name
+        +String email
+        +Boolean emailVerified
+        +String image
+        +String phone
+        +RoleType role
+        +String[] permissions
+        +Boolean isActive
+        +DateTime createdAt
+        +DateTime updatedAt
+    }
+
+    class Session {
+        +String id
+        +DateTime expiresAt
+        +String token
+        +String ipAddress
+        +String userAgent
+        +String userId
+    }
+
+    class Account {
+        +String id
+        +String accountId
+        +String providerId
+        +String userId
+        +String accessToken
+        +String refreshToken
+        +String idToken
+        +DateTime accessTokenExpiresAt
+        +DateTime refreshTokenExpiresAt
+        +String scope
+        +String password
+    }
+
+    class Verification {
+        +String id
+        +String identifier
+        +String value
+        +DateTime expiresAt
+    }
+
+    class Guest {
+        +String id
+        +String fullName
+        +String idNumber
+        +String idNumberEncrypted
+        +String idNumberHash
+        +String phone
+        +String email
+        +String address
+        +String nationality
+        +String category
+        +DateTime dateOfBirth
+        +String gender
+        +String previousLocation
+        +String nextDestination
+        +String purposeOfVisit
+        +String signature
+    }
+
+    class Room {
+        +String id
+        +String roomNumber
+        +RoomType roomType
+        +Int floor
+        +Int capacity
+        +Int stock
+        +Decimal pricePerNight
+        +String description
+        +String imageUrl
+        +RoomStatus status
+    }
+
+    class RoomPrice {
+        +String id
+        +String roomId
+        +DateTime date
+        +Decimal price
+    }
+
+    class Amenity {
+        +String id
+        +String name
+        +String icon
+        +String description
+    }
+
+    class RoomAmenity {
+        +String roomId
+        +String amenityId
+    }
+
+    class Facility {
+        +String id
+        +String name
+        +String description
+        +String icon
+        +String imageUrl
+    }
+
+    class Reservation {
+        +String id
+        +String bookingCode
+        +String guestId
+        +String roomId
+        +String userId
+        +DateTime checkInDate
+        +DateTime checkOutDate
+        +Int numGuests
+        +String specialRequests
+        +ReservationStatus status
+        +DateTime expiresAt
+        +Decimal totalPrice
+    }
+
+    class Stay {
+        +String id
+        +String reservationId
+        +DateTime checkInAt
+        +DateTime checkOutAt
+        +String notes
+    }
+
+    class Transaction {
+        +String id
+        +String reservationId
+        +Decimal amount
+        +PaymentMethod paymentMethod
+        +PaymentStatus paymentStatus
+        +DateTime paymentDate
+        +String snapToken
+        +String midtransOrderId
+        +String notes
+    }
+
+    class Income {
+        +String id
+        +String userId
+        +String transactionId
+        +Decimal amount
+        +String description
+        +DateTime incomeDate
+        +IncomeSourceType sourceType
+        +String referenceId
+        +PaymentMethod paymentMethod
+        +IncomeStatus status
+        +String guestNameSnapshot
+        +String roomNumberSnapshot
+        +IncomeType type
+    }
+
+    class Expense {
+        +String id
+        +String userId
+        +ExpenseCategory category
+        +Decimal amount
+        +String description
+        +DateTime expenseDate
+        +String receiptUrl
+    }
+
+    class Review {
+        +String id
+        +String guestId
+        +String reservationId
+        +Int rating
+        +String comment
+        +ReviewStatus status
+    }
+
+    class Gallery {
+        +String id
+        +String title
+        +String imageUrl
+        +String description
+        +String category
+        +Boolean isActive
+        +Int sortOrder
+    }
+
+    class ContactMessage {
+        +String id
+        +String name
+        +String email
+        +String phone
+        +String subject
+        +String message
+        +Boolean isRead
+    }
+
+    class AuditLog {
+        +String id
+        +String userId
+        +String action
+        +String entity
+        +String entityId
+        +Json oldValues
+        +Json newValues
+        +String ipAddress
+        +String userAgent
+        +DateTime createdAt
+    }
+
+    class AddOn {
+        +String id
+        +String name
+        +String category
+        +Decimal price
+        +Int stock
+        +String description
+        +String imageUrl
+    }
+
+    class BookingAddOn {
+        +String id
+        +String reservationId
+        +String addOnId
+        +Int quantity
+        +Decimal totalPrice
+    }
+
+    class Penalty {
+        +String id
+        +String reservationId
+        +PenaltyType type
+        +Decimal amount
+        +String description
+        +String notes
+        +PenaltyStatus status
+        +String createdByUserId
+    }
+
+    class RoleType {
+        <<enum>>
+        superadmin
+        admin
+        receptionist
+        guest
+    }
+    class RoomStatus {
+        <<enum>>
+        available
+        occupied
+        maintenance
+        inactive
+    }
+    class RoomType {
+        <<enum>>
+        standard
+        deluxe
+        suite
+        family
+    }
+    class ReservationStatus {
+        <<enum>>
+        pending
+        confirmed
+        expired
+        checked_in
+        checked_out
+        cancelled
+        no_show
+    }
+    class PaymentStatus {
+        <<enum>>
+        pending
+        paid
+        refunded
+        cancelled
+    }
+    class PaymentMethod {
+        <<enum>>
+        cash
+        transfer
+        qris
+        credit_card
+        debit_card
+    }
+    class ExpenseCategory {
+        <<enum>>
+        utilities
+        supplies
+        maintenance
+        salary
+        marketing
+        other
+    }
+    class ReviewStatus {
+        <<enum>>
+        pending
+        approved
+        rejected
+    }
+    class PenaltyType {
+        <<enum>>
+        late_checkout
+        room_damage
+        missing_items
+        other
+    }
+    class PenaltyStatus {
+        <<enum>>
+        pending
+        paid
+        waived
+    }
+    class IncomeSourceType {
+        <<enum>>
+        RESERVATION
+        EXTERNAL
+    }
+    class IncomeStatus {
+        <<enum>>
+        paid
+        pending
+        failed
+        refunded
+    }
+    class IncomeType {
+        <<enum>>
+        income
+        refund
+    }
+
+    User "1" --> "*" Session
+    User "1" --> "*" Account
+    User "1" --> "*" Reservation : staffRecorded
+    User "1" --> "*" Expense
+    User "1" --> "*" Income
+    User "1" --> "*" AuditLog
+    User "1" --> "*" Penalty : createdBy
+
+    Guest "1" --> "*" Reservation
+    Guest "1" --> "*" Review
+
+    Room "1" --> "*" Reservation
+    Room "1" --> "*" RoomPrice
+    Room "1" --> "*" RoomAmenity
+    Amenity "1" --> "*" RoomAmenity
+
+    Reservation "1" --> "0..1" Stay
+    Reservation "1" --> "0..1" Transaction
+    Reservation "1" --> "*" BookingAddOn
+    Reservation "1" --> "0..1" Review
+    Reservation "1" --> "*" Penalty
+
+    Transaction "1" --> "0..1" Income
+    AddOn "1" --> "*" BookingAddOn
+
+    User --> RoleType
+    Room --> RoomStatus
+    Room --> RoomType
+    Reservation --> ReservationStatus
+    Transaction --> PaymentStatus
+    Transaction --> PaymentMethod
+    Income --> IncomeSourceType
+    Income --> IncomeStatus
+    Income --> IncomeType
+    Income --> PaymentMethod
+    Expense --> ExpenseCategory
+    Review --> ReviewStatus
+    Penalty --> PenaltyType
+    Penalty --> PenaltyStatus

@@ -112,11 +112,25 @@ summary {
   }
 }
 
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
 .animate-fadeIn {
   animation: fadeIn 0.15s ease;
 }
 .animate-slideUp {
   animation: slideUp 0.2s ease;
+}
+.animate-slideInRight {
+  animation: slideInRight 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .animate-spin-custom {
   animation: spin 0.7s linear infinite;
@@ -124,6 +138,7 @@ summary {
 .animate-bounce-y {
   animation: bounce-y 2s infinite;
 }
+
 
 /* Reusable component classes via @apply */
 @layer components {
@@ -214,4 +229,21 @@ summary {
   border: 3px solid rgba(153, 27, 27, 0.25);
   border-top-color: #991b1b;
   animation: spin 0.7s linear infinite;
+}
+
+/* Toast animations */
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(2rem) scale(0.95); }
+  to   { opacity: 1; transform: translateX(0)    scale(1);    }
+}
+@keyframes shrink {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.animate-slideInRight {
+  animation: slideInRight 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }

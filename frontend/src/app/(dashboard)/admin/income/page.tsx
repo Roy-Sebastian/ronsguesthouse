@@ -1,7 +1,7 @@
-﻿'use client';
+'use client';
 import swal from '@/lib/swal';
 import { apiFetch } from '@/lib/apiFetch';
-
+import { showToast } from '@/lib/toast';
 
 import { confirmAction } from '@/lib/dialog';
 import { formatRp, fmtDate } from '@/lib/formatters';
@@ -108,6 +108,7 @@ export default function AdminIncomePage() {
     }
     setSaving(false);
     setShowModal(false);
+    showToast(editIncome ? 'Pendapatan berhasil diperbarui' : 'Pendapatan berhasil dicatat');
     fetchData();
   };
 
@@ -115,6 +116,7 @@ export default function AdminIncomePage() {
     const ok = await confirmAction('Hapus catatan pendapatan ini?');
     if (!ok) return;
     await apiFetch(`/incomes/${id}`, { method: 'DELETE' });
+    showToast('Pendapatan berhasil dihapus');
     fetchData();
   };
 

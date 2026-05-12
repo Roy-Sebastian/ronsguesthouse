@@ -1,6 +1,6 @@
-﻿'use client';
+'use client';
 import { apiFetch } from '@/lib/apiFetch';
-
+import { showToast } from '@/lib/toast';
 import { AlertCircle, CreditCard, Plus, Search, X } from 'lucide-react';
 import { formatRp } from '@/lib/formatters';
 
@@ -68,6 +68,7 @@ export default function ReceptionistTransactionsPage() {
         throw new Error(err.error || 'Gagal mencatat transaksi');
       }
       setShowModal(false);
+      showToast('Pembayaran berhasil dicatat');
       fetchData();
     } catch (err: any) {
       await swal.fire({ icon: 'error', title: 'Gagal', text: err.message });

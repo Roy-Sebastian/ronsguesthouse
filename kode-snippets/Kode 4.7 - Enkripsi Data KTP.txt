@@ -1,0 +1,1 @@
+Sistem melindungi nomor KTP tamu menggunakan enkripsi AES-256-GCM sehingga data sensitif tidak tersimpan dalam bentuk teks biasa di database. Selain enkripsi untuk penyimpanan, nomor KTP juga disimpan sebagai hash SHA-256 yang digunakan khusus untuk keperluan pencarian tanpa perlu membuka enkripsi. Potongan kode enkripsi data KTP dapat dilihat pada Kode 4.7 berikut.

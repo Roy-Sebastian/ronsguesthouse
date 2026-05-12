@@ -1,6 +1,6 @@
-﻿'use client';
+'use client';
 import { apiFetch } from '@/lib/apiFetch';
-
+import { showToast } from '@/lib/toast';
 import { confirmAction } from '@/lib/dialog';
 import {
   AirVent, Bath, Bed, BookOpen, Building2, Bus, Car, Coffee,
@@ -110,6 +110,7 @@ export default function AdminFacilitiesPage() {
     }
     setSaving(false);
     closeModal();
+    showToast(editItem ? 'Fasilitas berhasil diperbarui' : 'Fasilitas berhasil ditambahkan');
     fetchFacilities();
   };
 
@@ -117,6 +118,7 @@ export default function AdminFacilitiesPage() {
     const ok = await confirmAction('Hapus fasilitas umum ini?');
     if (!ok) return;
     await apiFetch(`/facilities/${id}`, { method: 'DELETE' });
+    showToast('Fasilitas berhasil dihapus');
     fetchFacilities();
   };
 

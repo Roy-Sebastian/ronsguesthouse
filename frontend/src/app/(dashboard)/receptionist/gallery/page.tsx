@@ -1,7 +1,7 @@
-﻿'use client';
+'use client';
 import { apiFetch } from '@/lib/apiFetch';
+import { showToast } from '@/lib/toast';
 import swal from '@/lib/swal';
-
 import { Image as ImageIcon, Trash2, Upload, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -58,6 +58,7 @@ export default function AdminGalleryPage() {
       setPreview('');
       setCaption('');
       setCategory('umum');
+      showToast('Foto berhasil diupload');
       fetchGallery();
     } catch (err: any) {
       await swal.fire({ icon: 'error', title: 'Gagal', text: err.message });
@@ -81,6 +82,7 @@ export default function AdminGalleryPage() {
         method: 'DELETE',
       });
       fetchGallery();
+      showToast('Foto berhasil dihapus');
     } catch (e: any) {
       await swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal menghapus' });
     }

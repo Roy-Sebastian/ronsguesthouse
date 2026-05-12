@@ -1,5 +1,6 @@
 'use client';
 import { apiFetch } from '@/lib/apiFetch';
+import { showToast } from '@/lib/toast';
 
 import { AlertTriangle, Clock, LogIn, LogOut, Search, PackagePlus } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -58,6 +59,7 @@ export default function ReceptionistStaysPage() {
         const err = await res.json();
         throw new Error(err.error || 'Gagal check-in');
       }
+      showToast('Check-in berhasil');
       fetchStays();
     } catch (e: any) {
       await swal.fire({ icon: 'error', title: 'Gagal', text: e.message });
@@ -75,6 +77,7 @@ export default function ReceptionistStaysPage() {
         const err = await res.json();
         throw new Error(err.error || 'Gagal check-out');
       }
+      showToast('Check-out berhasil');
       fetchStays();
     } catch (e: any) {
       await swal.fire({ icon: 'error', title: 'Gagal', text: e.message });

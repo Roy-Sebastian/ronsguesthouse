@@ -1,6 +1,7 @@
-﻿"use client";
+"use client";
 
 import { apiFetch } from '@/lib/apiFetch';
+import { showToast } from '@/lib/toast';
 import { TableActions } from '@/components/ui/TableActions';
 import { confirmAction } from '@/lib/dialog';
 import { Plus, Search, Trash2, ShoppingBag, X } from 'lucide-react';
@@ -53,6 +54,7 @@ export default function SuperadminAddonsPage() {
     });
     setSaving(false);
     setShowModal(false);
+    showToast(editId ? 'Layanan berhasil diperbarui' : 'Layanan berhasil ditambahkan');
     setEditId(null);
     setForm({ name: '', category: 'general', price: 0, description: '' });
     fetchAddons();
@@ -62,6 +64,7 @@ export default function SuperadminAddonsPage() {
     const ok = await confirmAction('Hapus layanan ini?');
     if (!ok) return;
     await apiFetch('/addons/master/' + id, { method: 'DELETE' });
+    showToast('Layanan berhasil dihapus');
     fetchAddons();
   };
 

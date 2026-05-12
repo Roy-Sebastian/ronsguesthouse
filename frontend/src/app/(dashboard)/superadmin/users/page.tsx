@@ -1,5 +1,6 @@
 'use client';
 import { apiFetch } from '@/lib/apiFetch';
+import { showToast } from '@/lib/toast';
 import { permissionsGroups } from '@/lib/rbac';
 import { TableActions } from '@/components/ui/TableActions';
 
@@ -227,6 +228,7 @@ export default function SuperadminUsersPage() {
       }
 
       setShowModal(false);
+      showToast(editId ? 'Pengguna berhasil diperbarui' : 'Pengguna berhasil ditambahkan');
       fetchUsers();
     } catch (err: any) {
       setError(err.message);

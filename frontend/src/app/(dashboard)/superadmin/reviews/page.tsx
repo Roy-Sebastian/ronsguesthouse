@@ -1,5 +1,6 @@
-﻿"use client";
+"use client";
 import { apiFetch } from '@/lib/apiFetch';
+import { showToast } from '@/lib/toast';
 
 import { useEffect, useState } from "react";
 import { Star, CheckCircle, XCircle, Trash2, Clock } from "lucide-react";
@@ -36,6 +37,7 @@ export default function AdminReviewsPage() {
     });
     if (!result.isConfirmed) return;
     await apiFetch(`/reviews/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) });
+    showToast(status === 'approved' ? 'Ulasan berhasil disetujui' : 'Ulasan berhasil ditolak');
     fetchReviews();
   };
 
@@ -50,6 +52,7 @@ export default function AdminReviewsPage() {
     });
     if (!result.isConfirmed) return;
     await apiFetch(`/reviews/${id}`, { method: "DELETE" });
+    showToast('Ulasan berhasil dihapus');
     fetchReviews();
   };
 

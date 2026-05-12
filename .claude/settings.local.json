@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rtk git *)",
+      "Bash(rtk gain *)",
+      "Bash(rtk proxy *)",
+      "Bash(rtk npm *)",
+      "Bash(rtk grep *)",
+      "Bash(rtk read *)",
+      "Bash(xargs grep *)",
+      "Bash(rtk prisma *)",
+      "Bash(node -e ' *)",
+      "Bash(awk '{print $2}')",
+      "Bash(ssh *)",
+      "Bash(rtk curl *)"
+    ]
+  }
+}

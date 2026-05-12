@@ -1,7 +1,7 @@
-﻿'use client';
+'use client';
 import swal from '@/lib/swal';
 import { apiFetch } from '@/lib/apiFetch';
-
+import { showToast } from '@/lib/toast';
 import { confirmAction } from '@/lib/dialog';
 import {
   AirVent, Bath, Bed, BookOpen, Building2, Bus, Car, Coffee,
@@ -85,6 +85,7 @@ export default function AdminAmenitiesPage() {
     setSaving(false);
     setShowModal(false);
     setForm({ name: '', description: '', icon: '' });
+    showToast('Amenitas berhasil ditambahkan');
     fetchAmenities();
   };
 
@@ -94,6 +95,7 @@ export default function AdminAmenitiesPage() {
     );
     if (!ok) return;
     await apiFetch(`/amenities/${id}`, { method: 'DELETE' });
+    showToast('Amenitas berhasil dihapus');
     fetchAmenities();
   };
 

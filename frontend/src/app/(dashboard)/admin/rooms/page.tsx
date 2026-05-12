@@ -1,6 +1,6 @@
 'use client';
 import { apiFetch } from '@/lib/apiFetch';
-
+import { showToast } from '@/lib/toast';
 import { TableActions } from '@/components/ui/TableActions';
 import { formatRp } from '@/lib/formatters';
 import { ROOM_TYPE_LABEL, getRoomTypeByNumber } from '@/lib/constants';
@@ -134,6 +134,7 @@ export default function AdminRoomsPage() {
     }
     setSaving(false);
     setShowModal(false);
+    showToast(editRoom ? 'Kamar berhasil diperbarui' : 'Kamar berhasil ditambahkan');
     fetchData();
   };
 
@@ -148,6 +149,7 @@ export default function AdminRoomsPage() {
     });
     if (!result.isConfirmed) return;
     await apiFetch(`/rooms/${id}`, { method: 'DELETE' });
+    showToast('Kamar berhasil dihapus');
     fetchData();
   };
 

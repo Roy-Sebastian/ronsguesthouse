@@ -1,6 +1,6 @@
 'use client';
 import { apiFetch } from '@/lib/apiFetch';
-
+import { showToast } from '@/lib/toast';
 import { TableActions } from '@/components/ui/TableActions';
 import { STATUS_BADGE, STATUS_LABEL } from '@/lib/constants';
 
@@ -178,6 +178,7 @@ export default function SuperadminReservationsPage() {
       }
       setShowModal(false);
       resetForm();
+      showToast(editId ? 'Reservasi berhasil diperbarui' : 'Reservasi berhasil dibuat');
       fetchAll();
     } catch {
       setError('Terjadi kesalahan');
@@ -216,6 +217,7 @@ export default function SuperadminReservationsPage() {
         throw new Error(d.error || 'Gagal menghapus reservasi');
       }
       fetchAll();
+      showToast('Reservasi berhasil dihapus');
     } catch (e: any) {
       await swal.fire({ icon: 'error', title: 'Gagal', text: e.message });
     }

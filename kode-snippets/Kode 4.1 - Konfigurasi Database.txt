@@ -1,0 +1,1 @@
+Sistem menggunakan Prisma ORM dengan adapter pg untuk mengelola koneksi ke database PostgreSQL melalui connection pool, sehingga koneksi tidak dibuka ulang pada setiap request. Pola singleton diterapkan agar hanya ada satu instance PrismaClient yang aktif selama server berjalan. Potongan kode konfigurasi database dapat dilihat pada Kode 4.1 berikut.

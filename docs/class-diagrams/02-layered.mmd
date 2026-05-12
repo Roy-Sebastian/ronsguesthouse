@@ -1,0 +1,525 @@
+classDiagram
+    direction TB
+
+    class ReservationController {
+        +getReminders(req, res, next)
+        +getAll(req, res, next)
+        +getById(req, res, next)
+        +create(req, res, next)
+        +update(req, res, next)
+        +remove(req, res, next)
+        +addAddOn(req, res, next)
+        +removeAddOn(req, res, next)
+    }
+    class ReservationService {
+        +getReminders()
+        +getAll()
+        +getById(id)
+        +createReservation(input)
+        +updateReservation(id, body)
+        +deleteReservation(id)
+        +addReservationAddOn(args)
+        +removeReservationAddOn(rid, baid, userId)
+    }
+    class ReservationRepository {
+        +findAll(args, tx)
+        +findById(id, args, tx)
+        +create(args, tx)
+        +update(id, args, tx)
+        +delete(id, tx)
+        +count(args, tx)
+    }
+
+    class RoomController {
+        +getRooms(req, res)
+        +createRoom(req, res)
+        +getRoomById(req, res)
+        +updateRoom(req, res)
+        +deleteRoom(req, res)
+    }
+    class RoomService {
+        +getRooms(status, type, checkIn, checkOut)
+        +getRoomById(id)
+        +createRoom(input)
+        +updateRoom(id, body)
+        +deleteRoom(id)
+    }
+    class RoomRepository {
+        +findAll(args, tx)
+        +findById(id, args, tx)
+        +create(args, tx)
+        +update(id, args, tx)
+        +delete(id, tx)
+        +count(args, tx)
+    }
+
+    class GuestController {
+        +getAll(req, res)
+        +getById(req, res)
+        +create(req, res)
+        +update(req, res)
+        +remove(req, res)
+        +updateIdentity(req, res)
+        +revealIdentity(req, res)
+    }
+    class GuestService {
+        +getAllGuests()
+        +getGuestById(id)
+        +createGuest(input)
+        +updateGuest(id, data)
+        +deleteGuest(id)
+    }
+    class GuestRepository {
+        +findAll(args, tx)
+        +findById(id, args, tx)
+        +findByPhoneOrEmail(args, tx)
+        +create(args, tx)
+        +update(id, args, tx)
+        +delete(id, tx)
+    }
+
+    class TransactionController {
+        +getAll(req, res)
+        +getById(req, res)
+        +create(req, res)
+        +update(req, res)
+        +remove(req, res)
+    }
+    class TransactionService {
+        +getAllTransactions()
+        +getTransactionById(id)
+        +createTransaction(input)
+        +updateTransaction(id, body)
+        +deleteTransaction(id)
+    }
+    class TransactionRepository {
+        +findAll(args, tx)
+        +findById(id, args, tx)
+        +create(args, tx)
+        +update(id, args, tx)
+        +delete(id, tx)
+    }
+
+    class MidtransController {
+        +charge(req, res)
+        +createSnapToken(req, res)
+        +notification(req, res)
+        +checkPaymentStatus(req, res)
+        +publicForceSync(req, res)
+    }
+    class MidtransService {
+        +createSnapToken(input)
+        +chargeMidtrans(amount)
+        +checkTransactionStatus(orderId)
+        +processMidtransNotification(body)
+    }
+
+    class StayController {
+        +getAll(req, res)
+        +getById(req, res)
+        +create(req, res)
+        +update(req, res)
+        +remove(req, res)
+    }
+    class StayService {
+        +getAllStays(page, limit, search, status)
+        +getStayById(id)
+        +createStay(rid, notes)
+        +updateStay(id, body)
+        +deleteStay(id)
+    }
+    class StayRepository {
+        +findAll(args, tx)
+        +findById(id, args, tx)
+        +create(args, tx)
+        +update(id, args, tx)
+        +delete(id, tx)
+    }
+
+    class PenaltyController {
+        +getAll(req, res)
+        +getById(req, res)
+        +create(req, res)
+        +update(req, res)
+        +remove(req, res)
+    }
+    class PenaltyService {
+        +getAllPenalties(filters)
+        +getPenaltyById(id)
+        +createPenalty(body, userId)
+        +updatePenalty(id, body, userId)
+        +deletePenalty(id)
+    }
+    class PenaltyRepository {
+        +findAll(args, tx)
+        +findById(id, args, tx)
+        +create(args, tx)
+        +update(id, args, tx)
+        +delete(id, tx)
+    }
+
+    class PricingController {
+        +calculatePrice(req, res)
+        +checkAvailability(req, res)
+        +getRoomPrices(req, res)
+        +upsertPrice(req, res)
+        +bulkUpsertPrices(req, res)
+        +deletePrice(req, res)
+    }
+    class PricingService {
+        +validateBookingInput(...)
+        +checkRoomAvailability(...)
+        +calculateBookingPrice(...)
+        +getRoomPrices(rid, start, end)
+        +upsertRoomPrice(rid, date, price)
+        +bulkUpsertRoomPrices(...)
+        +deleteRoomPrice(id)
+    }
+    class RoomPriceRepository {
+        +findAll(args, tx)
+        +findUnique(args, tx)
+        +upsert(args, tx)
+        +delete(id, tx)
+    }
+
+    class IncomeController {
+        +getAll(req, res)
+        +getById(req, res)
+        +create(req, res)
+        +update(req, res)
+        +remove(req, res)
+    }
+    class IncomeService {
+        +getAllIncomes(filter, search)
+        +getIncomeById(id)
+        +createIncome(data, userId)
+        +updateIncome(id, data)
+        +deleteIncome(id)
+    }
+    class IncomeRepository {
+        +findAll(args, tx)
+        +findById(id, args, tx)
+        +create(args, tx)
+        +update(id, args, tx)
+        +delete(id, tx)
+    }
+
+    class ExpenseController {
+        +getAll(req, res)
+        +getById(req, res)
+        +create(req, res)
+        +update(req, res)
+        +remove(req, res)
+    }
+    class ExpenseService {
+        +getAllExpenses(filter)
+        +getExpenseById(id)
+        +createExpense(body, userId)
+        +updateExpense(id, data)
+        +deleteExpense(id)
+    }
+    class ExpenseRepository {
+        +findAll(args, tx)
+        +findById(id, args, tx)
+        +create(args, tx)
+        +update(id, args, tx)
+        +delete(id, tx)
+    }
+
+    class ReviewController {
+        +getAll(req, res)
+        +getById(req, res)
+        +create(req, res)
+        +update(req, res)
+        +remove(req, res)
+        +getApprovedReviews(req, res)
+        +submitPublicReview(req, res)
+    }
+    class ReviewService {
+        +getAllReviews(where, include)
+        +getReviewById(id)
+        +createReview(data)
+        +updateReview(id, data)
+        +deleteReview(id)
+        +getApprovedReviews(limit)
+        +submitPublicReview(...)
+    }
+    class ReviewRepository {
+        +findAll(args, tx)
+        +findById(id, args, tx)
+        +create(args, tx)
+        +update(id, args, tx)
+        +delete(id, tx)
+    }
+
+    class AddOnController {
+        +getAll(req, res)
+        +getAvailable(req, res)
+        +create(req, res)
+        +update(req, res)
+        +remove(req, res)
+    }
+    class AddOnService {
+        +getAllAddOns()
+        +validateAddOnInput(input)
+        +createAddOn(body)
+        +deleteAddOn(id)
+        +updateAddOn(id, body)
+    }
+    class AddOnRepository {
+        +findAll(args, tx)
+        +findById(id, args, tx)
+        +create(args, tx)
+        +update(id, args, tx)
+        +delete(id, tx)
+    }
+
+    class AmenityController {
+        +getAll(req, res)
+        +getById(req, res)
+        +create(req, res)
+        +update(req, res)
+        +remove(req, res)
+    }
+    class AmenityService {
+        +getAllAmenities()
+        +getAmenityById(id)
+        +createAmenity(data)
+        +updateAmenity(id, data)
+        +deleteAmenity(id)
+    }
+    class AmenityRepository {
+        +findAll(args, tx)
+        +findById(id, args, tx)
+        +create(args, tx)
+        +update(id, args, tx)
+        +delete(id, tx)
+    }
+
+    class FacilityController {
+        +getAll(req, res)
+        +getById(req, res)
+        +create(req, res)
+        +update(req, res)
+        +remove(req, res)
+    }
+    class FacilityService {
+        +getAllFacilities()
+        +getFacilityById(id)
+        +createFacility(data)
+        +updateFacility(id, data)
+        +deleteFacility(id)
+    }
+    class FacilityRepository {
+        +findAll(args, tx)
+        +findById(id, args, tx)
+        +create(args, tx)
+        +update(id, args, tx)
+        +delete(id, tx)
+    }
+
+    class GalleryController {
+        +getAll(req, res)
+        +getById(req, res)
+        +create(req, res)
+        +update(req, res)
+        +remove(req, res)
+    }
+    class GalleryService {
+        +getAllGallery(filters)
+        +getGalleryById(id)
+        +createGallery(data)
+        +updateGallery(id, data)
+        +deleteGallery(id)
+    }
+    class GalleryRepository {
+        +findAll(args, tx)
+        +findById(id, args, tx)
+        +create(args, tx)
+        +update(id, args, tx)
+        +delete(id, tx)
+    }
+
+    class MessageController {
+        +getAll(req, res)
+        +getById(req, res)
+        +create(req, res)
+        +update(req, res)
+        +remove(req, res)
+        +submitPublic(req, res)
+    }
+    class MessageService {
+        +getAllMessages()
+        +getMessageById(id)
+        +createMessage(data)
+        +updateMessage(id, data)
+        +deleteMessage(id)
+        +submitPublicMessage(body)
+    }
+    class MessageRepository {
+        +findAll(args, tx)
+        +findById(id, args, tx)
+        +create(args, tx)
+        +update(id, args, tx)
+        +delete(id, tx)
+    }
+
+    class UserController {
+        +getAll(req, res)
+        +getById(req, res)
+        +create(req, res)
+        +update(req, res)
+        +remove(req, res)
+    }
+    class UserService {
+        +getAllUsers(search)
+        +getUserById(id)
+        +createUser(body, ctx)
+        +updateUser(id, body, ctx)
+        +deleteUser(id, ctx)
+    }
+    class UserRepository {
+        +findAll(args, tx)
+        +findById(id, args, tx)
+        +findByEmail(email, args, tx)
+        +create(args, tx)
+        +update(id, args, tx)
+        +updateMany(args, tx)
+        +delete(id, tx)
+        +count(args, tx)
+    }
+
+    class RolesController {
+        +getRoles(req, res)
+        +updateRoles(req, res)
+    }
+    class RolesService {
+        +getRoles()
+        +updateRoles(body)
+    }
+
+    class AuditLogController {
+        +getAll(req, res)
+        +getById(req, res)
+        +create(req, res)
+        +update(req, res)
+        +remove(req, res)
+    }
+    class AuditLogService {
+        +getAllAuditLogs(page, limit)
+        +getAuditLogById(id)
+        +createAuditLog(data)
+        +updateAuditLog(id, data)
+        +deleteAuditLog(id)
+    }
+    class AuditLogRepository {
+        +findAll(args, tx)
+        +findById(id, args, tx)
+        +create(args, tx)
+        +update(id, args, tx)
+        +delete(id, tx)
+    }
+
+    class DashboardController {
+        +getStats(req, res)
+    }
+    class DashboardService {
+        +getDashboardStats()
+    }
+    class DashboardRepository {
+        +getCounts(tx)
+        +getRevenue(tx)
+        +getRecentActivity(tx)
+    }
+
+    class PublicBookingController {
+        +publicBook(req, res)
+        +checkBookingAccess(req, res)
+        +forgotBooking(req, res)
+    }
+
+    class EmailService {
+        +sendBookingConfirmation(data)
+        +sendBookingRecovery(email, reservations)
+    }
+
+    class UploadController {
+        +uploadFile(req, res)
+    }
+
+    class DbRepository {
+        +transaction(fn)
+        +prisma
+    }
+
+    ReservationController --> ReservationService
+    ReservationController --> PricingService
+    ReservationService --> ReservationRepository
+    ReservationService --> DbRepository
+    ReservationService --> EmailService
+
+    RoomController --> RoomService
+    RoomService --> RoomRepository
+
+    GuestController --> GuestService
+    GuestService --> GuestRepository
+
+    TransactionController --> TransactionService
+    TransactionService --> TransactionRepository
+    TransactionService --> IncomeRepository
+
+    MidtransController --> MidtransService
+    MidtransService --> TransactionRepository
+    MidtransService --> ReservationRepository
+    MidtransService --> IncomeRepository
+
+    StayController --> StayService
+    StayService --> StayRepository
+    StayService --> ReservationRepository
+
+    PenaltyController --> PenaltyService
+    PenaltyService --> PenaltyRepository
+
+    PricingController --> PricingService
+    PricingService --> RoomRepository
+    PricingService --> RoomPriceRepository
+    PricingService --> ReservationRepository
+
+    IncomeController --> IncomeService
+    IncomeService --> IncomeRepository
+
+    ExpenseController --> ExpenseService
+    ExpenseService --> ExpenseRepository
+
+    ReviewController --> ReviewService
+    ReviewService --> ReviewRepository
+
+    AddOnController --> AddOnService
+    AddOnService --> AddOnRepository
+
+    AmenityController --> AmenityService
+    AmenityService --> AmenityRepository
+
+    FacilityController --> FacilityService
+    FacilityService --> FacilityRepository
+
+    GalleryController --> GalleryService
+    GalleryService --> GalleryRepository
+
+    MessageController --> MessageService
+    MessageService --> MessageRepository
+
+    UserController --> UserService
+    UserService --> UserRepository
+
+    RolesController --> RolesService
+
+    AuditLogController --> AuditLogService
+    AuditLogService --> AuditLogRepository
+
+    DashboardController --> DashboardService
+    DashboardService --> DashboardRepository
+
+    PublicBookingController --> ReservationService
+    PublicBookingController --> MidtransService
+    PublicBookingController --> EmailService

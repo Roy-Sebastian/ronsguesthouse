@@ -1,0 +1,1 @@
+Sistem menerapkan middleware requireAuth sebagai penjaga akses yang dijalankan sebelum setiap handler pada route terproteksi. Middleware ini memvalidasi session token dari cookie request, memeriksa status aktif akun pengguna, dan menyimpan data pengguna ke req.user untuk digunakan oleh handler berikutnya. Potongan kode middleware autentikasi dapat dilihat pada Kode 4.6 berikut.

@@ -1,7 +1,7 @@
-﻿'use client';
+'use client';
 import swal from '@/lib/swal';
 import { apiFetch } from '@/lib/apiFetch';
-
+import { showToast } from '@/lib/toast';
 import { confirmAction } from '@/lib/dialog';
 import { formatRp } from '@/lib/formatters';
 
@@ -98,6 +98,7 @@ export default function AdminExpensesPage() {
     }
     setSaving(false);
     setShowModal(false);
+    showToast(editExpense ? 'Pengeluaran berhasil diperbarui' : 'Pengeluaran berhasil dicatat');
     fetchExpenses();
   };
 
@@ -105,6 +106,7 @@ export default function AdminExpensesPage() {
     const ok = await confirmAction('Hapus catatan pengeluaran ini?');
     if (!ok) return;
     await apiFetch(`/expenses/${id}`, { method: 'DELETE' });
+    showToast('Pengeluaran berhasil dihapus');
     fetchExpenses();
   };
 

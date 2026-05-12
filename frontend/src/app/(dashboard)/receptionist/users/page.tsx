@@ -1,6 +1,6 @@
-﻿'use client';
+'use client';
 import { apiFetch } from '@/lib/apiFetch';
-
+import { showToast } from '@/lib/toast';
 import { TableActions } from '@/components/ui/TableActions';
 
 import {
@@ -161,6 +161,7 @@ export default function SuperadminUsersPage() {
     if (!result.isConfirmed) return;
     try {
       await apiFetch(`/users/${id}`, { method: 'DELETE' });
+      showToast('Pengguna berhasil dihapus');
       fetchUsers();
     } catch {
       await swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal menghapus' });
@@ -256,6 +257,7 @@ export default function SuperadminUsersPage() {
       }
 
       setShowModal(false);
+      showToast(editId ? 'Pengguna berhasil diperbarui' : 'Pengguna berhasil ditambahkan');
       fetchUsers();
     } catch (err: any) {
       setError(err.message);

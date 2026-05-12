@@ -1,6 +1,7 @@
-﻿'use client';
+'use client';
 import swal from '@/lib/swal';
 import { apiFetch } from '@/lib/apiFetch';
+import { showToast } from '@/lib/toast';
 
 import { confirmAction } from '@/lib/dialog';
 import {
@@ -85,6 +86,7 @@ export default function SuperadminAmenitiesPage() {
     setSaving(false);
     setShowModal(false);
     setForm({ name: '', description: '', icon: '' });
+    showToast('Amenitas berhasil ditambahkan');
     fetchAmenities();
   };
 
@@ -94,6 +96,7 @@ export default function SuperadminAmenitiesPage() {
     );
     if (!ok) return;
     await apiFetch(`/amenities/${id}`, { method: 'DELETE' });
+    showToast('Amenitas berhasil dihapus');
     fetchAmenities();
   };
 

@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls frontend/src/app/guest)",
+      "Bash(ls frontend/src/app/check-booking)",
+      "Bash(ls frontend/src/app/register)",
+      "Read(//c/Users/roybas/.claude/skills/canvas-design/**)",
+      "Read(//d/KULIAH/Tugas Akhir/Code Tugas Akhir/**)",
+      "Bash(rtk ls *)",
+      "Bash(rtk find *)",
+      "Read(//d/KULIAH/Tugas Akhir/Code Tugas Akhir/ronsguesthouse - PRODUCTION/**)",
+      "Bash(rtk npx *)",
+      "Bash(grep -E \"\\\\.\\(tsx|ts|jsx\\)$\")"
+    ]
+  }
+}
