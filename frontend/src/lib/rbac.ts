@@ -4,7 +4,7 @@ export const permissionsGroups = [
     permissions: [{ key: 'dashboard.view', label: 'Lihat Dashboard' }],
   },
   {
-    group: 'Manajemen Pengguna',
+    group: 'Pengguna',
     permissions: [
       { key: 'user.view', label: 'Lihat Pengguna' },
       { key: 'user.create', label: 'Tambah Pengguna' },
@@ -13,7 +13,7 @@ export const permissionsGroups = [
     ],
   },
   {
-    group: 'Tamu',
+    group: 'Manajemen Tamu',
     permissions: [
       { key: 'guest.view', label: 'Lihat Tamu' },
       { key: 'guest.create', label: 'Tambah Tamu' },
@@ -32,7 +32,7 @@ export const permissionsGroups = [
     ],
   },
   {
-    group: 'Menginap',
+    group: 'Check-In/Out & Add-On',
     permissions: [
       { key: 'stay.view', label: 'Lihat Data Menginap' },
       { key: 'stay.create', label: 'Check-In / Buat Stay' },
@@ -41,7 +41,7 @@ export const permissionsGroups = [
     ],
   },
   {
-    group: 'Transaksi',
+    group: 'Transaksi Pembayaran',
     permissions: [
       { key: 'transaction.view', label: 'Lihat Transaksi' },
       { key: 'transaction.create', label: 'Buat Transaksi' },
@@ -97,7 +97,7 @@ export const permissionsGroups = [
     ],
   },
   {
-    group: 'Sistem',
+    group: 'Manajemen Sistem',
     permissions: [
       { key: 'audit.view', label: 'Lihat Audit Log' },
       { key: 'role.manage', label: 'Kelola Role & Hak Akses' },

@@ -68,29 +68,30 @@ export const getApprovedReviews = async (_req: Request, res: Response) => {
 
 /**
  * POST /api/public/reviews
- * Submit a review from a guest using their booking code + email.
- * Body: { bookingCode, email, rating, comment }
+ * Submit a review from a guest using their booking code.
+ * Body: { bookingCode, rating, comment?, displayName? }
+ * No email required — booking code alone identifies the reservation.
  */
 export const submitPublicReview = async (req: Request, res: Response) => {
 	try {
-		const { bookingCode, email, rating, comment } = req.body;
+		const { bookingCode, rating, comment, displayName } = req.body;
 
-		if (!bookingCode || !email || !rating || !comment) {
+		if (!bookingCode || !rating) {
 			return res.status(400).json({
-				error: 'bookingCode, email, rating, dan comment wajib diisi',
+				error: 'bookingCode dan rating wajib diisi',
 			});
 		}
 
 		const review = await ReviewsService.submitPublicReview(
 			String(bookingCode),
-			String(email),
 			Number(rating),
-			String(comment),
+			comment ? String(comment) : undefined,
+			displayName ? String(displayName) : undefined,
 		);
 
 		res.status(201).json({
 			success: true,
-			message: 'Ulasan berhasil dikirim! Ulasan Anda akan ditinjau terlebih dahulu oleh admin.',
+			message: 'Review kamu sedang menunggu persetujuan admin',
 			review: { id: review.id, rating: review.rating, status: review.status },
 		});
 	} catch (error: any) {

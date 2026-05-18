@@ -1,6 +1,7 @@
 'use client';
 
 import { signOut, useSession } from '@/lib/auth-client';
+import { useRoleMatrix } from '@/lib/useRoleMatrix';
 import { defaultRoleMatrix } from '@/lib/rbac';
 import { confirmAction } from '@/lib/dialog';
 import { NotificationProvider, useNotifications } from '@/providers/NotificationProvider';
@@ -124,7 +125,10 @@ export default function DashboardLayout({
   const router = useRouter();
   const { data: session, isPending } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { reservationBadge, clearReservationBadge } = useNotifications();
+  const { reservationBadge, clearReservationBadge, reviewBadge, clearReviewBadge } = useNotifications();
+
+  // Live role matrix — fetched once from backend via shared hook (cached at module level)
+  const liveRoleMatrix = useRoleMatrix();
 
   // Auto-clear reservation badge when user visits any reservations page
   useEffect(() => {
@@ -133,6 +137,13 @@ export default function DashboardLayout({
     }
   }, [pathname, clearReservationBadge]);
 
+  // Auto-clear review badge when user visits reviews page
+  useEffect(() => {
+    if (pathname.includes('/reviews')) {
+      clearReviewBadge();
+    }
+  }, [pathname, clearReviewBadge]);
+
   // Prevent back-forward cache (BFCache) / Soft-Navigation from showing stale sensitive pages
   useEffect(() => {
     if (!isPending && !session) {
@@ -140,12 +151,14 @@ export default function DashboardLayout({
     }
   }, [session, isPending]);
 
-  // Permissions = role-based defaults (from defaultRoleMatrix, single source of truth)
-  // merged with any per-user custom overrides stored in session.
+  // Permissions = live role matrix from backend (fallback to hardcoded defaults).
+  // Merged with any per-user custom overrides stored in session.
   // Superadmin gets wildcard '*' so all nav items always pass hasPermission().
   const effectivePermissions = useMemo(() => {
     if ((session?.user as any)?.role === 'superadmin') return new Set(['*']);
-    const roleDefaults = defaultRoleMatrix[role] || {};
+    // Use live matrix from backend, otherwise fall back to hardcoded defaults
+    const activeMatrix = liveRoleMatrix ?? defaultRoleMatrix;
+    const roleDefaults = activeMatrix[role] || {};
     const rolekeys = Object.entries(roleDefaults)
       .filter(([, v]) => v)
       .map(([k]) => k);
@@ -153,7 +166,7 @@ export default function DashboardLayout({
       ? ((session?.user as any).permissions as string[])
       : [];
     return new Set([...rolekeys, ...custom]);
-  }, [role, session?.user]);
+  }, [role, session?.user, liveRoleMatrix]);
 
   // ── Variables & Derived State ──────────────────────────────────────────────
   const navSections = navByRole[role] || [];
@@ -271,9 +284,14 @@ export default function DashboardLayout({
                   pathname === item.href ||
                   (item.href !== `/${role}` && pathname.startsWith(item.href));
                 const Icon = item.icon;
-                // Show reservation badge on the reservations menu item
-                const showBadge =
-                  item.href === `/${role}/reservations` && reservationBadge > 0;
+                // Show badges based on route
+                const isReservation = item.href === `/${role}/reservations`;
+                const isReview = item.href === `/${role}/reviews`;
+                const showResBadge = isReservation && reservationBadge > 0;
+                const showRevBadge = isReview && reviewBadge > 0;
+                const showBadge = showResBadge || showRevBadge;
+                const badgeCount = showResBadge ? reservationBadge : showRevBadge ? reviewBadge : 0;
+
                 return (
                   <Link
                     key={item.href}
@@ -292,7 +310,7 @@ export default function DashboardLayout({
                     <span className="flex-1">{item.label}</span>
                     {showBadge && (
                       <span className="min-w-[1.1rem] h-[1.1rem] bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full px-1">
-                        {reservationBadge > 9 ? '9+' : reservationBadge}
+                        {badgeCount > 9 ? '9+' : badgeCount}
                       </span>
                     )}
                     {isActive && !showBadge && (

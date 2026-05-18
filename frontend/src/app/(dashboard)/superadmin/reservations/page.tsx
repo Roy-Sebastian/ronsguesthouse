@@ -1,6 +1,7 @@
 'use client';
 import { apiFetch } from '@/lib/apiFetch';
 import { showToast } from '@/lib/toast';
+import { confirmAction } from '@/lib/dialog';
 import { TableActions } from '@/components/ui/TableActions';
 import { STATUS_BADGE, STATUS_LABEL } from '@/lib/constants';
 
@@ -38,7 +39,6 @@ export default function SuperadminReservationsPage() {
   const [guestSearch, setGuestSearch] = useState('');
   const [guestDropdownOpen, setGuestDropdownOpen] = useState(false);
   const [priceOverride, setPriceOverride] = useState(false);
-  const [showPastConfirm, setShowPastConfirm] = useState(false);
   const [form, setForm] = useState({
     guestId: '',
     roomId: '',
@@ -118,7 +118,6 @@ export default function SuperadminReservationsPage() {
     setGuestSearch('');
     setGuestDropdownOpen(false);
     setPriceOverride(false);
-    setShowPastConfirm(false);
     setError('');
   };
 
@@ -146,7 +145,6 @@ export default function SuperadminReservationsPage() {
   const executeSave = async (isPast: boolean) => {
     setSaving(true);
     setError('');
-    setShowPastConfirm(false);
     try {
       const url = editId ? `/api/reservations/${editId}` : '/api/reservations';
       const method = editId ? 'PATCH' : 'POST';
@@ -192,7 +190,10 @@ export default function SuperadminReservationsPage() {
     if (!editId) {
       const today = new Date().toISOString().split('T')[0];
       if (form.checkOutDate && form.checkOutDate < today) {
-        setShowPastConfirm(true);
+        const ok = await confirmAction('Tanggal check-out yang diinput sudah berlalu. Apakah ini reservasi yang belum tercatat? Reservasi akan langsung dikonfirmasi dan masuk ke riwayat.', 'Reservasi Masa Lalu?');
+        if (ok) {
+          await executeSave(true);
+        }
         return;
       }
     }
@@ -763,35 +764,7 @@ export default function SuperadminReservationsPage() {
         </div>
       )}
 
-      {/* Past Reservation Confirmation */}
-      {showPastConfirm && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-            <h3 className="text-base font-bold text-gray-900 mb-3">Reservasi Masa Lalu?</h3>
-            <p className="text-sm text-gray-600 mb-5">
-              Tanggal check-out yang diinput sudah berlalu. Apakah ini reservasi yang belum tercatat?
-              Reservasi akan langsung dikonfirmasi dan masuk ke riwayat.
-            </p>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setShowPastConfirm(false)}
-                className="flex-1 py-2.5 border border-gray-200 text-gray-600 font-semibold text-sm rounded-xl hover:bg-gray-50 transition-colors"
-              >
-                Kembali ke Form
-              </button>
-              <button
-                type="button"
-                onClick={() => executeSave(true)}
-                disabled={saving}
-                className="flex-1 py-2.5 bg-primary text-white font-semibold text-sm rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
-              >
-                {saving ? 'Menyimpan...' : 'Ya, Simpan ke Riwayat'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Past Reservation Confirmation removed */}
 
       {/* View Detail Modal */}
       {viewReservation && (

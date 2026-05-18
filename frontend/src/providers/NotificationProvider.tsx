@@ -13,7 +13,7 @@ import { io, Socket } from 'socket.io-client';
 
 export interface Notification {
   id: string;
-  type: 'new_booking' | 'reminder' | 'payment_confirmed';
+  type: 'new_booking' | 'reminder' | 'payment_confirmed' | 'new_review';
   message: string;
   date: Date;
   read: boolean;
@@ -38,28 +38,42 @@ export interface PaymentToast {
   confirmedAt: string;
 }
 
+export interface ReviewToast {
+  id: string;
+  displayName: string;
+  rating: number;
+}
+
 interface NotificationContextValue {
   notifications: Notification[];
   unreadCount: number;
   reservationBadge: number;
+  reviewBadge: number;
   toasts: ReservationToast[];
   paymentToasts: PaymentToast[];
+  reviewToasts: ReviewToast[];
   markAllRead: () => void;
   clearReservationBadge: () => void;
+  clearReviewBadge: () => void;
   dismissToast: (id: string) => void;
   dismissPaymentToast: (id: string) => void;
+  dismissReviewToast: (id: string) => void;
 }
 
 const NotificationContext = createContext<NotificationContextValue>({
   notifications: [],
   unreadCount: 0,
   reservationBadge: 0,
+  reviewBadge: 0,
   toasts: [],
   paymentToasts: [],
+  reviewToasts: [],
   markAllRead: () => {},
   clearReservationBadge: () => {},
+  clearReviewBadge: () => {},
   dismissToast: () => {},
   dismissPaymentToast: () => {},
+  dismissReviewToast: () => {},
 });
 
 function playNotificationSound() {
@@ -97,8 +111,10 @@ export function NotificationProvider({
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [reservationBadge, setReservationBadge] = useState(0);
+  const [reviewBadge, setReviewBadge] = useState(0);
   const [toasts, setToasts] = useState<ReservationToast[]>([]);
   const [paymentToasts, setPaymentToasts] = useState<PaymentToast[]>([]);
+  const [reviewToasts, setReviewToasts] = useState<ReviewToast[]>([]);
   const socketRef = useRef<Socket | null>(null);
 
   const addNotification = useCallback((notif: Notification) => {
@@ -109,6 +125,9 @@ export function NotificationProvider({
     setUnreadCount((c) => c + 1);
     if (notif.type === 'new_booking') {
       setReservationBadge((c) => c + 1);
+    }
+    if (notif.type === 'new_review') {
+      setReviewBadge((c) => c + 1);
     }
   }, []);
 
@@ -214,6 +233,29 @@ export function NotificationProvider({
       }, 10000);
     });
 
+    socket.on('new_review', (data: any) => {
+      const toastId = 'review_' + (data.id ?? Date.now());
+      addNotification({
+        id: toastId,
+        type: 'new_review',
+        message: `Ulasan baru dari ${data.displayName || 'Tamu Anonim'} dengan rating ${data.rating} Bintang`,
+        date: new Date(),
+        read: false,
+      });
+
+      const reviewToast: ReviewToast = {
+        id: toastId,
+        displayName: data.displayName || 'Tamu Anonim',
+        rating: data.rating || 5,
+      };
+      setReviewToasts((prev) => [...prev, reviewToast]);
+      playNotificationSound();
+
+      setTimeout(() => {
+        setReviewToasts((prev) => prev.filter((t) => t.id !== toastId));
+      }, 8000);
+    });
+
     return () => {
       clearTimeout(connectTimer);
       socket.disconnect();
@@ -230,6 +272,10 @@ export function NotificationProvider({
     setReservationBadge(0);
   }, []);
 
+  const clearReviewBadge = useCallback(() => {
+    setReviewBadge(0);
+  }, []);
+
   const dismissToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
@@ -238,18 +284,26 @@ export function NotificationProvider({
     setPaymentToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
+  const dismissReviewToast = useCallback((id: string) => {
+    setReviewToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
   return (
     <NotificationContext.Provider
       value={{
         notifications,
         unreadCount,
         reservationBadge,
+        reviewBadge,
         toasts,
         paymentToasts,
+        reviewToasts,
         markAllRead,
         clearReservationBadge,
+        clearReviewBadge,
         dismissToast,
         dismissPaymentToast,
+        dismissReviewToast,
       }}
     >
       {children}

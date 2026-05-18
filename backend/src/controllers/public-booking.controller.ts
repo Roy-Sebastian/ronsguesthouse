@@ -256,8 +256,9 @@ export const checkBookingAccess = async (req: Request, res: Response) => {
       include: {
         guest: { select: { fullName: true, email: true, phone: true } },
         room: { select: { roomType: true, roomNumber: true, imageUrl: true } },
-        transaction: { select: { paymentStatus: true, amount: true } }
-      }
+        transaction: { select: { paymentStatus: true, amount: true } },
+        review: { select: { id: true, status: true } },
+      } as any,
     });
 
     // Audit Logging
@@ -291,7 +292,11 @@ export const checkBookingAccess = async (req: Request, res: Response) => {
         ...resAny.guest,
         email: resAny.guest?.email ? maskEmail(resAny.guest.email) : null,
         phone: resAny.guest?.phone ? maskPhone(resAny.guest.phone) : null,
-      }
+      },
+      // Expose whether a review exists without revealing its content
+      hasReview: !!resAny.review,
+      reviewStatus: resAny.review?.status || null,
+      review: undefined, // strip the full review object
     };
 
     res.json(maskedReservation);

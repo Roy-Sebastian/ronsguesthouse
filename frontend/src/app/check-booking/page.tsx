@@ -4,7 +4,7 @@ import PublicNavbar from '@/components/layout/PublicNavbar';
 import PublicFooter from '@/components/layout/PublicFooter';
 import ScrollReveal from '@/components/ui/ScrollReveal';
 import { BACKEND_URL } from '@/lib/constants';
-import { Search, Loader2, Star } from 'lucide-react';
+import { Search, Loader2, Star, CheckCircle, Clock } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 
@@ -186,18 +186,44 @@ function CheckBookingContent() {
             </div>
           )}
 
-          {/* Review CTA for checked_out */}
+          {/* Review CTA — only for checked_out reservations */}
           {result && result.status === 'checked_out' && (
-            <div className="mt-6 bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] ring-1 ring-neutral-200/50 p-6 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <Star className="w-8 h-8 text-yellow-500 mx-auto mb-3" />
-              <h3 className="text-lg font-bold text-neutral-900 mb-2">How was your experience?</h3>
-              <p className="text-sm text-neutral-500 mb-4">Share your review to help us improve our service</p>
-              <a
-                href={`/review?code=${encodeURIComponent(result.bookingCode)}`}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-red-800 hover:bg-red-900 text-white rounded-xl font-medium tracking-wide transition-all shadow-lg shadow-red-900/20 text-sm"
-              >
-                <Star className="w-4 h-4" /> Write a Review
-              </a>
+            <div className="mt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              {!result.hasReview ? (
+                // Guest hasn't reviewed yet → show CTA
+                <div className="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] ring-1 ring-neutral-200/50 p-6 text-center">
+                  <Star className="w-8 h-8 text-yellow-500 mx-auto mb-3" />
+                  <h3 className="text-lg font-bold text-neutral-900 mb-2">Bagaimana pengalaman Anda?</h3>
+                  <p className="text-sm text-neutral-500 mb-4">Bagikan ulasan untuk membantu kami meningkatkan layanan</p>
+                  <a
+                    href={`/review?code=${encodeURIComponent(result.bookingCode)}`}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-red-800 hover:bg-red-900 text-white rounded-xl font-medium tracking-wide transition-all shadow-lg shadow-red-900/20 text-sm"
+                  >
+                    <Star className="w-4 h-4" /> Tulis Ulasan
+                  </a>
+                </div>
+              ) : result.reviewStatus === 'pending' ? (
+                // Review submitted but awaiting moderation
+                <div className="bg-amber-50 rounded-2xl ring-1 ring-amber-200 p-6 text-center">
+                  <Clock className="w-8 h-8 text-amber-500 mx-auto mb-3" />
+                  <h3 className="text-lg font-bold text-amber-800 mb-1">Ulasan Sedang Ditinjau</h3>
+                  <p className="text-sm text-amber-600">Ulasan kamu sedang menunggu persetujuan admin sebelum ditampilkan.</p>
+                </div>
+              ) : result.reviewStatus === 'approved' ? (
+                // Review approved and live
+                <div className="bg-green-50 rounded-2xl ring-1 ring-green-200 p-6 text-center">
+                  <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-3" />
+                  <h3 className="text-lg font-bold text-green-800 mb-1">Ulasan Sudah Tampil</h3>
+                  <p className="text-sm text-green-600">Terima kasih! Ulasan kamu sudah tampil di halaman utama kami.</p>
+                </div>
+              ) : (
+                // Review rejected
+                <div className="bg-neutral-100 rounded-2xl ring-1 ring-neutral-200 p-6 text-center">
+                  <Star className="w-8 h-8 text-neutral-400 mx-auto mb-3" />
+                  <h3 className="text-lg font-bold text-neutral-700 mb-1">Ulasan Tidak Dapat Ditampilkan</h3>
+                  <p className="text-sm text-neutral-500">Ulasan kamu tidak memenuhi pedoman kami dan tidak dapat dipublikasikan.</p>
+                </div>
+              )}
             </div>
           )}
         </div>

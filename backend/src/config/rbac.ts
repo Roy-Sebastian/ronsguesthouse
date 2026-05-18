@@ -7,7 +7,7 @@ export const PERMISSION_GROUPS = [
     permissions: [{ key: 'dashboard.view', label: 'Lihat Dashboard' }],
   },
   {
-    group: 'Manajemen Pengguna',
+    group: 'Pengguna',
     permissions: [
       { key: 'user.view', label: 'Lihat Pengguna' },
       { key: 'user.create', label: 'Tambah Pengguna' },
@@ -16,7 +16,7 @@ export const PERMISSION_GROUPS = [
     ],
   },
   {
-    group: 'Tamu',
+    group: 'Manajemen Tamu',
     permissions: [
       { key: 'guest.view', label: 'Lihat Tamu' },
       { key: 'guest.create', label: 'Tambah Tamu' },
@@ -35,7 +35,7 @@ export const PERMISSION_GROUPS = [
     ],
   },
   {
-    group: 'Menginap',
+    group: 'Check-In/Out & Add-On',
     permissions: [
       { key: 'stay.view', label: 'Lihat Data Menginap' },
       { key: 'stay.create', label: 'Check-In / Buat Stay' },
@@ -44,7 +44,7 @@ export const PERMISSION_GROUPS = [
     ],
   },
   {
-    group: 'Transaksi',
+    group: 'Transaksi Pembayaran',
     permissions: [
       { key: 'transaction.view', label: 'Lihat Transaksi' },
       { key: 'transaction.create', label: 'Buat Transaksi' },
@@ -100,7 +100,7 @@ export const PERMISSION_GROUPS = [
     ],
   },
   {
-    group: 'Sistem',
+    group: 'Manajemen Sistem',
     permissions: [
       { key: 'audit.view', label: 'Lihat Audit Log' },
       { key: 'role.manage', label: 'Kelola Role & Hak Akses' },
@@ -294,7 +294,8 @@ export const saveRoleMatrix = (matrix: RoleMatrix) => {
     fs.mkdirSync(dir, { recursive: true });
   }
   fs.writeFileSync(ROLES_FILE, JSON.stringify(matrix, null, 2));
-  _matrixCache = matrix;
+  // Invalidate cache so the next read picks up the newly saved matrix
+  _matrixCache = null;
 };
 
 export const getRolePermissions = (role?: string): string[] => {

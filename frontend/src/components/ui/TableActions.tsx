@@ -1,6 +1,6 @@
 import { Eye, Edit, Trash2 } from 'lucide-react';
 import { useSession } from '@/lib/auth-client';
-import { defaultRoleMatrix } from '@/lib/rbac';
+import { useRoleMatrix } from '@/lib/useRoleMatrix';
 import { useMemo } from 'react';
 
 interface TableActionsProps {
@@ -24,22 +24,25 @@ export function TableActions({
 }: TableActionsProps) {
   const { data: session } = useSession();
   const user = session?.user;
+  const roleMatrix = useRoleMatrix();
 
   const permissions = useMemo(() => {
     if (!user) return new Set<string>();
     const role = (user as any).role || 'guest';
+    if (role === 'superadmin') return new Set(['*']);
+
     const custom = Array.isArray((user as any).permissions)
       ? ((user as any).permissions as string[])
       : [];
 
     let base: string[] = [];
-    if (defaultRoleMatrix[role]) {
-      base = Object.keys(defaultRoleMatrix[role]).filter(
-        (key) => defaultRoleMatrix[role][key],
+    if (roleMatrix[role]) {
+      base = Object.keys(roleMatrix[role]).filter(
+        (key) => roleMatrix[role][key],
       );
     }
     return new Set([...base, ...custom]);
-  }, [user]);
+  }, [user, roleMatrix]);
 
   const hasPerm = (required?: string) => {
     if (!required) return false;
@@ -88,3 +91,4 @@ export function TableActions({
     </div>
   );
 }
+

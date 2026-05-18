@@ -395,7 +395,8 @@ model Review {
   guestId       String
   reservationId String?      @unique
   rating        Int // 1-5
-  comment       String
+  displayName   String?      // Custom display name; defaults to "Tamu Anonim"
+  comment       String?      // Optional review text
   status        ReviewStatus @default(pending)
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
