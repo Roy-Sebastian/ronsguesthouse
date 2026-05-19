@@ -10,6 +10,7 @@ import { useEffect, useState } from 'react';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
+import { useHasPermission } from '@/lib/useHasPermission';
 
 const WORLD_COUNTRIES = [
   'Afghanistan','Albania','Algeria','Andorra','Angola','Antigua and Barbuda','Argentina',
@@ -167,6 +168,10 @@ export default function SuperadminGuestsPage() {
   const [editTarget, setEditTarget] = useState<any>(null);
   const [editForm, setEditForm] = useState(EMPTY_FORM);
 
+  const canCreate = useHasPermission('guest.create');
+  const canEdit   = useHasPermission('guest.edit');
+  const canDelete = useHasPermission('guest.delete');
+
   const fetchGuests = async () => {
     setLoading(true);
     const data = await apiFetch(`/guests${search ? `?search=${search}` : ''}`)
@@ -301,9 +306,11 @@ export default function SuperadminGuestsPage() {
           <h1 className="page-title">Data Tamu</h1>
           <p className="page-subtitle">Kelola informasi tamu penginapan</p>
         </div>
-        <button onClick={() => { setError(''); setForm(EMPTY_FORM); setShowCreate(true); }} className="btn btn-primary btn-md">
-          <Plus size={16} /> <span>Tambah Tamu</span>
-        </button>
+        {canCreate && (
+          <button onClick={() => { setError(''); setForm(EMPTY_FORM); setShowCreate(true); }} className="btn btn-primary btn-md">
+            <Plus size={16} /> <span>Tambah Tamu</span>
+          </button>
+        )}
       </div>
 
       {/* Stats */}
@@ -405,20 +412,24 @@ export default function SuperadminGuestsPage() {
                       >
                         <Eye size={15} />
                       </button>
-                      <button
-                        onClick={() => openEdit(g)}
-                        className="w-8 h-8 rounded-lg bg-blue-50 hover:bg-blue-500 hover:text-white text-blue-500 flex items-center justify-center transition-all"
-                        title="Edit"
-                      >
-                        <Pencil size={15} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(g.id, g.fullName)}
-                        className="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-500 hover:text-white text-red-400 flex items-center justify-center transition-all"
-                        title="Hapus"
-                      >
-                        <Trash2 size={15} />
-                      </button>
+                      {canEdit && (
+                        <button
+                          onClick={() => openEdit(g)}
+                          className="w-8 h-8 rounded-lg bg-blue-50 hover:bg-blue-500 hover:text-white text-blue-500 flex items-center justify-center transition-all"
+                          title="Edit"
+                        >
+                          <Pencil size={15} />
+                        </button>
+                      )}
+                      {canDelete && (
+                        <button
+                          onClick={() => handleDelete(g.id, g.fullName)}
+                          className="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-500 hover:text-white text-red-400 flex items-center justify-center transition-all"
+                          title="Hapus"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
