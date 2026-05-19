@@ -367,7 +367,7 @@ export default function AdminGuestsPage() {
               <SortableHeader label="Negara" field="nationality" sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort} className="px-5 py-3.5 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100" />
               <SortableHeader label="Reservasi" field="_count.reservations" sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort} className="px-5 py-3.5 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100" />
               <SortableHeader label="Terdaftar" field="createdAt" sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort} className="px-5 py-3.5 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100" />
-              <th className="px-5 py-3.5 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100">Aksi</th>
+              <th className="px-5 py-3.5 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-right">Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -439,10 +439,10 @@ export default function AdminGuestsPage() {
         </table>
       </div>
 
-      {/* Guest Detail Drawer */}
+      {/* Guest Detail Popup */}
       {selected && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-sm" onClick={() => setSelected(null)}>
-          <div className="w-full max-w-md bg-white h-full overflow-hidden flex flex-col shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col">
             <div className="flex items-center justify-between px-8 pt-8 pb-4 border-b border-gray-100 shrink-0">
               <h2 className="page-title">Detail Tamu</h2>
               <button onClick={() => setSelected(null)} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center">
@@ -450,69 +450,77 @@ export default function AdminGuestsPage() {
               </button>
             </div>
             <div className="overflow-y-auto flex-1 px-8 py-6">
-            <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-100">
-              <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-primary to-primary-hover flex items-center justify-center text-white text-2xl font-bold">
-                {selected.fullName?.charAt(0).toUpperCase()}
+              <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-100">
+                <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-primary to-primary-hover flex items-center justify-center text-white text-2xl font-bold">
+                  {selected.fullName?.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <h3 className="font-semibold text-dark text-lg">{selected.fullName}</h3>
+                  <div className="text-xs text-gray-400">Tamu #{selected.id?.slice(0, 8)}</div>
+                </div>
               </div>
-              <div>
-                <h3 className="font-semibold text-dark text-lg">{selected.fullName}</h3>
-                <div className="text-xs text-gray-400">Tamu #{selected.id?.slice(0, 8)}</div>
-              </div>
-            </div>
-            <div className="space-y-4 text-sm">
-              {[
-                { Icon: Mail, label: 'Email', val: selected.email },
-                { Icon: Phone, label: 'Telepon', val: selected.phone },
-                {
-                  Icon: Globe,
-                  label: 'Negara',
-                  val: selected.category === 'Luar Negeri' ? (selected.nationality || 'Luar Negeri') : 'Indonesia',
-                },
-              ].map(
-                ({ Icon, label, val }) =>
-                  val && (
-                    <div key={label} className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-primary shrink-0">
-                        <Icon size={15} />
+              <div className="space-y-4 text-sm">
+                {[
+                  { Icon: Mail, label: 'Email', val: selected.email },
+                  { Icon: Phone, label: 'Telepon', val: selected.phone },
+                  {
+                    Icon: Globe,
+                    label: 'Negara',
+                    val: selected.category === 'Luar Negeri' ? (selected.nationality || 'Luar Negeri') : 'Indonesia',
+                  },
+                ].map(
+                  ({ Icon, label, val }) =>
+                    val && (
+                      <div key={label} className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-primary shrink-0">
+                          <Icon size={15} />
+                        </div>
+                        <div>
+                          <div className="text-xs text-gray-400 mb-0.5">{label}</div>
+                          <div className="text-gray-700">{val}</div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="text-xs text-gray-400 mb-0.5">{label}</div>
-                        <div className="text-gray-700">{val}</div>
-                      </div>
+                    ),
+                )}
+                {selected.idNumber && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-primary shrink-0">
+                      <span className="text-xs font-bold">ID</span>
                     </div>
-                  ),
-              )}
-              {selected.idNumber && (
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-primary shrink-0">
-                    <span className="text-xs font-bold">ID</span>
+                    <div>
+                      <div className="text-xs text-gray-400 mb-0.5">No. Identitas</div>
+                      <div className="text-gray-700">{selected.idNumber}</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-xs text-gray-400 mb-0.5">No. Identitas</div>
-                    <div className="text-gray-700">{selected.idNumber}</div>
+                )}
+              </div>
+              {selected.reservations?.length > 0 && (
+                <div className="mt-6 pt-6 border-t border-gray-100">
+                  <h4 className="font-semibold text-dark text-sm mb-3">
+                    Riwayat Reservasi ({selected.reservations.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {selected.reservations.map((r: any) => (
+                      <div key={r.id} className="bg-gray-50 rounded-xl px-3 py-2.5 text-xs text-gray-500 flex justify-between">
+                        <span>Kamar {r.room?.roomNumber}</span>
+                        <span>{new Date(r.checkInDate).toLocaleDateString('id-ID')}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
-            </div>
-            {selected.reservations?.length > 0 && (
-              <div className="mt-6 pt-6 border-t border-gray-100">
-                <h4 className="font-semibold text-dark text-sm mb-3">
-                  Riwayat Reservasi ({selected.reservations.length})
-                </h4>
-                <div className="space-y-2">
-                  {selected.reservations.map((r: any) => (
-                    <div key={r.id} className="bg-gray-50 rounded-xl px-3 py-2.5 text-xs text-gray-500 flex justify-between">
-                      <span>Kamar {r.room?.roomNumber}</span>
-                      <span>{new Date(r.checkInDate).toLocaleDateString('id-ID')}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+              <button
+                onClick={() => setSelected(null)}
+                className="mt-6 w-full py-2.5 border border-gray-200 text-gray-600 font-semibold text-sm rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                Tutup
+              </button>
             </div>
           </div>
         </div>
       )}
+
+
 
       {/* Create Modal */}
       {showCreate && (
