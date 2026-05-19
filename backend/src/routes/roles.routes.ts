@@ -5,7 +5,9 @@ import { requireAuth, requirePermission } from '../middlewares/auth.middleware';
 
 const router = Router();
 
-router.get('/', requireAuth, requirePermission('role.manage'), controller.getRoles);
+// Public read — all authenticated dashboard users need this to render their sidebar correctly
+router.get('/', requireAuth, controller.getRoles);
+// Write — restricted to users with role management permission
 router.post('/', requireAuth, requirePermission('role.manage'), controller.updateRoles);
 
 export default router;

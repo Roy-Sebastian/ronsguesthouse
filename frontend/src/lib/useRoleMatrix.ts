@@ -31,7 +31,13 @@ export function useRoleMatrix(): Record<string, Record<string, boolean>> {
       _fetchPromise = apiFetch('/roles')
         .then((res) => res.json())
         .then((data) => {
-          if (data && typeof data === 'object' && Object.keys(data).length > 0) {
+          // Validate it's actually a role matrix — guard against error responses like {error: "Forbidden"}
+          const isValidMatrix =
+            data &&
+            typeof data === 'object' &&
+            !data.error &&
+            (data.superadmin || data.admin || data.receptionist);
+          if (isValidMatrix) {
             _cachedMatrix = data;
           }
         })

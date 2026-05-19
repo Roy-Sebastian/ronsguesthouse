@@ -155,10 +155,11 @@ export default function DashboardLayout({
   // Merged with any per-user custom overrides stored in session.
   // Superadmin gets wildcard '*' so all nav items always pass hasPermission().
   const effectivePermissions = useMemo(() => {
-    if ((session?.user as any)?.role === 'superadmin') return new Set(['*']);
-    // Use live matrix from backend, otherwise fall back to hardcoded defaults
+    // Use the role from session (source of truth), not from the URL prop
+    const sessionRole = (session?.user as any)?.role as string | undefined;
+    if (sessionRole === 'superadmin') return new Set(['*']);
     const activeMatrix = liveRoleMatrix ?? defaultRoleMatrix;
-    const roleDefaults = activeMatrix[role] || {};
+    const roleDefaults = activeMatrix[sessionRole ?? role] || {};
     const rolekeys = Object.entries(roleDefaults)
       .filter(([, v]) => v)
       .map(([k]) => k);
