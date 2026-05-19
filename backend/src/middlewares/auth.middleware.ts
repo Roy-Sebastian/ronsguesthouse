@@ -66,7 +66,10 @@ export const requirePermission = (permission: string | string[]) => {
 
   return (req: Request, res: Response, next: NextFunction) => {
     if (!hasAnyPermission(req, permissions)) {
-      return res.status(403).json({ error: 'Forbidden' });
+      return res.status(403).json({
+        error: 'Forbidden',
+        role: req.user?.role || 'none',
+      });
     }
 
     next();
