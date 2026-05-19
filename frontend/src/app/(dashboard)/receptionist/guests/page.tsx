@@ -367,7 +367,7 @@ export default function ReceptionistGuestsPage() {
               <SortableHeader label="Negara" field="nationality" sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort} className="px-5 py-3.5 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100" />
               <SortableHeader label="Reservasi" field="_count.reservations" sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort} className="px-5 py-3.5 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100" />
               <SortableHeader label="Terdaftar" field="createdAt" sortBy={sortBy} sortOrder={sortOrder} onSort={handleSort} className="px-5 py-3.5 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100" />
-              <th className="px-5 py-3.5 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-right">Aksi</th>
+              <th className="px-6 py-3.5 bg-gray-50 text-[11px] font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200 select-none whitespace-nowrap">Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -451,7 +451,7 @@ export default function ReceptionistGuestsPage() {
             </div>
             <div className="overflow-y-auto flex-1 px-8 py-6">
               <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-100">
-                <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-primary to-primary-hover flex items-center justify-center text-white text-2xl font-bold">
+                <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-primary to-primary-hover flex items-center justify-center text-white text-2xl font-bold shrink-0">
                   {selected.fullName?.charAt(0).toUpperCase()}
                 </div>
                 <div>
@@ -459,43 +459,24 @@ export default function ReceptionistGuestsPage() {
                   <div className="text-xs text-gray-400">Tamu #{selected.id?.slice(0, 8)}</div>
                 </div>
               </div>
-              <div className="space-y-4 text-sm">
+              <dl className="space-y-3 text-sm">
                 {[
-                  { Icon: Mail, label: 'Email', val: selected.email },
-                  { Icon: Phone, label: 'Telepon', val: selected.phone },
-                  {
-                    Icon: Globe,
-                    label: 'Negara',
-                    val: selected.category === 'Luar Negeri' ? (selected.nationality || 'Luar Negeri') : 'Indonesia',
-                  },
-                ].map(
-                  ({ Icon, label, val }) =>
-                    val && (
-                      <div key={label} className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-primary shrink-0">
-                          <Icon size={15} />
-                        </div>
-                        <div>
-                          <div className="text-xs text-gray-400 mb-0.5">{label}</div>
-                          <div className="text-gray-700">{val}</div>
-                        </div>
-                      </div>
-                    ),
-                )}
-                {selected.idNumber && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-primary shrink-0">
-                      <span className="text-xs font-bold">ID</span>
-                    </div>
-                    <div>
-                      <div className="text-xs text-gray-400 mb-0.5">No. Identitas</div>
-                      <div className="text-gray-700">{selected.idNumber}</div>
-                    </div>
+                  ['Nama Lengkap', selected.fullName || '-'],
+                  ['Email', selected.email || '-'],
+                  ['Telepon', selected.phone || '-'],
+                  ['No. Identitas', selected.idNumber || '-'],
+                  ['Kewarganegaraan', selected.category === 'Luar Negeri' ? (selected.nationality || 'Luar Negeri') : 'Indonesia'],
+                  ['Jumlah Reservasi', `${selected._count?.reservations ?? selected.reservations?.length ?? 0}x`],
+                  ['Tanggal Terdaftar', fmtDateLocal(selected.createdAt)],
+                ].map(([label, value]) => (
+                  <div key={String(label)} className="flex justify-between gap-4 border-b border-gray-100 pb-2.5 last:border-0">
+                    <dt className="text-gray-400 shrink-0">{label}</dt>
+                    <dd className="font-medium text-gray-800 text-right">{String(value)}</dd>
                   </div>
-                )}
-              </div>
+                ))}
+              </dl>
               {selected.reservations?.length > 0 && (
-                <div className="mt-6 pt-6 border-t border-gray-100">
+                <div className="mt-6 pt-4 border-t border-gray-100">
                   <h4 className="font-semibold text-dark text-sm mb-3">
                     Riwayat Reservasi ({selected.reservations.length})
                   </h4>
