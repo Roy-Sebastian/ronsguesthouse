@@ -300,7 +300,7 @@ export default function SuperadminUsersPage() {
                 sortOrder={sortOrder}
                 onSort={handleSort}
               />
-              <th className="px-5 py-3.5 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-center">
+              <th className="px-6 py-3.5 bg-gray-50 text-[11px] font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200 text-center">
                 Aksi
               </th>
             </tr>

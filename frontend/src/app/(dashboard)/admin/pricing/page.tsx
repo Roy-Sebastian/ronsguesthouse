@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { apiFetch } from '@/lib/apiFetch';
 import { showToast } from '@/lib/toast';
 import { formatRp } from '@/lib/formatters';
@@ -506,7 +506,7 @@ export default function AdminPricingPage() {
                       <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Harga Override</th>
                       <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Harga Dasar</th>
                       <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Selisih</th>
-                      <th className="px-5 py-3.5 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-center">Aksi</th>
+                      <th className="px-6 py-3.5 bg-gray-50 text-[11px] font-bold text-gray-600 uppercase tracking-wider border-b-2 border-gray-200 text-center">Aksi</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
