@@ -11,6 +11,7 @@ import CheckOutBillModal from '@/components/features/CheckOutBillModal';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
+import { Pagination } from '@/components/ui/Pagination';
 import swal from '@/lib/swal';
 
 export default function ReceptionistStaysPage() {
@@ -25,6 +26,14 @@ export default function ReceptionistStaysPage() {
   const [detailStay, setDetailStay] = useState<any | null>(null);
   const [checkInReservation, setCheckInReservation] = useState<any | null>(null);
   const [checkOutStay, setCheckOutStay] = useState<any | null>(null);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, dateStart, dateEnd]);
 
   const fetchStays = async () => {
     setLoading(true);
@@ -120,6 +129,9 @@ export default function ReceptionistStaysPage() {
   const historyStays = stays.filter((s) => s.checkOutAt && matchDate(s.checkInAt, s.checkOutAt));
 
   const { sortedData: sortedHistoryStays, handleSort, sortBy, sortOrder } = useTableSort(historyStays);
+
+  const totalPages = Math.ceil(sortedHistoryStays.length / itemsPerPage);
+  const paginatedHistoryStays = sortedHistoryStays.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <>
@@ -332,7 +344,7 @@ export default function ReceptionistStaysPage() {
                 </td>
               </tr>
             ) : (
-              sortedHistoryStays.map((s) => (
+              paginatedHistoryStays.map((s) => (
                 <tr
                   key={s.id}
                   className="hover:bg-red-50/20 transition-colors cursor-pointer"
@@ -359,6 +371,13 @@ export default function ReceptionistStaysPage() {
             )}
           </tbody>
         </table>
+        <Pagination
+          page={currentPage}
+          limit={itemsPerPage}
+          total={sortedHistoryStays.length}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {addonReservationId && (

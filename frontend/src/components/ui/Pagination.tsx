@@ -7,9 +7,10 @@ interface PaginationProps {
   limit: number;
   total: number;
   totalPages: number;
+  onPageChange?: (newPage: number) => void;
 }
 
-export function Pagination({ page, limit, total, totalPages }: PaginationProps) {
+export function Pagination({ page, limit, total, totalPages, onPageChange }: PaginationProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -17,11 +18,15 @@ export function Pagination({ page, limit, total, totalPages }: PaginationProps) 
   const handlePageChange = useCallback(
     (newPage: number) => {
       if (newPage < 1 || newPage > totalPages) return;
+      if (onPageChange) {
+        onPageChange(newPage);
+        return;
+      }
       const params = new URLSearchParams(searchParams);
       params.set('page', String(newPage));
       router.push(`${pathname}?${params.toString()}`);
     },
-    [pathname, router, searchParams, totalPages],
+    [pathname, router, searchParams, totalPages, onPageChange],
   );
 
   if (totalPages <= 1) return null;

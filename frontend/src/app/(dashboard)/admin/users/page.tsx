@@ -20,6 +20,7 @@ import { useEffect, useState } from 'react';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import swal from '@/lib/swal';
+import { Pagination } from '@/components/ui/Pagination';
 
 interface User {
   id: string;
@@ -51,6 +52,13 @@ export default function SuperadminUsersPage() {
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -78,6 +86,9 @@ export default function SuperadminUsersPage() {
   };
 
   const { sortedData, handleSort, sortBy, sortOrder } = useTableSort(users);
+
+  const totalPages = Math.ceil(sortedData.length / itemsPerPage);
+  const paginatedData = sortedData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   useEffect(() => {
     fetchUsers();
@@ -309,7 +320,7 @@ export default function SuperadminUsersPage() {
                 </td>
               </tr>
             ) : (
-              sortedData.map((u) => (
+              paginatedData.map((u) => (
                 <tr
                   key={u.id}
                   className="hover:bg-red-50/20 transition-colors border-b border-gray-100 last:border-0 relative"
@@ -334,8 +345,8 @@ export default function SuperadminUsersPage() {
                       onClick={() => toggleStatus(u.id, u.isActive)}
                       className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-colors ${
                         u.isActive
-                          ? 'text-green-700 bg-green-50 hover:bg-green-100'
-                          : 'text-gray-500 bg-gray-100 hover:bg-gray-200'
+                           ? 'text-green-700 bg-green-50 hover:bg-green-100'
+                           : 'text-gray-500 bg-gray-100 hover:bg-gray-200'
                       }`}
                       disabled={u.role === 'superadmin'}
                     >
@@ -389,6 +400,8 @@ export default function SuperadminUsersPage() {
             )}
           </tbody>
         </table>
+        
+        <Pagination page={currentPage} limit={itemsPerPage} total={sortedData.length} totalPages={totalPages} onPageChange={setCurrentPage} />
       </div>
 
       {showModal && (

@@ -26,6 +26,7 @@ import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/ui/SortableHeader';
+import { Pagination } from '@/components/ui/Pagination';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ChartTooltip, Legend);
 
@@ -61,6 +62,14 @@ export default function AdminReportsPage() {
   // Date filter state
   const [filterStart, setFilterStart] = useState('');
   const [filterEnd,   setFilterEnd]   = useState('');
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterStart, filterEnd]);
 
   const [data, setData] = useState<{
     totalIncome: number;
@@ -373,6 +382,9 @@ export default function AdminReportsPage() {
 
   const { sortedData: sortedTransactions, handleSort, sortBy, sortOrder } = useTableSort(data?.recentTransactions || []);
 
+  const totalPages = Math.ceil(sortedTransactions.length / itemsPerPage);
+  const paginatedTransactions = sortedTransactions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -514,7 +526,7 @@ export default function AdminReportsPage() {
                     </td>
                   </tr>
                 ) : (
-                  sortedTransactions.map((tx: any, idx: number) => (
+                  paginatedTransactions.map((tx: any, idx: number) => (
                     <tr key={idx} className="hover:bg-red-50/20 transition-colors">
                       <td className="px-6 py-4 border-b border-gray-100 text-xs text-gray-500">
                         {new Date(tx.date).toLocaleDateString('id-ID')}
@@ -533,6 +545,13 @@ export default function AdminReportsPage() {
                 )}
               </tbody>
             </table>
+            <Pagination
+              page={currentPage}
+              limit={itemsPerPage}
+              total={sortedTransactions.length}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
           </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { apiFetch } from '@/lib/apiFetch';
 
 
@@ -9,7 +9,7 @@ import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 10;
 
 export default function AuditLogsPage() {
   const [logs, setLogs] = useState<any[]>([]);

@@ -25,6 +25,7 @@ import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/ui/SortableHeader';
+import { Pagination } from '@/components/ui/Pagination';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ChartTooltip, Legend);
 
@@ -46,6 +47,10 @@ export default function SuperadminReportsPage() {
     recentTransactions: any[];
   } | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     apiFetch('/dashboard/stats')
@@ -327,6 +332,9 @@ export default function SuperadminReportsPage() {
 
   const { sortedData: sortedTransactions, handleSort, sortBy, sortOrder } = useTableSort(data?.recentTransactions || []);
 
+  const totalPages = Math.ceil(sortedTransactions.length / itemsPerPage);
+  const paginatedTransactions = sortedTransactions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   return (
     <>
       <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
@@ -478,7 +486,7 @@ export default function SuperadminReportsPage() {
                     </td>
                   </tr>
                 ) : (
-                  sortedTransactions.map((tx: any, idx: number) => (
+                  paginatedTransactions.map((tx: any, idx: number) => (
                     <tr
                       key={idx}
                       className="hover:bg-red-50/20 transition-colors"
@@ -507,6 +515,13 @@ export default function SuperadminReportsPage() {
                 )}
               </tbody>
             </table>
+            <Pagination
+              page={currentPage}
+              limit={itemsPerPage}
+              total={sortedTransactions.length}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
           </div>
         </div>
       </div>

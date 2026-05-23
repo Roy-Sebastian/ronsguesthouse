@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
+import { Pagination } from '@/components/ui/Pagination';
 import swal from '@/lib/swal';
 
 const methodOptions = [
@@ -33,6 +34,14 @@ export default function ReceptionistTransactionsPage() {
     paymentMethod: 'cash',
     referenceId: '',
   });
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, dateStart, dateEnd]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -117,6 +126,9 @@ export default function ReceptionistTransactionsPage() {
   });
 
   const { sortedData, handleSort, sortBy, sortOrder } = useTableSort(filtered);
+
+  const totalPages = Math.ceil(sortedData.length / itemsPerPage);
+  const paginatedData = sortedData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <>
@@ -303,7 +315,7 @@ export default function ReceptionistTransactionsPage() {
                 </td>
               </tr>
             ) : (
-              sortedData.map((t) => (
+              paginatedData.map((t) => (
                 <tr
                   key={t.id}
                   className="hover:bg-red-50/20 transition-colors"
@@ -339,6 +351,13 @@ export default function ReceptionistTransactionsPage() {
             )}
           </tbody>
         </table>
+        <Pagination
+          page={currentPage}
+          limit={itemsPerPage}
+          total={sortedData.length}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {showModal && (

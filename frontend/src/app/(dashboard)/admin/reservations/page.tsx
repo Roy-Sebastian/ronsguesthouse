@@ -15,6 +15,7 @@ import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
 import swal from '@/lib/swal';
+import { Pagination } from '@/components/ui/Pagination';
 import { useNotifications } from '@/providers/NotificationProvider';
 
 
@@ -30,6 +31,14 @@ export default function SuperadminReservationsPage() {
   const [saving, setSaving] = useState(false);
   const [dateStart, setDateStart] = useState('');
   const [dateEnd, setDateEnd] = useState('');
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, dateStart, dateEnd]);
+
   const [error, setError] = useState('');
   const [editId, setEditId] = useState<string | null>(null);
   const [originalStatus, setOriginalStatus] = useState<string>('');
@@ -265,6 +274,9 @@ export default function SuperadminReservationsPage() {
 
   const { sortedData, handleSort, sortBy, sortOrder } = useTableSort(filtered);
 
+  const totalPages = Math.ceil(sortedData.length / itemsPerPage);
+  const paginatedData = sortedData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   return (
     <>
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -415,7 +427,7 @@ export default function SuperadminReservationsPage() {
                 </td>
               </tr>
             ) : (
-              sortedData.map((r) => (
+              paginatedData.map((r) => (
                 <tr
                   key={r.id}
                   className="hover:bg-red-50/20 transition-colors border-b border-gray-100 last:border-0"
@@ -466,6 +478,8 @@ export default function SuperadminReservationsPage() {
             )}
           </tbody>
         </table>
+        
+        <Pagination page={currentPage} limit={itemsPerPage} total={sortedData.length} totalPages={totalPages} onPageChange={setCurrentPage} />
       </div>
 
       {/* Create / Edit Modal */}

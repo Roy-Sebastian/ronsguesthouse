@@ -19,6 +19,7 @@ import { Bar } from 'react-chartjs-2';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
+import { Pagination } from '@/components/ui/Pagination';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
@@ -38,6 +39,12 @@ export default function AdminExpensesPage() {
     expenseDate: new Date().toISOString().split('T')[0],
   });
   const [saving, setSaving] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, period, dateStart, dateEnd]);
 
   const fetchExpenses = async () => {
     setLoading(true);
@@ -213,6 +220,9 @@ export default function AdminExpensesPage() {
 
   const chartData = generateChartData();
   const { sortedData, handleSort, sortBy, sortOrder } = useTableSort(filteredByPeriod);
+
+  const totalPages = Math.ceil(sortedData.length / itemsPerPage);
+  const paginatedData = sortedData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <>
@@ -393,7 +403,7 @@ export default function AdminExpensesPage() {
                 </td>
               </tr>
             ) : (
-              sortedData.map((ex) => (
+              paginatedData.map((ex) => (
                 <tr
                   key={ex.id}
                   className="hover:bg-red-50/20 transition-colors"
@@ -448,6 +458,13 @@ export default function AdminExpensesPage() {
             )}
           </tbody>
         </table>
+        <Pagination
+          page={currentPage}
+          limit={itemsPerPage}
+          total={sortedData.length}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {showModal && (

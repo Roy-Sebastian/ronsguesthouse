@@ -7,6 +7,7 @@ import { Plus, Search, Trash2, ShoppingBag, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/ui/SortableHeader';
+import { Pagination } from '@/components/ui/Pagination';
 
 export default function SuperadminAddonsPage() {
   const [addons, setAddons] = useState<any[]>([]);
@@ -16,6 +17,12 @@ export default function SuperadminAddonsPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', category: 'general', price: 0, description: '' });
   const [saving, setSaving] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
 
   const fetchAddons = async () => {
     setLoading(true);
@@ -72,6 +79,9 @@ export default function SuperadminAddonsPage() {
   );
 
   const { sortedData, handleSort, sortBy, sortOrder } = useTableSort(filtered);
+
+  const totalPages = Math.ceil(sortedData.length / itemsPerPage);
+  const paginatedData = sortedData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <>
@@ -138,7 +148,7 @@ export default function SuperadminAddonsPage() {
                   <td colSpan={3} className="px-6 py-8 text-center text-gray-400">Belum ada data layanan</td>
                 </tr>
               ) : (
-                sortedData.map((a) => (
+                paginatedData.map((a) => (
                   <tr key={a.id} className="hover:bg-red-50/20 transition-colors">
                     <td className="px-6 py-4">
                       <div className="font-medium text-gray-900">{a.name}</div>
@@ -159,6 +169,13 @@ export default function SuperadminAddonsPage() {
             </tbody>
           </table>
         </div>
+        <Pagination
+          page={currentPage}
+          limit={itemsPerPage}
+          total={sortedData.length}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {showModal && (

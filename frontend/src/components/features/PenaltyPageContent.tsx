@@ -1,8 +1,9 @@
-﻿'use client';
+'use client';
 
 import { apiFetch } from '@/lib/apiFetch';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { useTableSort } from '@/hooks/useTableSort';
+import { Pagination } from '@/components/ui/Pagination';
 import { confirmAction, showError } from '@/lib/dialog';
 import { formatRp } from '@/lib/formatters';
 import { AlertTriangle, Edit, Plus, Search, Trash2, X } from 'lucide-react';
@@ -74,6 +75,14 @@ export default function PenaltyPageContent({
     notes: '',
     status: 'pending',
   });
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter]);
 
   const fetchPenalties = async () => {
     setLoading(true);
@@ -210,6 +219,9 @@ export default function PenaltyPageContent({
     .reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
   const { sortedData, handleSort, sortBy, sortOrder } = useTableSort(penalties);
+
+  const totalPages = Math.ceil(sortedData.length / itemsPerPage);
+  const paginatedData = sortedData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <>
@@ -371,7 +383,7 @@ export default function PenaltyPageContent({
                 </td>
               </tr>
             ) : (
-              sortedData.map((p) => (
+              paginatedData.map((p) => (
                 <tr key={p.id} className="hover:bg-red-50/20 transition-colors">
                   <td className="px-4 py-3 border-b border-gray-100 text-sm text-gray-500">
                     {new Date(p.createdAt).toLocaleDateString('id-ID')}
@@ -432,6 +444,13 @@ export default function PenaltyPageContent({
             )}
           </tbody>
         </table>
+        <Pagination
+          page={currentPage}
+          limit={itemsPerPage}
+          total={sortedData.length}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {/* Modal */}

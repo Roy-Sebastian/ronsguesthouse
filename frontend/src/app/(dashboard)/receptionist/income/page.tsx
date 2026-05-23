@@ -30,6 +30,7 @@ import { Bar } from 'react-chartjs-2';
 import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
+import { Pagination } from '@/components/ui/Pagination';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
@@ -48,6 +49,12 @@ export default function AdminIncomePage() {
     incomeDate: new Date().toISOString().split('T')[0],
   });
   const [saving, setSaving] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, period, dateStart, dateEnd]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -237,6 +244,9 @@ export default function AdminIncomePage() {
 
   const chartData = generateChartData();
   const { sortedData, handleSort, sortBy, sortOrder } = useTableSort(filteredByPeriod);
+
+  const totalPages = Math.ceil(sortedData.length / itemsPerPage);
+  const paginatedData = sortedData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <>
@@ -447,7 +457,7 @@ export default function AdminIncomePage() {
                 </td>
               </tr>
             ) : (
-              sortedData.map((t, i) => (
+              paginatedData.map((t, i) => (
                 <tr
                   key={t.id || i}
                   className="hover:bg-red-50/20 transition-colors border-b border-gray-100 last:border-0"
@@ -564,6 +574,13 @@ export default function AdminIncomePage() {
             )}
           </tbody>
         </table>
+        <Pagination
+          page={currentPage}
+          limit={itemsPerPage}
+          total={sortedData.length}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {/* Modal */}

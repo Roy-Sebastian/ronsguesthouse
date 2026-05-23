@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import swal from '@/lib/swal';
+import { Pagination } from '@/components/ui/Pagination';
 
 
 
@@ -77,6 +78,14 @@ export default function AdminPricingPage() {
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
   const [bulkPrice, setBulkPrice] = useState('');
   const [showBulkModal, setShowBulkModal] = useState(false);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedRoomId, viewYear, viewMonth]);
 
   
   const selectedRoom = useMemo(
@@ -264,6 +273,15 @@ export default function AdminPricingPage() {
   const daysInMonth = getDaysInMonth(viewYear, viewMonth);
   const firstDay = getFirstDayOfMonth(viewYear, viewMonth);
   const basePrice = selectedRoom ? Number(selectedRoom.pricePerNight) : 0;
+
+  const sortedOverrides = useMemo(() => {
+    return [...overrides].sort((a, b) => a.date.localeCompare(b.date));
+  }, [overrides]);
+
+  const totalPages = Math.ceil(sortedOverrides.length / itemsPerPage);
+  const paginatedOverrides = useMemo(() => {
+    return sortedOverrides.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  }, [sortedOverrides, currentPage]);
 
   const calendarCells = [];
   // Blank cells for days before the 1st
@@ -492,8 +510,7 @@ export default function AdminPricingPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {overrides
-                      .sort((a, b) => a.date.localeCompare(b.date))
+                    {paginatedOverrides
                       .map((o) => {
                         const oprice = Number(o.price);
                         const diff = oprice - basePrice;
@@ -534,6 +551,13 @@ export default function AdminPricingPage() {
                       })}
                   </tbody>
                 </table>
+                <Pagination
+                  page={currentPage}
+                  limit={itemsPerPage}
+                  total={sortedOverrides.length}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                />
               </div>
             )}
           </div>
