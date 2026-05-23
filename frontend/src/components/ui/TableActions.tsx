@@ -51,7 +51,7 @@ export function TableActions({
   };
 
   return (
-    <div className="flex items-center gap-2 justify-end">
+    <div className="flex items-center gap-2 justify-center">
       {viewPermission && hasPerm(viewPermission) && onView && (
         <button
           onClick={(e) => {

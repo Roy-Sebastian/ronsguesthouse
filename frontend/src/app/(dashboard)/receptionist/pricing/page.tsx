@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { apiFetch } from '@/lib/apiFetch';
 import { showToast } from '@/lib/toast';
 import { formatRp } from '@/lib/formatters';
@@ -506,7 +506,7 @@ export default function AdminPricingPage() {
                       <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Harga Override</th>
                       <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Harga Dasar</th>
                       <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Selisih</th>
-                      <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Aksi</th>
+                      <th className="px-5 py-3.5 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-center">Aksi</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -537,7 +537,7 @@ export default function AdminPricingPage() {
                                 {diff > 0 ? '+' : ''}{formatRp(diff)}
                               </span>
                             </td>
-                            <td className="px-6 py-3 text-right">
+                            <td className="px-6 py-3 text-center">
                               <button
                                 onClick={() => deleteOverride(o.id)}
                                 className="btn btn-ghost btn-icon text-gray-400 hover:text-red-600 hover:bg-red-50"

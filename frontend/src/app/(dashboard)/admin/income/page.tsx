@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import swal from '@/lib/swal';
 import { apiFetch } from '@/lib/apiFetch';
 import { showToast } from '@/lib/toast';
@@ -438,7 +438,7 @@ export default function AdminIncomePage() {
                 onSort={handleSort}
                 className="px-4 py-3 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
-              <th className="px-4 py-3 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100">
+              <th className="px-4 py-3 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-center">
                 Aksi
               </th>
             </tr>
@@ -548,13 +548,13 @@ export default function AdminIncomePage() {
                   <td className="px-4 py-3 text-sm font-bold text-green-600">
                     + {formatRp(t.amount)}
                   </td>
-                  <td className="px-4 py-3 text-sm">
+                  <td className="px-4 py-3 text-sm text-center">
                     {t.transactionId ? (
                       <span className="text-xs text-gray-400 italic opacity-60">
                         Sistem Terkunci
                       </span>
                     ) : (
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 justify-center">
                         <button
                           onClick={() => openEdit(t)}
                           className="btn btn-ghost btn-icon text-blue-600 hover:bg-blue-50 hover:text-blue-700"

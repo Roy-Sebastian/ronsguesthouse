@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import swal from '@/lib/swal';
 import { apiFetch } from '@/lib/apiFetch';
 import { showToast } from '@/lib/toast';
@@ -381,7 +381,7 @@ export default function AdminExpensesPage() {
                 sortOrder={sortOrder}
                 onSort={handleSort}
               />
-              <th>
+              <th className="px-5 py-3.5 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-center">
                 Aksi
               </th>
             </tr>
@@ -437,8 +437,8 @@ export default function AdminExpensesPage() {
                   <td className="px-4 py-3 border-b border-gray-100 text-xs text-gray-500">
                     {ex.user?.name}
                   </td>
-                  <td className="px-4 py-3 border-b border-gray-100">
-                    <div className="flex items-center gap-2">
+                  <td className="px-4 py-3 border-b border-gray-100 text-center">
+                    <div className="flex items-center justify-center gap-2">
                       <button
                         className="btn btn-ghost btn-icon text-gray-500 hover:text-gray-900 hover:bg-gray-100"
                         onClick={() => openEdit(ex)}

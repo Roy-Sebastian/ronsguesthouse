@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { Users, BedDouble, CalendarCheck, Activity, ShieldCheck, Clock } from "lucide-react";
@@ -40,9 +40,9 @@ export default function SuperAdminDashboard() {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {[
-          { label: "Total Kamar", value: stats?.totalRooms ?? "�", icon: BedDouble, iconColor: "text-blue-600", bg: "bg-blue-50" },
-          { label: "Total Tamu", value: stats?.totalGuests ?? "�", icon: Users, iconColor: "text-amber-600", bg: "bg-amber-50" },
-          { label: "Total Reservasi", value: stats?.totalReservations ?? "�", icon: CalendarCheck, iconColor: "text-indigo-600", bg: "bg-indigo-50" },
+          { label: "Total Kamar", value: stats?.totalRooms ?? "?", icon: BedDouble, iconColor: "text-blue-600", bg: "bg-blue-50" },
+          { label: "Total Tamu", value: stats?.totalGuests ?? "?", icon: Users, iconColor: "text-amber-600", bg: "bg-amber-50" },
+          { label: "Total Reservasi", value: stats?.totalReservations ?? "?", icon: CalendarCheck, iconColor: "text-indigo-600", bg: "bg-indigo-50" },
           { label: "Status Sistem", value: "Aktif", icon: ShieldCheck, iconColor: "text-emerald-600", bg: "bg-emerald-50" },
         ].map(({ label, value, icon: Icon, iconColor, bg }) => (
           <div key={label} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-5">
@@ -93,7 +93,7 @@ export default function SuperAdminDashboard() {
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100">
                   <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Pengguna</th>
-                  <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Aksi</th>
+                  <th className="px-6 py-3 bg-gray-200/50 text-xs font-semibold uppercase tracking-wider text-gray-500 text-center border-b border-gray-100">Aksi</th>
                   <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Entitas</th>
                   <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Waktu</th>
                 </tr>

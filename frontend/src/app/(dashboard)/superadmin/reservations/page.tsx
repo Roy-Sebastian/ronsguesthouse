@@ -403,7 +403,7 @@ export default function SuperadminReservationsPage() {
                 onSort={handleSort}
                 className="px-5 py-3.5 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100"
               />
-              <th className="px-5 py-3.5 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100">
+              <th className="px-5 py-3.5 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-center">
                 Aksi
               </th>
             </tr>
@@ -461,7 +461,7 @@ export default function SuperadminReservationsPage() {
                       {STATUS_LABEL[r.status] || r.status}
                     </span>
                   </td>
-                  <td className="px-5 py-4">
+                  <td className="px-5 py-4 text-center">
                     <TableActions
                         viewPermission="reservation.view"
                         editPermission="reservation.edit"

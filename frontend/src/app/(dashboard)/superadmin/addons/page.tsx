@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { apiFetch } from '@/lib/apiFetch';
 import { showToast } from '@/lib/toast';
@@ -136,7 +136,7 @@ export default function SuperadminAddonsPage() {
                   onSort={handleSort}
                   className="px-6 py-4 font-medium"
                 />
-                <th className="px-6 py-4 font-medium text-right">Aksi</th>
+                <th className="px-5 py-3.5 bg-gray-50/60 text-xs font-semibold text-gray-500 uppercase tracking-widest border-b border-gray-100 text-center">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -156,7 +156,7 @@ export default function SuperadminAddonsPage() {
                       <div className="text-xs text-gray-500">{a.category}</div>
                     </td>
                     <td className="px-6 py-4">Rp {Number(a.price).toLocaleString('id-ID')}</td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4 text-center">
                       <TableActions
                         deletePermission="addon.manage"
                         editPermission="addon.manage"
