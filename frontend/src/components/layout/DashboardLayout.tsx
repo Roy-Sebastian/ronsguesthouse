@@ -125,17 +125,17 @@ export default function DashboardLayout({
   const router = useRouter();
   const { data: session, isPending } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { reservationBadge, clearReservationBadge, reviewBadge, clearReviewBadge } = useNotifications();
+  const {
+    reservationBadge,
+    clearReservationBadge,
+    reviewBadge,
+    clearReviewBadge,
+    unpaidTransactionsCount,
+    readyToCheckInCount,
+  } = useNotifications();
 
   // Live role matrix — fetched once from backend via shared hook (cached at module level)
   const liveRoleMatrix = useRoleMatrix();
-
-  // Auto-clear reservation badge when user visits any reservations page
-  useEffect(() => {
-    if (pathname.includes('/reservations')) {
-      clearReservationBadge();
-    }
-  }, [pathname, clearReservationBadge]);
 
   // Auto-clear review badge when user visits reviews page
   useEffect(() => {
@@ -288,10 +288,24 @@ export default function DashboardLayout({
                 // Show badges based on route
                 const isReservation = item.href === `/${role}/reservations`;
                 const isReview = item.href === `/${role}/reviews`;
+                const isStay = item.href === `/${role}/stays`;
+                const isTransaction = item.href === `/${role}/transactions`;
+
                 const showResBadge = isReservation && reservationBadge > 0;
                 const showRevBadge = isReview && reviewBadge > 0;
-                const showBadge = showResBadge || showRevBadge;
-                const badgeCount = showResBadge ? reservationBadge : showRevBadge ? reviewBadge : 0;
+                const showStayBadge = isStay && readyToCheckInCount > 0;
+                const showTxBadge = isTransaction && unpaidTransactionsCount > 0;
+
+                const showBadge = showResBadge || showRevBadge || showStayBadge || showTxBadge;
+                const badgeCount = showResBadge
+                  ? reservationBadge
+                  : showRevBadge
+                    ? reviewBadge
+                    : showStayBadge
+                      ? readyToCheckInCount
+                      : showTxBadge
+                        ? unpaidTransactionsCount
+                        : 0;
 
                 return (
                   <Link

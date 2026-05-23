@@ -1,5 +1,6 @@
-﻿'use client';
+'use client';
 import { apiFetch } from '@/lib/apiFetch';
+import { ROOM_TYPE_LABEL } from '@/lib/constants';
 
 
 import { BedDouble, RefreshCw, Search } from 'lucide-react';
@@ -179,7 +180,7 @@ export default function ReceptionistRoomsPage() {
                 </div>
                 <div className="p-3">
                   <div className="text-xs text-gray-400 capitalize mb-1.5">
-                    {room.roomType}
+                    {ROOM_TYPE_LABEL[room.roomType] || room.roomType}
                   </div>
                   <span
                     className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border ${cfg.badge}`}

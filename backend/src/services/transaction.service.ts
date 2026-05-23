@@ -4,6 +4,7 @@ import { incomeRepository } from '../repositories/income.repository';
 import { reservationRepository } from '../repositories/reservation.repository';
 import { transactionRepository } from '../repositories/transaction.repository';
 import { buildIncomeDescriptionWithAddOns, extractAddOnLines } from '../utils';
+import { getIO } from '../config/socket';
 
 /** Derive new reservation status from payment status change */
 function resolveReservationStatus(
@@ -53,6 +54,9 @@ export async function createTransaction(
 ) {
   const { referenceId, ...rest } = body;
   const payload: any = { ...rest };
+  if (!payload.paymentStatus) {
+    payload.paymentStatus = 'paid';
+  }
   if (referenceId) {
     payload.notes = payload.notes
       ? `${payload.notes}\nRef: ${referenceId}`
@@ -118,6 +122,13 @@ export async function createTransaction(
     });
   }
 
+  if (data.reservationId) {
+    try {
+      const io = getIO();
+      io?.emit('reservation_updated', { id: data.reservationId });
+    } catch (e) {}
+  }
+
   return data;
 }
 
@@ -175,9 +186,23 @@ export async function updateTransaction(
     await incomeRepository.deleteMany({ where: { transactionId: data.id } });
   }
 
+  if (data.reservationId) {
+    try {
+      const io = getIO();
+      io?.emit('reservation_updated', { id: data.reservationId });
+    } catch (e) {}
+  }
+
   return data;
 }
 
 export async function deleteTransaction(id: string) {
+  const oldTx = await transactionRepository.findById(id, { select: { reservationId: true } });
   await transactionRepository.delete(id);
+  if (oldTx?.reservationId) {
+    try {
+      const io = getIO();
+      io?.emit('reservation_updated', { id: oldTx.reservationId });
+    } catch (e) {}
+  }
 }

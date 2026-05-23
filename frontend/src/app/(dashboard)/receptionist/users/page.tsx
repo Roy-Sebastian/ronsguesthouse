@@ -446,13 +446,13 @@ export default function SuperadminUsersPage() {
                 <X size={20} />
               </button>
             </div>
+            {error && (
+              <div className="px-6 py-3 bg-red-50 text-red-600 text-sm border-b border-red-100 shrink-0 font-medium">
+                {error}
+              </div>
+            )}
 
             <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
-              {error && (
-                <div className="mb-5 p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100">
-                  {error}
-                </div>
-              )}
 
               <form id="userForm" onSubmit={handleSave} className="space-y-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -3,7 +3,7 @@ import { apiFetch } from '@/lib/apiFetch';
 import { showToast } from '@/lib/toast';
 import { confirmAction } from '@/lib/dialog';
 import { TableActions } from '@/components/ui/TableActions';
-import { STATUS_BADGE, STATUS_LABEL } from '@/lib/constants';
+import { STATUS_BADGE, STATUS_LABEL, ROOM_TYPE_LABEL } from '@/lib/constants';
 
 import { formatRp, fmtDate } from '@/lib/formatters';
 
@@ -56,10 +56,11 @@ export default function SuperadminReservationsPage() {
     checked_in: ['checked_in', 'checked_out'],
   };
 
-  const { paymentToasts } = useNotifications();
+  const { paymentToasts, fetchBadgeCounts } = useNotifications();
 
   const fetchAll = async () => {
     setLoading(true);
+    fetchBadgeCounts().catch(() => {});
     const [res, g, r] = await Promise.all([
       apiFetch('/reservations')
         .then((x) => x.json())
@@ -481,12 +482,12 @@ export default function SuperadminReservationsPage() {
                 <X size={16} />
               </button>
             </div>
-            <div className="overflow-y-auto flex-1 px-8 py-6">
             {error && (
-              <div className="mb-4 px-4 py-3 bg-red-50 text-red-700 rounded-xl text-sm border border-red-100">
+              <div className="px-8 py-3 bg-red-50 text-red-700 text-sm border-b border-red-100 shrink-0 font-medium">
                 {error}
               </div>
             )}
+            <div className="overflow-y-auto flex-1 px-8 py-6">
             <form onSubmit={handleSave} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
@@ -631,13 +632,16 @@ export default function SuperadminReservationsPage() {
                 <input
                   type="number"
                   min={1}
+                  inputMode="numeric"
                   value={form.numGuests}
-                  onChange={(e) =>
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
                     setForm((f) => ({
                       ...f,
-                      numGuests: Number(e.target.value),
-                    }))
-                  }
+                      numGuests: isNaN(val) || val < 1 ? 1 : val,
+                    }));
+                  }}
                   className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 bg-gray-50"
                 />
               </div>
@@ -786,7 +790,7 @@ export default function SuperadminReservationsPage() {
                 ['Tamu', viewReservation.guest?.fullName || '-'],
                 ['Email', viewReservation.guest?.email || '-'],
                 ['Telepon', viewReservation.guest?.phone || '-'],
-                ['Kamar', viewReservation.room ? `Kamar ${viewReservation.room.roomNumber} – ${viewReservation.room.roomType}` : '-'],
+                ['Kamar', viewReservation.room ? `Kamar ${viewReservation.room.roomNumber} – ${ROOM_TYPE_LABEL[viewReservation.room.roomType] || viewReservation.room.roomType}` : '-'],
                 ['Check-In', fmtDate(viewReservation.checkInDate)],
                 ['Check-Out', fmtDate(viewReservation.checkOutDate)],
                 ['Jumlah Tamu', viewReservation.numGuests],

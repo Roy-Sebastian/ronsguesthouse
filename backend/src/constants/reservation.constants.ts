@@ -5,6 +5,7 @@ export const INACTIVE_STATUSES = [
   ReservationStatus.cancelled,
   ReservationStatus.no_show,
   ReservationStatus.expired,
+  ReservationStatus.checked_out, // checked_out = kamar sudah bebas, tidak boleh blokir tanggal baru
 ] as const;
 
 /** Terminal statuses — no further transitions allowed */

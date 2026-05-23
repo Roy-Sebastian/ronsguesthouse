@@ -3,7 +3,7 @@
 import PublicNavbar from '@/components/layout/PublicNavbar';
 import PublicFooter from '@/components/layout/PublicFooter';
 import ScrollReveal from '@/components/ui/ScrollReveal';
-import { BACKEND_URL } from '@/lib/constants';
+import { BACKEND_URL, formatRoomType } from '@/lib/constants';
 import { Search, Loader2, Star, CheckCircle, Clock } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState } from 'react';
@@ -165,7 +165,7 @@ function CheckBookingContent() {
                     <div className="space-y-3 text-sm">
                       <div className="flex justify-between">
                         <span className="text-neutral-500">Room</span>
-                        <span className="font-medium">{result.room.roomType} - {result.room.roomNumber}</span>
+                        <span className="font-medium">{formatRoomType(result.room.roomType)} - {result.room.roomNumber}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-neutral-500">Check-In</span>

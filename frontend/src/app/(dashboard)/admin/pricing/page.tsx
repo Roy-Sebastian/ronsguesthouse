@@ -2,6 +2,7 @@
 import { apiFetch } from '@/lib/apiFetch';
 import { showToast } from '@/lib/toast';
 import { formatRp } from '@/lib/formatters';
+import { ROOM_TYPE_LABEL } from '@/lib/constants';
 import {
   Calendar,
   ChevronLeft,
@@ -369,7 +370,7 @@ export default function AdminPricingPage() {
             >
               {rooms.map((r) => (
                 <option key={r.id} value={r.id}>
-                  {r.roomNumber} - {r.roomType} (Base: {formatRp(Number(r.pricePerNight))}/malam)
+                  {r.roomNumber} - {ROOM_TYPE_LABEL[r.roomType] || r.roomType} (Base: {formatRp(Number(r.pricePerNight))}/malam)
                 </option>
               ))}
             </select>

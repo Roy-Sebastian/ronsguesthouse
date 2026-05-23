@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { apiFetch } from '@/lib/apiFetch';
 
 import {
@@ -26,7 +26,7 @@ import {
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
-import { STATUS_BADGE, STATUS_LABEL } from '@/lib/constants';
+import { STATUS_BADGE, STATUS_LABEL, ROOM_TYPE_LABEL } from '@/lib/constants';
 
 import { formatRp, calculateDays } from '@/lib/formatters';
 
@@ -338,7 +338,7 @@ export default function AdminDashboard() {
                       </strong>
                     </td>
                     <td className="px-5 py-4 border-b border-gray-100 text-sm text-gray-500">
-                      {r.room?.roomNumber ? `${r.room.roomType ? r.room.roomType.charAt(0).toUpperCase() + r.room.roomType.slice(1) : ''} Room - ${r.room.roomNumber}` : 'Room'}
+                      {r.room?.roomNumber ? `${r.room.roomType ? ROOM_TYPE_LABEL[r.room.roomType] || r.room.roomType : ''} Room - ${r.room.roomNumber}` : 'Room'}
                     </td>
                     <td className="px-5 py-4 border-b border-gray-100 text-sm text-gray-500">
                       {new Date(r.checkInDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric'})}

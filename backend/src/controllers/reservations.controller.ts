@@ -113,3 +113,12 @@ export const removeAddOn = async (req: Request, res: Response, next: NextFunctio
     next(error);
   }
 };
+
+export const getBadgeCounts = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await ReservationService.getBadgeCounts();
+    res.json(data);
+  } catch (error) {
+    next(error);
+  }
+};

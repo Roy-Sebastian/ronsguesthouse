@@ -1,3 +1,4 @@
+import { getIO } from '../config/socket';
 import { dbRepository } from '../repositories/db.repository';
 import { reservationRepository } from '../repositories/reservation.repository';
 import { stayRepository } from '../repositories/stay.repository';
@@ -79,7 +80,7 @@ export async function getStayById(id: string) {
 }
 
 export async function createStay(reservationId: string, notes?: string) {
-  return dbRepository.transaction(async (tx) => {
+  const result = await dbRepository.transaction(async (tx) => {
     const reservation = await reservationRepository.findById(reservationId, { select: { status: true } }, tx);
     if (!reservation) throw Object.assign(new Error('Reservation not found'), { statusCode: 404 });
     if (reservation.status !== 'confirmed') {
@@ -97,10 +98,17 @@ export async function createStay(reservationId: string, notes?: string) {
 
     return data;
   });
+
+  try {
+    const io = getIO();
+    io?.emit('reservation_updated', { id: reservationId, status: 'checked_in' });
+  } catch (e) {}
+
+  return result;
 }
 
 export async function updateStay(id: string, body: any) {
-  return dbRepository.transaction(async (tx) => {
+  const result = await dbRepository.transaction(async (tx) => {
     const { action, ...otherData } = body;
     let updateData: any = { ...otherData };
 
@@ -122,8 +130,22 @@ export async function updateStay(id: string, body: any) {
 
     return data;
   });
+
+  try {
+    const io = getIO();
+    io?.emit('reservation_updated', { id: result.reservationId, status: body.action === 'checkout' ? 'checked_out' : undefined });
+  } catch (e) {}
+
+  return result;
 }
 
 export async function deleteStay(id: string) {
+  const existingStay = await stayRepository.findById(id, { select: { reservationId: true } });
   await stayRepository.delete(id);
+  if (existingStay) {
+    try {
+      const io = getIO();
+      io?.emit('reservation_updated', { id: existingStay.reservationId });
+    } catch (e) {}
+  }
 }

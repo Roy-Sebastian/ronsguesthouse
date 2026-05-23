@@ -16,6 +16,12 @@ export function generateDateRange(checkIn: Date, checkOut: Date): Date[] {
   const end = normalizeToUTCMidnight(checkOut);
   const dates: Date[] = [];
 
+  // Same-day booking (checkIn == checkOut): treat as 1 night (e.g. day-use / rest)
+  if (start.getTime() === end.getTime()) {
+    dates.push(new Date(start));
+    return dates;
+  }
+
   const current = new Date(start);
   while (current < end) {
     dates.push(new Date(current));

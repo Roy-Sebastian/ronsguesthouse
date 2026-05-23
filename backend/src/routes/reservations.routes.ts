@@ -17,6 +17,12 @@ router.get(
 	requirePermission('reservation.view'),
 	controller.getRecent,
 );
+router.get(
+	'/utils/badge-counts',
+	requireAuth,
+	requirePermission('reservation.view'),
+	controller.getBadgeCounts,
+);
 router.get('/', requireAuth, requirePermission('reservation.view'), controller.getAll);
 router.get('/:id', requireAuth, requirePermission('reservation.view'), controller.getById);
 router.post('/', requireAuth, requirePermission('reservation.create'), controller.create);

@@ -79,12 +79,12 @@ function GuestForm({
             <X size={16} />
           </button>
         </div>
-        <div className="overflow-y-auto flex-1 px-8 py-6">
         {error && (
-          <div className="mb-4 px-4 py-3 bg-red-50 text-red-700 rounded-xl text-sm border border-red-100">
+          <div className="px-8 py-3 bg-red-50 text-red-700 text-sm border-b border-red-100 shrink-0 font-medium">
             {error}
           </div>
         )}
+        <div className="overflow-y-auto flex-1 px-8 py-6">
         <form onSubmit={onSubmit} className="space-y-4">
           {([
             { key: 'fullName', label: 'Nama Lengkap', required: true },

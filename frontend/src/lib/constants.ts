@@ -32,6 +32,13 @@ export const ROOM_TYPE_LABEL: Record<string, string> = {
   family:    'Family',
 };
 
+/** Format room type to human-readable label */
+export function formatRoomType(type?: string): string {
+  if (!type) return '';
+  const cleanType = type.toLowerCase().trim();
+  return ROOM_TYPE_LABEL[cleanType] || type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 /**
  * Auto-detect room type based on room number:
  * 1–3  → city_view

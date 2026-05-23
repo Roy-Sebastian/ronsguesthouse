@@ -97,8 +97,14 @@ export async function createReservation(
         // 2. Per-date availability check with stock support
         const { available, fullyBookedDates } = await checkRoomAvailability(roomId, checkIn, checkOut, tx);
         if (!available) {
+          const formattedDates = fullyBookedDates.map((dateStr) => {
+            const parts = dateStr.split('-');
+            if (parts.length !== 3) return dateStr;
+            const [year, month, day] = parts;
+            return `${day}-${month}-${year.slice(-2)}`;
+          });
           throw Object.assign(
-            new AppError(`Maaf, kamar tidak tersedia pada tanggal: ${fullyBookedDates.join(', ')}`, 409),
+            new AppError(`Maaf, kamar tidak tersedia pada tanggal: ${formattedDates.join(', ')}`, 409),
             { fullyBookedDates },
           );
         }
@@ -488,3 +494,51 @@ export async function removeReservationAddOn(reservationId: string, bookingAddOn
     return bookingAddOn;
   });
 }
+
+export async function getBadgeCounts() {
+  const [unpaidTransactionsCount, readyToCheckInCount, reservationBadgeCount] = await Promise.all([
+    prisma.reservation.count({
+      where: {
+        status: {
+          in: [ReservationStatus.pending, ReservationStatus.confirmed, ReservationStatus.checked_in],
+        },
+        OR: [
+          { transaction: null },
+          {
+            transaction: {
+              paymentStatus: {
+                not: 'paid',
+              },
+            },
+          },
+        ],
+      },
+    }),
+    prisma.reservation.count({
+      where: {
+        status: ReservationStatus.confirmed,
+      },
+    }),
+    prisma.reservation.count({
+      where: {
+        OR: [
+          { status: ReservationStatus.pending },
+          {
+            status: ReservationStatus.confirmed,
+            transaction: {
+              midtransOrderId: { not: null },
+              paymentStatus: { not: 'paid' },
+            },
+          },
+        ],
+      },
+    }),
+  ]);
+
+  return {
+    unpaidTransactionsCount,
+    readyToCheckInCount,
+    reservationBadgeCount,
+  };
+}
+

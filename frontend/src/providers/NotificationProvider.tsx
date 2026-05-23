@@ -48,6 +48,8 @@ interface NotificationContextValue {
   notifications: Notification[];
   unreadCount: number;
   reservationBadge: number;
+  unpaidTransactionsCount: number;
+  readyToCheckInCount: number;
   reviewBadge: number;
   toasts: ReservationToast[];
   paymentToasts: PaymentToast[];
@@ -58,12 +60,15 @@ interface NotificationContextValue {
   dismissToast: (id: string) => void;
   dismissPaymentToast: (id: string) => void;
   dismissReviewToast: (id: string) => void;
+  fetchBadgeCounts: () => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextValue>({
   notifications: [],
   unreadCount: 0,
   reservationBadge: 0,
+  unpaidTransactionsCount: 0,
+  readyToCheckInCount: 0,
   reviewBadge: 0,
   toasts: [],
   paymentToasts: [],
@@ -74,6 +79,7 @@ const NotificationContext = createContext<NotificationContextValue>({
   dismissToast: () => {},
   dismissPaymentToast: () => {},
   dismissReviewToast: () => {},
+  fetchBadgeCounts: async () => {},
 });
 
 function playNotificationSound() {
@@ -115,6 +121,8 @@ export function NotificationProvider({
   const [toasts, setToasts] = useState<ReservationToast[]>([]);
   const [paymentToasts, setPaymentToasts] = useState<PaymentToast[]>([]);
   const [reviewToasts, setReviewToasts] = useState<ReviewToast[]>([]);
+  const [unpaidTransactionsCount, setUnpaidTransactionsCount] = useState(0);
+  const [readyToCheckInCount, setReadyToCheckInCount] = useState(0);
   const socketRef = useRef<Socket | null>(null);
 
   const addNotification = useCallback((notif: Notification) => {
@@ -130,6 +138,25 @@ export function NotificationProvider({
       setReviewBadge((c) => c + 1);
     }
   }, []);
+
+  const fetchBadgeCounts = useCallback(async () => {
+    if (!STAFF_ROLES.includes(role)) return;
+    try {
+      const res = await apiFetch('/reservations/utils/badge-counts');
+      if (res.ok) {
+        const data = await res.json();
+        setUnpaidTransactionsCount(data.unpaidTransactionsCount ?? 0);
+        setReadyToCheckInCount(data.readyToCheckInCount ?? 0);
+        setReservationBadge(data.reservationBadgeCount ?? 0);
+      }
+    } catch (err) {
+      console.error('Failed to fetch badge counts', err);
+    }
+  }, [role]);
+
+  useEffect(() => {
+    fetchBadgeCounts();
+  }, [fetchBadgeCounts]);
 
   // Fetch H-1 reminders on mount
   useEffect(() => {
@@ -197,6 +224,7 @@ export function NotificationProvider({
       };
       setToasts((prev) => [...prev, toast]);
       playNotificationSound();
+      fetchBadgeCounts();
 
       setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== toastId));
@@ -227,10 +255,19 @@ export function NotificationProvider({
       };
       setPaymentToasts((prev) => [...prev, paymentToast]);
       playNotificationSound();
+      fetchBadgeCounts();
 
       setTimeout(() => {
         setPaymentToasts((prev) => prev.filter((t) => t.id !== toastId));
       }, 10000);
+    });
+
+    socket.on('reservation_updated', () => {
+      fetchBadgeCounts();
+    });
+
+    socket.on('reservation_deleted', () => {
+      fetchBadgeCounts();
     });
 
     socket.on('new_review', (data: any) => {
@@ -294,6 +331,8 @@ export function NotificationProvider({
         notifications,
         unreadCount,
         reservationBadge,
+        unpaidTransactionsCount,
+        readyToCheckInCount,
         reviewBadge,
         toasts,
         paymentToasts,
@@ -304,6 +343,7 @@ export function NotificationProvider({
         dismissToast,
         dismissPaymentToast,
         dismissReviewToast,
+        fetchBadgeCounts,
       }}
     >
       {children}

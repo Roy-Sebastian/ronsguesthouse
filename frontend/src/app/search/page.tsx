@@ -2,7 +2,7 @@
 
 import PublicFooter from '@/components/layout/PublicFooter';
 import PublicNavbar from '@/components/layout/PublicNavbar';
-import { BACKEND_URL, FALLBACK_ROOM_IMAGE } from '@/lib/constants';
+import { BACKEND_URL, FALLBACK_ROOM_IMAGE, formatRoomType } from '@/lib/constants';
 import { calculateNights } from '@/lib/formatters';
 import { BedDouble, Calendar, ChevronRight, ChevronLeft, Users } from 'lucide-react';
 import Link from 'next/link';
@@ -280,7 +280,7 @@ function SearchContent() {
 
                   {/* Info Column */}
                   <div className="p-6 md:w-2/5 flex flex-col justify-center border-b md:border-b-0 md:border-r border-gray-100 flex-1">
-                    <h2 className="text-xl font-serif font-semibold text-gray-900 mb-2 capitalize">{room.roomType}</h2>
+                    <h2 className="text-xl font-serif font-semibold text-gray-900 mb-2 capitalize">{formatRoomType(room.roomType)}</h2>
                     
                     <div className="flex items-center text-xs text-gray-500 mb-3 space-x-4">
                        <span className="flex items-center"><BedDouble className="w-3.5 h-3.5 mr-1" /> Guest House</span>

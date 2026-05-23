@@ -3,7 +3,7 @@
 import PublicFooter from '@/components/layout/PublicFooter';
 import PublicNavbar from '@/components/layout/PublicNavbar';
 import { apiFetch } from '@/lib/apiFetch';
-import { BACKEND_URL, FALLBACK_ROOM_IMAGE } from '@/lib/constants';
+import { BACKEND_URL, FALLBACK_ROOM_IMAGE, formatRoomType } from '@/lib/constants';
 import { calculateDays } from '@/lib/formatters';
 import { ChevronRight, ArrowLeft, CheckCircle2, User, FileText, CreditCard, BedDouble, Loader2 } from 'lucide-react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -86,7 +86,7 @@ export default function BookingPage() {
       if (formData.checkIn && formData.checkOut) {
         const inDate = new Date(formData.checkIn);
         const outDate = new Date(formData.checkOut);
-        if (inDate >= outDate) newErrors.checkOut = 'Check-out must be after check-in';
+        if (inDate > outDate) newErrors.checkOut = 'Check-out tidak boleh sebelum check-in';
       }
       if (!formData.guestName.trim()) newErrors.guestName = 'Full name is required';
       if (!formData.guestEmail.trim()) {
@@ -350,7 +350,7 @@ export default function BookingPage() {
                 <div className="space-y-6">
                   <div className="flex justify-between items-center py-4 border-b border-gray-100">
                     <span className="text-sm font-bold uppercase tracking-widest text-gray-500">Room</span>
-                    <span className="font-serif text-xl capitalize">{room.roomType} Room</span>
+                    <span className="font-serif text-xl capitalize">{formatRoomType(room.roomType)} Room</span>
                   </div>
                   
                   <div className="flex justify-between items-center py-4 border-b border-gray-100">
@@ -475,7 +475,7 @@ export default function BookingPage() {
                   />
                 </div>
                 
-                <h4 className="text-xl font-serif capitalize mb-1">{room.roomType} Room</h4>
+                <h4 className="text-xl font-serif capitalize mb-1">{formatRoomType(room.roomType)} Room</h4>
                 <p className="text-sm text-gray-500 flex items-center mb-6">
                   <BedDouble className="w-4 h-4 mr-1.5" /> Guest House
                 </p>

@@ -41,8 +41,8 @@ export async function validateBookingInput(
     throw Object.assign(new Error('Tanggal tidak valid'), { statusCode: 400 });
   }
 
-  if (checkIn >= checkOut) {
-    throw Object.assign(new Error('Tanggal check-in harus sebelum check-out'), { statusCode: 400 });
+  if (checkIn > checkOut) {
+    throw Object.assign(new Error('Tanggal check-out tidak boleh sebelum check-in'), { statusCode: 400 });
   }
 
   if (!options.allowPastDates) {

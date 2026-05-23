@@ -110,8 +110,14 @@ export const publicBook = async (req: Request, res: Response) => {
             roomId, checkInDate, checkOutDate, tx
           );
           if (!available) {
+            const formattedDates = fullyBookedDates.map((dateStr) => {
+              const parts = dateStr.split('-');
+              if (parts.length !== 3) return dateStr;
+              const [year, month, day] = parts;
+              return `${day}-${month}-${year.slice(-2)}`;
+            });
             throw Object.assign(
-              new Error(`Kamar tidak tersedia pada tanggal: ${fullyBookedDates.join(', ')}`),
+              new Error(`Kamar tidak tersedia pada tanggal: ${formattedDates.join(', ')}`),
               { statusCode: 409, fullyBookedDates },
             );
           }
