@@ -457,7 +457,7 @@ export default function AdminIncomePage() {
                 </td>
               </tr>
             ) : (
-              sortedData.map((t, i) => (
+              paginatedData.map((t, i) => (
                 <tr
                   key={t.id || i}
                   className="hover:bg-red-50/20 transition-colors border-b border-gray-100 last:border-0"
