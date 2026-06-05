@@ -3,7 +3,7 @@ import { apiFetch } from '@/lib/apiFetch';
 import { showToast } from '@/lib/toast';
 
 import { useEffect, useState } from "react";
-import { Star, CheckCircle, XCircle, Trash2, Clock } from "lucide-react";
+import { Star, CheckCircle, XCircle, Trash2, Clock, Hash, User } from "lucide-react";
 import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
 import swal from '@/lib/swal';
 
@@ -97,27 +97,54 @@ export default function AdminReviewsPage() {
         ) : reviews.length === 0 ? (
           <div className="col-span-full py-20 text-center text-gray-400 bg-white rounded-2xl border border-gray-100"><Star size={48} className="mx-auto mb-4 opacity-20" /><h3 className="text-base font-medium">Tidak ada ulasan {filter}</h3></div>
         ) : (
-          reviews.map(r => (
-            <div key={r.id} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex flex-col transition-all hover:shadow-md hover:-translate-y-0.5">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <div className="font-semibold text-dark text-sm">{r.guest?.fullName}</div>
-                  <div className="text-xs text-gray-400 mt-0.5">{new Date(r.createdAt).toLocaleString("id-ID")}</div>
+          reviews.map(r => {
+            const displayName = r.displayName || r.guest?.fullName || 'Tamu Anonim';
+            const bookingCode = r.reservation?.bookingCode;
+            return (
+              <div key={r.id} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex flex-col transition-all hover:shadow-md hover:-translate-y-0.5">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex-1 min-w-0">
+                    {/* Display name */}
+                    <div className="flex items-center gap-1.5 font-semibold text-dark text-sm truncate">
+                      <User size={13} className="text-gray-400 flex-shrink-0" />
+                      <span className="truncate">{displayName}</span>
+                    </div>
+                    {/* Guest fullName (from DB relation) if different */}
+                    {r.guest?.fullName && r.guest.fullName !== displayName && (
+                      <div className="text-xs text-gray-400 mt-0.5 truncate pl-4">
+                        Tamu: {r.guest.fullName}
+                      </div>
+                    )}
+                    {/* Booking code */}
+                    {bookingCode && (
+                      <div className="flex items-center gap-1 mt-1">
+                        <Hash size={11} className="text-gray-300 flex-shrink-0" />
+                        <span className="text-xs font-mono text-gray-400">{bookingCode}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-0.5 text-primary-light flex-shrink-0 ml-2">
+                    {Array.from({length: 5}).map((_, i) => (
+                      <Star key={i} size={14} fill={i < r.rating ? "currentColor" : "none"} color="currentColor" className={i >= r.rating ? "opacity-30" : ""} />
+                    ))}
+                  </div>
                 </div>
-                <div className="flex gap-0.5 text-primary-light">{Array.from({length: 5}).map((_, i) => <Star key={i} size={14} fill={i < r.rating ? "currentColor" : "none"} color="currentColor" className={i >= r.rating ? "opacity-30" : ""} />)}</div>
+                <p className="text-gray-600 text-sm leading-relaxed mb-2 flex-1 italic">
+                  {r.comment ? `"${r.comment}"` : <span className="not-italic text-gray-300">— tidak ada komentar —</span>}
+                </p>
+                <div className="text-xs text-gray-300 mb-4">{new Date(r.createdAt).toLocaleString("id-ID")}</div>
+                <div className="flex justify-end gap-2 pt-4 border-t border-gray-100">
+                  {filter === "pending" && (
+                    <>
+                      <button className="btn btn-success btn-sm" onClick={() => updateStatus(r.id, "approved")}><CheckCircle size={14} /> Setujui</button>
+                      <button className="btn btn-danger btn-sm" onClick={() => updateStatus(r.id, "rejected")}><XCircle size={14} /> Tolak</button>
+                    </>
+                  )}
+                  <button className="btn btn-ghost btn-icon text-gray-400 hover:text-red-600 hover:bg-red-50" onClick={() => handleDelete(r.id)}><Trash2 size={16} /></button>
+                </div>
               </div>
-              <p className="text-gray-600 text-sm leading-relaxed mb-6 flex-1 italic">"{r.comment}"</p>
-              <div className="flex justify-end gap-2 pt-4 border-t border-gray-100">
-                {filter === "pending" && (
-                  <>
-                    <button className="btn btn-success btn-sm" onClick={() => updateStatus(r.id, "approved")}><CheckCircle size={14} /> Setujui</button>
-                    <button className="btn btn-danger btn-sm" onClick={() => updateStatus(r.id, "rejected")}><XCircle size={14} /> Tolak</button>
-                  </>
-                )}
-                <button className="btn btn-ghost btn-icon text-gray-400 hover:text-red-600 hover:bg-red-50" onClick={() => handleDelete(r.id)}><Trash2 size={16} /></button>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </>
