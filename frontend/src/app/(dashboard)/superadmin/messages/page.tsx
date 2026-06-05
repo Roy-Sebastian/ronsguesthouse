@@ -2,7 +2,6 @@
 import { apiFetch } from '@/lib/apiFetch';
 import swal from '@/lib/swal';
 import { showToast } from '@/lib/toast';
-import { useHasPermission } from '@/lib/useHasPermission';
 import { Pagination } from '@/components/ui/Pagination';
 
 import { useEffect, useState } from "react";
@@ -18,7 +17,7 @@ export default function AdminMessagesPage() {
   const [selected, setSelected] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const canDelete = useHasPermission('message.delete');
+  const canDelete = true;
 
   const fetchMessages = async () => {
     setLoading(true);
