@@ -170,7 +170,7 @@ export default function AdminMessagesPage() {
                 {selected.phone && <a href={`https://wa.me/${selected.phone.replace(/^0/,"62")}`} target="_blank" rel="noreferrer" className="btn btn-success btn-md">Balas via WhatsApp</a>}
                 {canDelete && (
                   <button
-                    className="btn btn-danger-outline btn-md ml-auto flex items-center gap-1.5"
+                    className="btn btn-danger btn-md ml-auto flex items-center gap-1.5"
                     onClick={() => handleDelete(selected.id)}
                   >
                     <Trash2 size={16} /> <span>Hapus Pesan</span>
