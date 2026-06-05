@@ -7,7 +7,7 @@ import { confirmAction } from '@/lib/dialog';
 import {
   AirVent, Bath, Bed, BookOpen, Building2, Bus, Car, Coffee,
   Dumbbell, Flame, Lightbulb, Lock, type LucideIcon, Music, Package,
-  Phone, Plug, Plus, Refrigerator, Search, Shield, Shirt, ShowerHead,
+  Pencil, Phone, Plug, Plus, Refrigerator, Search, Shield, Shirt, ShowerHead,
   Snowflake, Sofa, Star, Sun, Trash2, Trees, Tv, Utensils, Waves,
   Wind, Wifi, Wrench, X,
 } from 'lucide-react';
@@ -61,6 +61,7 @@ export default function SuperadminAmenitiesPage() {
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ name: '', description: '', icon: '' });
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const fetchAmenities = async () => {
     setLoading(true);
@@ -75,19 +76,39 @@ export default function SuperadminAmenitiesPage() {
     fetchAmenities();
   }, []);
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    await apiFetch('/amenities', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    });
+    if (editingId) {
+      await apiFetch(`/amenities/${editingId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      showToast('Amenitas berhasil diperbarui');
+    } else {
+      await apiFetch('/amenities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      showToast('Amenitas berhasil ditambahkan');
+    }
     setSaving(false);
     setShowModal(false);
     setForm({ name: '', description: '', icon: '' });
-    showToast('Amenitas berhasil ditambahkan');
+    setEditingId(null);
     fetchAmenities();
+  };
+
+  const handleEdit = (amenity: any) => {
+    setForm({
+      name: amenity.name,
+      description: amenity.description || '',
+      icon: amenity.icon || '',
+    });
+    setEditingId(amenity.id);
+    setShowModal(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -113,12 +134,16 @@ export default function SuperadminAmenitiesPage() {
         </div>
         <button
           className="btn btn-primary btn-md"
-          onClick={() => setShowModal(true)}
+          onClick={() => {
+            setForm({ name: '', description: '', icon: '' });
+            setEditingId(null);
+            setShowModal(true);
+          }}
         >
           <Plus size={16} /> <span>Tambah Amenitas</span>
         </button>
       </div>
-
+ 
       <div className="search-bar flex-1">
         <Search size={18} className="text-gray-400 ml-2 shrink-0" />
         <input
@@ -128,7 +153,7 @@ export default function SuperadminAmenitiesPage() {
           onChange={(e) => setSearch(e.target.value)}
         />
       </div>
-
+ 
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {loading ? (
           <div className="col-span-full py-20 text-center">
@@ -152,12 +177,22 @@ export default function SuperadminAmenitiesPage() {
                   </div>
                   <h3 className="font-semibold text-gray-800 text-base">{a.name}</h3>
                 </div>
-                <button
-                  className="p-1.5 text-red-300 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                  onClick={() => handleDelete(a.id)}
-                >
-                  <Trash2 size={16} />
-                </button>
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    className="p-1.5 text-gray-400 hover:bg-gray-50 hover:text-primary rounded-lg transition-colors"
+                    onClick={() => handleEdit(a)}
+                    title="Edit amenitas"
+                  >
+                    <Pencil size={15} />
+                  </button>
+                  <button
+                    className="p-1.5 text-red-300 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors"
+                    onClick={() => handleDelete(a.id)}
+                    title="Hapus amenitas"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
               <p className="text-sm text-gray-500 mb-4 flex-1">
                 {a.description || 'Tidak ada deskripsi'}
@@ -169,7 +204,7 @@ export default function SuperadminAmenitiesPage() {
           ))
         )}
       </div>
-
+ 
       {showModal && (
         <div
           className="fixed inset-0 bg-black/50 z-200 flex items-center justify-center p-4 backdrop-blur-sm"
@@ -179,7 +214,7 @@ export default function SuperadminAmenitiesPage() {
         >
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-slideUp">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="font-serif text-xl font-bold text-dark">Tambah Amenitas</h2>
+              <h2 className="font-serif text-xl font-bold text-dark">{editingId ? 'Edit Amenitas' : 'Tambah Amenitas'}</h2>
               <button
                 className="text-gray-400 hover:bg-gray-100 rounded-lg p-1 transition-colors"
                 onClick={() => setShowModal(false)}
@@ -187,7 +222,7 @@ export default function SuperadminAmenitiesPage() {
                 <X size={20} />
               </button>
             </div>
-            <form onSubmit={handleCreate} className="p-6 flex flex-col gap-4">
+            <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Nama*</label>
                 <input

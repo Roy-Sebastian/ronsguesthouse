@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import PublicFooter from '@/components/layout/PublicFooter';
 import PublicNavbar from '@/components/layout/PublicNavbar';
@@ -43,8 +43,8 @@ export default function ContactPage() {
       setSuccess(true);
       setForm({ name: '', email: '', phone: '', subject: '', message: '' });
       setTimeout(() => setSuccess(false), 5000);
-    } catch {
-      setError('Failed to send your message. Please try again.');
+    } catch (err: any) {
+      setError(err.message || 'Failed to send your message. Please try again.');
     } finally {
       setLoading(false);
     }

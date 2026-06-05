@@ -471,8 +471,8 @@ export default function Home() {
           </ScrollReveal>
 
           <div className="w-full relative overflow-hidden">
-            <div className="flex w-max animate-marquee space-x-6 pb-4 cursor-pointer">
-              {[...reviews, ...reviews].map((review, index) => (
+            <div className={`flex ${reviews.length >= 3 ? 'w-max animate-marquee' : 'justify-center w-full'} space-x-6 pb-4 cursor-pointer`}>
+              {(reviews.length >= 3 ? [...reviews, ...reviews] : reviews).map((review, index) => (
                 <div key={index} className="w-[300px] md:w-[350px] p-6 bg-white border border-gray-200 hover:border-gray-300 shadow-sm rounded-lg flex flex-col h-full transition-all text-left flex-shrink-0 whitespace-normal">
                   <div className="flex justify-start mb-6">
                     {Array.from({ length: 5 }).map((_, i) => (
