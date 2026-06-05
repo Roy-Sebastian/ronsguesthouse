@@ -1,8 +1,13 @@
-﻿"use client";
+"use client";
 import { apiFetch } from '@/lib/apiFetch';
+import swal from '@/lib/swal';
+import { showToast } from '@/lib/toast';
+import { useSession } from '@/lib/auth-client';
+import { useHasPermission } from '@/lib/useHasPermission';
+import { Pagination } from '@/components/ui/Pagination';
 
 import { useEffect, useState } from "react";
-import { Mail, CheckCircle, Search, MailOpen, Phone } from "lucide-react";
+import { Mail, CheckCircle, Search, MailOpen, Phone, Trash2 } from "lucide-react";
 import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
 
 export default function AdminMessagesPage() {
@@ -12,6 +17,9 @@ export default function AdminMessagesPage() {
   const [dateStart, setDateStart] = useState("");
   const [dateEnd, setDateEnd] = useState("");
   const [selected, setSelected] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const canDelete = useHasPermission('message.delete');
 
   const fetchMessages = async () => {
     setLoading(true);
@@ -21,6 +29,30 @@ export default function AdminMessagesPage() {
   };
 
   useEffect(() => { fetchMessages(); }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, dateStart, dateEnd]);
+
+  const handleDelete = async (id: string) => {
+    const result = await swal.fire({
+      icon: 'warning',
+      title: 'Hapus Pesan',
+      text: 'Apakah Anda yakin ingin menghapus pesan ini secara permanen?',
+      showCancelButton: true,
+      confirmButtonText: 'Ya, Hapus',
+      cancelButtonText: 'Batal',
+    });
+    if (!result.isConfirmed) return;
+    const res = await apiFetch(`/messages/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      showToast('Pesan berhasil dihapus');
+      setSelected(null);
+      fetchMessages();
+    } else {
+      showToast('Gagal menghapus pesan', 'error');
+    }
+  };
 
   const handleRead = async (msg: any) => {
     setSelected(msg);
@@ -47,6 +79,10 @@ export default function AdminMessagesPage() {
     const searchMatch = !search || m.name.toLowerCase().includes(search.toLowerCase()) || m.subject.toLowerCase().includes(search.toLowerCase());
     return dateMatch && searchMatch;
   });
+
+  const itemsPerPage = 10;
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const paginatedMessages = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <>
@@ -83,7 +119,7 @@ export default function AdminMessagesPage() {
               <div className="py-20 text-center text-gray-400"><Mail size={32} className="mx-auto mb-3 opacity-20" /><p className="text-sm">Tidak ada pesan</p></div>
             ) : (
               <div className="divide-y divide-gray-100">
-                {filtered.map(m => (
+                {paginatedMessages.map(m => (
                   <button key={m.id} className={`w-full text-left p-4 hover:bg-gray-50 transition-colors ${selected?.id === m.id ? "bg-primary/5 border-l-2 border-primary" : "border-l-2 border-transparent"} ${!m.isRead ? "font-semibold text-dark" : "text-gray-600"}`} onClick={() => handleRead(m)}>
                     <div className="flex justify-between items-start mb-1">
                       <div className="truncate text-sm flex-1 mr-2">{m.name}</div>
@@ -96,6 +132,13 @@ export default function AdminMessagesPage() {
               </div>
             )}
           </div>
+          <Pagination
+            page={currentPage}
+            limit={itemsPerPage}
+            total={filtered.length}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
         </div>
 
         {/* Message View */}
@@ -127,6 +170,14 @@ export default function AdminMessagesPage() {
               <div className="px-8 py-4 border-t border-gray-100 shrink-0 flex gap-3">
                 <a href={`mailto:${selected.email}`} className="btn btn-primary btn-md">Balas via Email</a>
                 {selected.phone && <a href={`https://wa.me/${selected.phone.replace(/^0/,"62")}`} target="_blank" rel="noreferrer" className="btn btn-success btn-md">Balas via WhatsApp</a>}
+                {canDelete && (
+                  <button
+                    className="btn btn-outline border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 btn-md ml-auto flex items-center gap-1.5"
+                    onClick={() => handleDelete(selected.id)}
+                  >
+                    <Trash2 size={16} /> <span>Hapus Pesan</span>
+                  </button>
+                )}
               </div>
             </>
           ) : (
