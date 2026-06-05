@@ -13,7 +13,7 @@ import { io, Socket } from 'socket.io-client';
 
 export interface Notification {
   id: string;
-  type: 'new_booking' | 'reminder' | 'payment_confirmed' | 'new_review';
+  type: 'new_booking' | 'reminder' | 'payment_confirmed' | 'new_review' | 'new_message';
   message: string;
   date: Date;
   read: boolean;
@@ -44,6 +44,13 @@ export interface ReviewToast {
   rating: number;
 }
 
+export interface MessageToast {
+  id: string;
+  name: string;
+  subject: string;
+  message: string;
+}
+
 interface NotificationContextValue {
   notifications: Notification[];
   unreadCount: number;
@@ -51,15 +58,19 @@ interface NotificationContextValue {
   unpaidTransactionsCount: number;
   readyToCheckInCount: number;
   reviewBadge: number;
+  messageBadge: number;
   toasts: ReservationToast[];
   paymentToasts: PaymentToast[];
   reviewToasts: ReviewToast[];
+  messageToasts: MessageToast[];
   markAllRead: () => void;
   clearReservationBadge: () => void;
   clearReviewBadge: () => void;
+  clearMessageBadge: () => void;
   dismissToast: (id: string) => void;
   dismissPaymentToast: (id: string) => void;
   dismissReviewToast: (id: string) => void;
+  dismissMessageToast: (id: string) => void;
   fetchBadgeCounts: () => Promise<void>;
 }
 
@@ -70,15 +81,19 @@ const NotificationContext = createContext<NotificationContextValue>({
   unpaidTransactionsCount: 0,
   readyToCheckInCount: 0,
   reviewBadge: 0,
+  messageBadge: 0,
   toasts: [],
   paymentToasts: [],
   reviewToasts: [],
+  messageToasts: [],
   markAllRead: () => {},
   clearReservationBadge: () => {},
   clearReviewBadge: () => {},
+  clearMessageBadge: () => {},
   dismissToast: () => {},
   dismissPaymentToast: () => {},
   dismissReviewToast: () => {},
+  dismissMessageToast: () => {},
   fetchBadgeCounts: async () => {},
 });
 
@@ -118,9 +133,11 @@ export function NotificationProvider({
   const [unreadCount, setUnreadCount] = useState(0);
   const [reservationBadge, setReservationBadge] = useState(0);
   const [reviewBadge, setReviewBadge] = useState(0);
+  const [messageBadge, setMessageBadge] = useState(0);
   const [toasts, setToasts] = useState<ReservationToast[]>([]);
   const [paymentToasts, setPaymentToasts] = useState<PaymentToast[]>([]);
   const [reviewToasts, setReviewToasts] = useState<ReviewToast[]>([]);
+  const [messageToasts, setMessageToasts] = useState<MessageToast[]>([]);
   const [unpaidTransactionsCount, setUnpaidTransactionsCount] = useState(0);
   const [readyToCheckInCount, setReadyToCheckInCount] = useState(0);
   const socketRef = useRef<Socket | null>(null);
@@ -136,6 +153,9 @@ export function NotificationProvider({
     }
     if (notif.type === 'new_review') {
       setReviewBadge((c) => c + 1);
+    }
+    if (notif.type === 'new_message') {
+      setMessageBadge((c) => c + 1);
     }
   }, []);
 
@@ -293,6 +313,30 @@ export function NotificationProvider({
       }, 8000);
     });
 
+    socket.on('new_message', (data: any) => {
+      const toastId = 'message_' + (data.id ?? Date.now());
+      addNotification({
+        id: toastId,
+        type: 'new_message',
+        message: `Pesan baru dari ${data.name || 'Tamu'}: "${data.subject}"`,
+        date: new Date(),
+        read: false,
+      });
+
+      const messageToast: MessageToast = {
+        id: toastId,
+        name: data.name || 'Tamu',
+        subject: data.subject || '-',
+        message: data.message || '',
+      };
+      setMessageToasts((prev) => [...prev, messageToast]);
+      playNotificationSound();
+
+      setTimeout(() => {
+        setMessageToasts((prev) => prev.filter((t) => t.id !== toastId));
+      }, 8000);
+    });
+
     return () => {
       clearTimeout(connectTimer);
       socket.disconnect();
@@ -313,6 +357,10 @@ export function NotificationProvider({
     setReviewBadge(0);
   }, []);
 
+  const clearMessageBadge = useCallback(() => {
+    setMessageBadge(0);
+  }, []);
+
   const dismissToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
@@ -325,6 +373,10 @@ export function NotificationProvider({
     setReviewToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
+  const dismissMessageToast = useCallback((id: string) => {
+    setMessageToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
   return (
     <NotificationContext.Provider
       value={{
@@ -334,15 +386,19 @@ export function NotificationProvider({
         unpaidTransactionsCount,
         readyToCheckInCount,
         reviewBadge,
+        messageBadge,
         toasts,
         paymentToasts,
         reviewToasts,
+        messageToasts,
         markAllRead,
         clearReservationBadge,
         clearReviewBadge,
+        clearMessageBadge,
         dismissToast,
         dismissPaymentToast,
         dismissReviewToast,
+        dismissMessageToast,
         fetchBadgeCounts,
       }}
     >

@@ -132,6 +132,8 @@ export default function DashboardLayout({
     clearReviewBadge,
     unpaidTransactionsCount,
     readyToCheckInCount,
+    messageBadge,
+    clearMessageBadge,
   } = useNotifications();
 
   // Live role matrix — fetched once from backend via shared hook (cached at module level)
@@ -143,6 +145,13 @@ export default function DashboardLayout({
       clearReviewBadge();
     }
   }, [pathname, clearReviewBadge]);
+
+  // Auto-clear message badge when user visits messages page
+  useEffect(() => {
+    if (pathname.includes('/messages')) {
+      clearMessageBadge();
+    }
+  }, [pathname, clearMessageBadge]);
 
   // Prevent back-forward cache (BFCache) / Soft-Navigation from showing stale sensitive pages
   useEffect(() => {
@@ -290,13 +299,15 @@ export default function DashboardLayout({
                 const isReview = item.href === `/${role}/reviews`;
                 const isStay = item.href === `/${role}/stays`;
                 const isTransaction = item.href === `/${role}/transactions`;
+                const isMessage = item.href === `/${role}/messages`;
 
                 const showResBadge = isReservation && reservationBadge > 0;
                 const showRevBadge = isReview && reviewBadge > 0;
                 const showStayBadge = isStay && readyToCheckInCount > 0;
                 const showTxBadge = isTransaction && unpaidTransactionsCount > 0;
+                const showMsgBadge = isMessage && messageBadge > 0;
 
-                const showBadge = showResBadge || showRevBadge || showStayBadge || showTxBadge;
+                const showBadge = showResBadge || showRevBadge || showStayBadge || showTxBadge || showMsgBadge;
                 const badgeCount = showResBadge
                   ? reservationBadge
                   : showRevBadge
@@ -305,7 +316,9 @@ export default function DashboardLayout({
                       ? readyToCheckInCount
                       : showTxBadge
                         ? unpaidTransactionsCount
-                        : 0;
+                        : showMsgBadge
+                          ? messageBadge
+                          : 0;
 
                 return (
                   <Link

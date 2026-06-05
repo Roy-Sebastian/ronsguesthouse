@@ -1,8 +1,8 @@
 'use client';
 
 import { useNotifications } from '@/providers/NotificationProvider';
-import type { PaymentToast, ReviewToast } from '@/providers/NotificationProvider';
-import { BedDouble, CalendarDays, X, CheckCircle2, CreditCard, Star } from 'lucide-react';
+import type { PaymentToast, ReviewToast, MessageToast } from '@/providers/NotificationProvider';
+import { BedDouble, CalendarDays, X, CheckCircle2, CreditCard, Star, Mail } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 // ─── Reservation Toast ────────────────────────────────────────────────────────
@@ -290,12 +290,97 @@ function ReviewToastItem({
   );
 }
 
+// ─── Message Toast ────────────────────────────────────────────────────────────
+
+function MessageToastItem({
+  toast,
+  onDismiss,
+}: {
+  toast: MessageToast;
+  onDismiss: (id: string) => void;
+}) {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(true), 10);
+    return () => clearTimeout(t);
+  }, []);
+
+  const handleDismiss = () => {
+    setVisible(false);
+    setTimeout(() => onDismiss(toast.id), 300);
+  };
+
+  return (
+    <div
+      className={`
+        w-80 bg-white border border-blue-200 rounded-2xl shadow-2xl overflow-hidden
+        transition-all duration-300 ease-out
+        ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
+      `}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 pt-3 pb-2 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100">
+        <div className="flex items-center gap-2">
+          <Mail size={16} className="text-blue-600 shrink-0" />
+          <span className="text-sm font-bold text-blue-800 tracking-wide">
+            Pesan Baru Masuk
+          </span>
+        </div>
+        <button
+          onClick={handleDismiss}
+          className="text-gray-400 hover:text-gray-700 transition-colors p-0.5 rounded-full hover:bg-gray-100"
+        >
+          <X size={14} />
+        </button>
+      </div>
+
+      {/* Body */}
+      <div className="px-4 py-3 space-y-1.5">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider w-16 shrink-0">
+            Pengirim
+          </span>
+          <span className="text-sm font-semibold text-gray-900 truncate">
+            {toast.name}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider w-16 shrink-0">
+            Subjek
+          </span>
+          <span className="text-sm font-medium text-gray-800 truncate">
+            {toast.subject}
+          </span>
+        </div>
+        <p className="text-xs text-gray-500 line-clamp-2 italic bg-gray-50 p-2 rounded-lg border border-gray-100">
+          "{toast.message}"
+        </p>
+      </div>
+
+      {/* Progress bar auto-dismiss */}
+      <div className="h-1 bg-gray-100 relative overflow-hidden">
+        <div className="absolute inset-0 bg-blue-400 origin-left animate-[shrink_8s_linear_forwards]" />
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Export ──────────────────────────────────────────────────────────────
 
 export default function ReservationToastPopup() {
-  const { toasts, dismissToast, paymentToasts, dismissPaymentToast, reviewToasts, dismissReviewToast } = useNotifications();
+  const {
+    toasts,
+    dismissToast,
+    paymentToasts,
+    dismissPaymentToast,
+    reviewToasts,
+    dismissReviewToast,
+    messageToasts = [],
+    dismissMessageToast,
+  } = useNotifications();
 
-  if (toasts.length === 0 && paymentToasts.length === 0 && reviewToasts.length === 0) return null;
+  if (toasts.length === 0 && paymentToasts.length === 0 && reviewToasts.length === 0 && messageToasts.length === 0) return null;
 
   return (
     <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 items-end pointer-events-none">
@@ -312,6 +397,11 @@ export default function ReservationToastPopup() {
       {reviewToasts.map((toast) => (
         <div key={toast.id} className="pointer-events-auto">
           <ReviewToastItem toast={toast} onDismiss={dismissReviewToast} />
+        </div>
+      ))}
+      {messageToasts.map((toast) => (
+        <div key={toast.id} className="pointer-events-auto">
+          <MessageToastItem toast={toast} onDismiss={dismissMessageToast} />
         </div>
       ))}
     </div>

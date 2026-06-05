@@ -1,4 +1,6 @@
-﻿import { messageRepository } from '../repositories/message.repository';
+import { messageRepository } from '../repositories/message.repository';
+import { getIO } from '../config/socket';
+import { logger } from '../config/logger';
 
 export async function getAllMessages() {
   return messageRepository.findAll({ orderBy: { createdAt: 'desc' } });
@@ -37,7 +39,25 @@ export async function submitPublicMessage(body: any) {
     throw Object.assign(new Error('Pesan minimal 10 karakter'), { statusCode: 400 });
   }
 
-  return messageRepository.create({
+  const createdMessage = await messageRepository.create({
     data: { name, email, phone, subject, message, isRead: false },
   });
+
+  try {
+    const io = getIO();
+    if (io) {
+      io.emit('new_message', {
+        id: createdMessage.id,
+        name: createdMessage.name,
+        email: createdMessage.email,
+        subject: createdMessage.subject,
+        message: createdMessage.message,
+        createdAt: createdMessage.createdAt,
+      });
+    }
+  } catch (e) {
+    logger.error('Socket emit error for new message', { error: e });
+  }
+
+  return createdMessage;
 }
