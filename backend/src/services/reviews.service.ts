@@ -137,32 +137,65 @@ export async function submitPublicReview(
     });
   }
 
-  // 5. Create review (comment is optional)
-  const review = await (prisma as any).review.create({
-    data: {
-      guestId: reservation.guest.id,
+  // 5. Guard against missing guest relation
+  if (!reservation.guest || !reservation.guest.id) {
+    logger.error('Guest relation missing for reservation', {
       reservationId: reservation.id,
-      rating,
-      displayName: resolvedDisplayName,
-      comment: comment?.trim() || null,
-      status: 'pending', // requires admin moderation
-    },
-  });
-
-  logger.info('Public review submitted', {
-    reviewId: review.id,
-    reservationId: reservation.id,
-    rating,
-  });
-
-  const io = getIO();
-  if (io) {
-    io.emit('new_review', {
-      id: review.id,
-      displayName: review.displayName,
-      rating: review.rating,
+      bookingCode: normalizedCode,
     });
+    throw Object.assign(
+      new Error('Data tamu tidak ditemukan untuk reservasi ini. Hubungi admin.'),
+      { statusCode: 500 },
+    );
   }
 
-  return review;
+  // 6. Create review (comment is optional)
+  try {
+    const review = await (prisma as any).review.create({
+      data: {
+        guestId: reservation.guest.id,
+        reservationId: reservation.id,
+        rating,
+        displayName: resolvedDisplayName,
+        comment: comment?.trim() || null,
+        status: 'pending', // requires admin moderation
+      },
+    });
+
+    logger.info('Public review submitted', {
+      reviewId: review.id,
+      reservationId: reservation.id,
+      rating,
+    });
+
+    const io = getIO();
+    if (io) {
+      io.emit('new_review', {
+        id: review.id,
+        displayName: review.displayName,
+        rating: review.rating,
+      });
+    }
+
+    return review;
+  } catch (createError: any) {
+    // Log the full Prisma error for debugging
+    logger.error('Failed to create review', {
+      error: createError.message,
+      code: createError.code,
+      meta: createError.meta,
+      reservationId: reservation.id,
+      bookingCode: normalizedCode,
+    });
+
+    // Prisma unique constraint violation (P2002) — duplicate review
+    if (createError.code === 'P2002') {
+      throw Object.assign(
+        new Error('Kamu sudah pernah memberikan review untuk reservasi ini'),
+        { statusCode: 409 },
+      );
+    }
+
+    throw createError;
+  }
 }

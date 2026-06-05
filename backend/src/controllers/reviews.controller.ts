@@ -96,6 +96,9 @@ export const submitPublicReview = async (req: Request, res: Response) => {
 		});
 	} catch (error: any) {
 		const statusCode = error.statusCode || 500;
+		if (statusCode === 500) {
+			console.error('[submitPublicReview] Unexpected error:', error);
+		}
 		res.status(statusCode).json({ error: error.message || 'Gagal mengirim ulasan' });
 	}
 };

@@ -169,14 +169,49 @@ export default function Home() {
     router.push(`/check-booking?code=${encodeURIComponent(code)}`);
   };
 
-  const getIcon = (name: string) => {
-    const n = name.toLowerCase();
-    if (n.includes('wifi')) return <Wifi className="w-8 h-8" />;
-    if (n.includes('parkir') || n.includes('parking')) return <Car className="w-8 h-8" />;
-    if (n.includes('kopi') || n.includes('coffee') || n.includes('cafe'))
-      return <Coffee className="w-8 h-8" />;
-    if (n.includes('aman') || n.includes('security')) return <Shield className="w-8 h-8" />;
-    return <Clock className="w-8 h-8" />;
+  const FACILITY_NAME_ICON_MAP: Record<string, LucideIcon> = {
+    wifi: Wifi, internet: Wifi,
+    parkir: Car, parking: Car,
+    kopi: Coffee, coffee: Coffee, cafe: Coffee, breakfast: Coffee,
+    aman: Shield, security: Shield, keamanan: Shield,
+    tv: Tv, television: Tv,
+    shower: ShowerHead, mandi: ShowerHead,
+    ac: AirVent, aircon: AirVent,
+    heater: Flame, pemanas: Flame, 'water heater': Flame,
+    kulkas: Refrigerator, fridge: Refrigerator, refrigerator: Refrigerator,
+    laundry: Shirt, cucian: Shirt,
+    gym: Dumbbell, fitness: Dumbbell,
+    restaurant: Utensils, makan: Utensils, dining: Utensils,
+    garden: Trees, taman: Trees,
+    pool: Waves, kolam: Waves,
+    bath: Bath, bathtub: Bath,
+    bed: Bed, kasur: Bed,
+    sofa: Sofa, lounge: Sofa,
+    music: Music,
+    phone: Phone, telepon: Phone,
+    lock: Lock, kunci: Lock,
+    sun: Sun, rooftop: Sun,
+    wind: Wind, kipas: Wind,
+    plug: Plug, listrik: Plug, charger: Plug,
+    bus: Bus, shuttle: Bus, transport: Bus,
+    building: Building2,
+    book: BookOpen, perpustakaan: BookOpen,
+  };
+
+  const getFacilityIcon = (fac: Facility): LucideIcon => {
+    // 1. Try the icon field from the database (matches AMENITY_ICON_MAP keys like "Wifi", "Tv", etc.)
+    if (fac.icon && AMENITY_ICON_MAP[fac.icon]) {
+      return AMENITY_ICON_MAP[fac.icon];
+    }
+
+    // 2. Fall back to name-based matching
+    const n = fac.name.toLowerCase();
+    for (const [keyword, icon] of Object.entries(FACILITY_NAME_ICON_MAP)) {
+      if (n.includes(keyword)) return icon;
+    }
+
+    // 3. Default
+    return Coffee;
   };
 
   // ── JSX ────────────────────────────────────────────────────────────────────
@@ -396,7 +431,7 @@ export default function Home() {
             <ScrollReveal key={fac.id}>
               <div className="flex flex-col items-center justify-center p-8 bg-white border border-gray-100 rounded-lg aspect-square text-center shadow-sm hover:shadow-md transition-shadow">
                 <div className="text-red-800 mb-4">
-                  {getIcon(fac.name)}
+                  {(() => { const Icon = getFacilityIcon(fac); return <Icon className="w-8 h-8" />; })()}
                 </div>
                 <h4 className="text-sm font-bold text-gray-900 mb-2 truncate w-full">{fac.name}</h4>
                 <p className="text-xs text-gray-500 font-medium line-clamp-2">
