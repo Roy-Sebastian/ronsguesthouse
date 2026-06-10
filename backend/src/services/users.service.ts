@@ -108,5 +108,42 @@ export async function deleteUser(id: string, ctx: RequesterContext) {
   if (!target) throw new Error('Pengguna tidak ditemukan');
   if (target.role === 'superadmin') throw new Error('Akun superadmin tidak dapat dihapus');
   if (target.id === (ctx as any).requesterId) throw new Error('Tidak dapat menghapus akun sendiri');
-  await userRepository.delete(id);
+
+  const reservationCount = await prisma.reservation.count({
+    where: { userId: id }
+  });
+  if (reservationCount > 0) {
+    throw new Error('Tidak dapat menghapus pengguna karena terdapat data reservasi yang dicatat oleh pengguna ini');
+  }
+
+  const expenseCount = await prisma.expense.count({
+    where: { userId: id }
+  });
+  if (expenseCount > 0) {
+    throw new Error('Tidak dapat menghapus pengguna karena terdapat data pengeluaran yang dicatat oleh pengguna ini');
+  }
+
+  await prisma.$transaction(async (tx) => {
+    // Delete related audit logs first
+    await tx.auditLog.deleteMany({
+      where: { userId: id }
+    });
+
+    // Nullify userId on related incomes
+    await tx.income.updateMany({
+      where: { userId: id },
+      data: { userId: null }
+    });
+
+    // Nullify createdByUserId on related penalties
+    await tx.penalty.updateMany({
+      where: { createdByUserId: id },
+      data: { createdByUserId: null }
+    });
+
+    // Delete the user
+    await tx.user.delete({
+      where: { id }
+    });
+  });
 }

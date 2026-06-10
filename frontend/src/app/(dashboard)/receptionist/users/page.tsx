@@ -121,6 +121,7 @@ export default function SuperadminUsersPage() {
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -171,11 +172,18 @@ export default function SuperadminUsersPage() {
     });
     if (!result.isConfirmed) return;
     try {
-      await apiFetch(`/users/${id}`, { method: 'DELETE' });
+      setDeleting(true);
+      const res = await apiFetch(`/users/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Gagal menghapus');
+      }
       showToast('Pengguna berhasil dihapus');
       fetchUsers();
-    } catch {
-      await swal.fire({ icon: 'error', title: 'Gagal', text: 'Gagal menghapus' });
+    } catch (err: any) {
+      await swal.fire({ icon: 'error', title: 'Gagal', text: err.message || 'Gagal menghapus' });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -279,6 +287,20 @@ export default function SuperadminUsersPage() {
 
   return (
     <>
+      {/* Loading badge fixed kanan atas saat menghapus */}
+      {deleting && (
+        <div className="fixed top-20 right-6 z-[9999] flex items-center gap-2.5 bg-red-600 text-white text-sm font-semibold px-4 py-3 rounded-xl shadow-xl animate-slideUp">
+          <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin shrink-0" />
+          <span>Menghapus pengguna...</span>
+        </div>
+      )}
+      {/* Loading badge fixed kanan atas saat menyimpan */}
+      {saving && (
+        <div className="fixed top-20 right-6 z-[9999] flex items-center gap-2.5 bg-red-600 text-white text-sm font-semibold px-4 py-3 rounded-xl shadow-xl animate-slideUp">
+          <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin shrink-0" />
+          <span>{editId ? 'Memperbarui pengguna...' : 'Menambah pengguna...'}</span>
+        </div>
+      )}
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="page-title">

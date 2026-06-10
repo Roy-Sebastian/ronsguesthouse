@@ -10,13 +10,21 @@ import { useTableSort } from '@/hooks/useTableSort';
 import { SortableHeader } from '@/components/ui/SortableHeader';
 import { Pagination } from '@/components/ui/Pagination';
 
+const categoryLabel: Record<string, string> = {
+  general: 'Umum',
+  extra_bed: 'Extra Bed',
+  food: 'Makanan / Minuman',
+  laundry: 'Laundry',
+  rental: 'Penyewaan',
+};
+
 export default function SuperadminAddonsPage() {
   const [addons, setAddons] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: '', category: 'general', price: 0, description: '' });
+  const [form, setForm] = useState({ name: '', category: 'general', priceStr: '', description: '' });
   const [saving, setSaving] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -38,13 +46,13 @@ export default function SuperadminAddonsPage() {
 
   const openCreate = () => {
     setEditId(null);
-    setForm({ name: '', category: 'general', price: 0, description: '' });
+    setForm({ name: '', category: 'general', priceStr: '', description: '' });
     setShowModal(true);
   };
 
   const openEdit = (a: any) => {
     setEditId(a.id);
-    setForm({ name: a.name, category: a.category || 'general', price: Number(a.price), description: a.description || '' });
+    setForm({ name: a.name, category: a.category || 'general', priceStr: String(Number(a.price)), description: a.description || '' });
     setShowModal(true);
   };
 
@@ -57,13 +65,13 @@ export default function SuperadminAddonsPage() {
     await apiFetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, price: Number(form.price) }),
+      body: JSON.stringify({ name: form.name, category: form.category, description: form.description, price: Number(form.priceStr) || 0 }),
     });
     setSaving(false);
     setShowModal(false);
     showToast(editId ? 'Layanan berhasil diperbarui' : 'Layanan berhasil ditambahkan');
     setEditId(null);
-    setForm({ name: '', category: 'general', price: 0, description: '' });
+    setForm({ name: '', category: 'general', priceStr: '', description: '' });
     fetchAddons();
   };
 
@@ -153,7 +161,7 @@ export default function SuperadminAddonsPage() {
                   <tr key={a.id} className="hover:bg-red-50/20 transition-colors">
                     <td className="px-6 py-4">
                       <div className="font-medium text-gray-900">{a.name}</div>
-                      <div className="text-xs text-gray-500">{a.category}</div>
+                      <div className="text-xs text-gray-500">{categoryLabel[a.category] || a.category}</div>
                     </td>
                     <td className="px-6 py-4">Rp {Number(a.price).toLocaleString('id-ID')}</td>
                     <td className="px-6 py-4 text-center">
@@ -195,7 +203,18 @@ export default function SuperadminAddonsPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Harga</label>
-                <input required type="number" value={form.price} onChange={e => setForm({ ...form, price: Number(e.target.value) })} className="form-input" placeholder="0" />
+                <input
+                  required
+                  type="text"
+                  inputMode="numeric"
+                  value={form.priceStr}
+                  onChange={e => {
+                    const val = e.target.value.replace(/[^0-9]/g, '');
+                    setForm({ ...form, priceStr: val === '' ? '' : String(parseInt(val, 10)) });
+                  }}
+                  className="form-input"
+                  placeholder="Contoh: 12000"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
