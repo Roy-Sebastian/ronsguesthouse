@@ -1,7 +1,6 @@
 'use client';
 import { apiFetch } from '@/lib/apiFetch';
 import { showToast } from '@/lib/toast';
-import { permissionsGroups } from '@/lib/rbac';
 import { TableActions } from '@/components/ui/TableActions';
 
 import {
@@ -9,10 +8,8 @@ import {
   EyeOff,
   Plus,
   Search,
-  ShieldCheck,
   ToggleLeft,
   ToggleRight,
-  Trash2,
   Users,
   X,
 } from 'lucide-react';
@@ -129,16 +126,7 @@ export default function SuperadminUsersPage() {
     }
   };
 
-  const togglePermission = (permId: string) => {
-    setForm((prev) => {
-      const perms = prev.permissions || [];
-      if (perms.includes(permId)) {
-        return { ...prev, permissions: perms.filter((p) => p !== permId) };
-      } else {
-        return { ...prev, permissions: [...perms, permId] };
-      }
-    });
-  };
+
 
   const openCreate = () => {
     setEditId(null);
@@ -148,7 +136,7 @@ export default function SuperadminUsersPage() {
       password: '',
       role: 'receptionist',
       phone: '',
-      permissions: ['reservation.view', 'reservation.create', 'guest.view'],
+      permissions: [],
     });
     setConfirmPassword('');
     setShowPassword(false);
@@ -549,43 +537,7 @@ export default function SuperadminUsersPage() {
                   </div>
                 </div>
 
-                <div className="mt-6">
-                  <h3 className="text-sm font-bold text-gray-800 mb-3 border-b border-gray-100 pb-2">
-                    Role-Based Access Control (RBAC)
-                  </h3>
-                  <p className="text-xs text-gray-500 mb-4">
-                    Centang modul yang dapat diakses oleh karyawan ini di
-                    dashboard mereka.
-                  </p>
 
-                  <div className="space-y-4">
-                    {permissionsGroups.map((grp) => (
-                      <div key={grp.group}>
-                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                          {grp.group}
-                        </p>
-                        <div className="grid grid-cols-2 gap-2">
-                          {grp.permissions.map((perm) => (
-                            <label
-                              key={perm.key}
-                              className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={form.permissions.includes(perm.key)}
-                                onChange={() => togglePermission(perm.key)}
-                                className="mt-0.5 accent-primary h-4 w-4 rounded"
-                              />
-                              <div className="text-sm font-medium text-gray-800">
-                                {perm.label}
-                              </div>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
               </form>
             </div>
 

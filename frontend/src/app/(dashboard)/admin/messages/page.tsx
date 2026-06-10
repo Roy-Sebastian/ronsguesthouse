@@ -5,7 +5,7 @@ import { showToast } from '@/lib/toast';
 import { Pagination } from '@/components/ui/Pagination';
 
 import { useEffect, useState } from "react";
-import { Mail, CheckCircle, Search, MailOpen, Phone, Trash2 } from "lucide-react";
+import { Mail, Search, MailOpen, Phone, Trash2 } from "lucide-react";
 import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
 
 export default function AdminMessagesPage() {
@@ -16,12 +16,12 @@ export default function AdminMessagesPage() {
   const [dateEnd, setDateEnd] = useState("");
   const [selected, setSelected] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
-
-  const canDelete = true;
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const fetchMessages = async () => {
     setLoading(true);
-    const data = await fetch("/api/messages").then(r => r.json()).catch(() => []);
+    const res = await apiFetch("/messages").catch(() => null);
+    const data = res ? await res.json().catch(() => []) : [];
     setMessages(Array.isArray(data) ? data : []);
     setLoading(false);
   };
@@ -32,7 +32,8 @@ export default function AdminMessagesPage() {
     setCurrentPage(1);
   }, [search, dateStart, dateEnd]);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
     const result = await swal.fire({
       icon: 'warning',
       title: 'Hapus Pesan',
@@ -42,10 +43,12 @@ export default function AdminMessagesPage() {
       cancelButtonText: 'Batal',
     });
     if (!result.isConfirmed) return;
+    setDeletingId(id);
     const res = await apiFetch(`/messages/${id}`, { method: 'DELETE' });
+    setDeletingId(null);
     if (res.ok) {
       showToast('Pesan berhasil dihapus');
-      setSelected(null);
+      if (selected?.id === id) setSelected(null);
       fetchMessages();
     } else {
       showToast('Gagal menghapus pesan', 'error');
@@ -118,14 +121,32 @@ export default function AdminMessagesPage() {
             ) : (
               <div className="divide-y divide-gray-100">
                 {paginatedMessages.map(m => (
-                  <button key={m.id} className={`w-full text-left p-4 hover:bg-gray-50 transition-colors ${selected?.id === m.id ? "bg-primary/5 border-l-2 border-primary" : "border-l-2 border-transparent"} ${!m.isRead ? "font-semibold text-dark" : "text-gray-600"}`} onClick={() => handleRead(m)}>
+                  <div
+                    key={m.id}
+                    className={`relative group w-full text-left p-4 hover:bg-gray-50 transition-colors cursor-pointer ${selected?.id === m.id ? "bg-primary/5 border-l-2 border-primary" : "border-l-2 border-transparent"} ${!m.isRead ? "font-semibold text-dark" : "text-gray-600"}`}
+                    onClick={() => handleRead(m)}
+                  >
                     <div className="flex justify-between items-start mb-1">
                       <div className="truncate text-sm flex-1 mr-2">{m.name}</div>
-                      <div className="text-[0.65rem] text-gray-400 whitespace-nowrap">{new Date(m.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short" })}</div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="text-[0.65rem] text-gray-400 whitespace-nowrap">{new Date(m.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short" })}</div>
+                        {/* Tombol hapus inline di setiap item */}
+                        <button
+                          title="Hapus pesan"
+                          disabled={deletingId === m.id}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-50 text-red-400 hover:text-red-600 shrink-0"
+                          onClick={(e) => handleDelete(m.id, e)}
+                        >
+                          {deletingId === m.id
+                            ? <div className="w-3.5 h-3.5 border-2 border-red-300 border-t-red-500 rounded-full animate-spin" />
+                            : <Trash2 size={14} />
+                          }
+                        </button>
+                      </div>
                     </div>
                     <div className="truncate text-sm mb-1">{m.subject}</div>
                     <div className={`truncate text-xs ${!m.isRead ? "text-gray-600 font-medium" : "text-gray-400"}`}>{m.message}</div>
-                  </button>
+                  </div>
                 ))}
               </div>
             )}
@@ -165,17 +186,20 @@ export default function AdminMessagesPage() {
                   {selected.message}
                 </div>
               </div>
-              <div className="px-8 py-4 border-t border-gray-100 shrink-0 flex gap-3">
+              <div className="px-8 py-4 border-t border-gray-100 shrink-0 flex gap-3 flex-wrap">
                 <a href={`mailto:${selected.email}`} className="btn btn-primary btn-md">Balas via Email</a>
                 {selected.phone && <a href={`https://wa.me/${selected.phone.replace(/^0/,"62")}`} target="_blank" rel="noreferrer" className="btn btn-success btn-md">Balas via WhatsApp</a>}
-                {canDelete && (
-                  <button
-                    className="btn btn-danger btn-md ml-auto flex items-center gap-1.5"
-                    onClick={() => handleDelete(selected.id)}
-                  >
-                    <Trash2 size={16} /> <span>Hapus Pesan</span>
-                  </button>
-                )}
+                <button
+                  className="btn btn-danger btn-md ml-auto flex items-center gap-1.5"
+                  disabled={deletingId === selected.id}
+                  onClick={() => handleDelete(selected.id)}
+                >
+                  {deletingId === selected.id
+                    ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    : <Trash2 size={16} />
+                  }
+                  <span>Hapus Pesan</span>
+                </button>
               </div>
             </>
           ) : (
